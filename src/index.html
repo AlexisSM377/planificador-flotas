@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planificación y Contactos | Tracker México GPS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #051937;
+        --accent: #0087d1;
+        --bg-page: #e2e8f0;
+        --white: #ffffff;
+        --text-main: #051937;
+        --text-muted: #4a5568;
+        --border: #cbd5e1;
+        --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --shadow-input: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        --priority-critical: #e53e3e;
+        --priority-relevant: #d97706;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        background-color: var(--bg-page);
+        color: var(--text-main);
+        margin: 0;
+        padding: 20px 10px;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--white);
+        border-radius: 24px;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+
+      header {
+        padding: 40px 30px 20px;
+        text-align: center;
+        background: var(--white);
+        border-bottom: 1px solid #edf2f7;
+      }
+      .logo-container img {
+        max-width: 180px;
+        height: auto;
+        margin-bottom: 15px;
+      }
+      h1 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--primary);
+        margin: 0;
+        letter-spacing: -0.04em;
+      }
+      .subtitle {
+        color: var(--accent);
+        font-size: 13px;
+        margin-top: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      /* Tabs Styles */
+      .tabs-nav {
+        display: flex;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
+        padding: 0 20px;
+      }
+      .tab-btn {
+        padding: 18px 25px;
+        border: none;
+        background: none;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+      }
+      .tab-btn.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+        background: white;
+      }
+      .tab-content {
+        display: none;
+        padding: 30px 35px;
+      }
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Form Styles */
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 20px 0 25px;
+        padding-bottom: 15px;
+        border-bottom: 3px solid var(--primary);
+      }
+      h2 {
+        font-size: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        color: var(--primary);
+        margin: 0;
+        font-weight: 800;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      label {
+        font-size: 10px;
+        font-weight: 800;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      input,
+      select,
+      textarea {
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        color: var(--primary);
+        width: 100%;
+      }
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(0, 135, 209, 0.1);
+      }
+
+      /* Multi-action Chips */
+      .multi-action-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+      .action-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .action-chip input {
+        width: auto;
+        cursor: pointer;
+      }
+      .action-chip.selected {
+        background: #e0f2fe;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* Priority Radio Styles */
+      .priority-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 5px;
+      }
+      .priority-option {
+        flex: 1;
+        position: relative;
+      }
+      .priority-option input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+      }
+      .priority-label {
+        display: block;
+        text-align: center;
+        padding: 10px;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+      }
+      .priority-option input[value="Critica"]:checked + .priority-label {
+        border-color: var(--priority-critical);
+        color: var(--priority-critical);
+        background: #fef2f2;
+      }
+      .priority-option input[value="Relevante"]:checked + .priority-label {
+        border-color: var(--priority-relevant);
+        color: var(--priority-relevant);
+        background: #fffbeb;
+      }
+
+      /* Dynamic Lists */
+      .dynamic-list-box {
+        background: #f1f5f9;
+        padding: 18px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+      }
+      .dynamic-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .queue-container {
+        background: #f1f5f9;
+        border-radius: 20px;
+        padding: 15px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border);
+      }
+      .queue-item {
+        background: white;
+        padding: 12px 18px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid var(--border);
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        justify-content: end;
+        border-top: 1px solid var(--border);
+        padding-top: 25px;
+      }
+      .btn {
+        padding: 14px 28px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 800;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .btn-secondary {
+        background: #cbd5e1;
+        color: var(--primary);
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: white;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-success {
+        background: #10b981;
+        color: white;
+      }
+
+      .remove-btn {
+        color: #e53e3e;
+        background: #fff5f5;
+        border: none;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        font-weight: 800;
+      }
+      .add-row-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        cursor: pointer;
+        border: none;
+        font-weight: 800;
+        color: white;
+        background: var(--accent);
+      }
+
+      #toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--primary);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 50px;
+        display: none;
+        z-index: 9999;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      /* Contact Table Improvements */
+      .contact-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        overflow: hidden;
+      }
+      .contact-table th {
+        background: var(--primary);
+        color: white;
+        text-align: left;
+        padding: 12px 15px;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .contact-table td {
+        padding: 12px 15px;
+        background: white;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 12px;
+        vertical-align: top;
+      }
+
+      .badge-priority {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+      .p-critica {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .p-relevante {
+        background: #fef3c7;
+        color: #b45309;
+      }
+
+      .badge-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .badge-action {
+        padding: 3px 6px;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .bg-call {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .bg-email {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .bg-report {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .dispatch-card {
+        background: #f8fafc;
+        padding: 25px;
+        border-radius: 18px;
+        margin-bottom: 25px;
+        position: relative;
+        border: 1px solid var(--border);
+      }
+      .dispatch-badge {
+        position: absolute;
+        top: -12px;
+        left: 25px;
+        background: var(--primary);
+        color: white;
+        padding: 4px 14px;
+        border-radius: 8px;
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      @media (max-width: 600px) {
+        .tabs-nav {
+          flex-direction: column;
+        }
+        .tab-content {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <header>
+          <div class="logo-container">
+            <img
+              src="https://i.postimg.cc/jKYN1Nxp/TRACKER-IA.png"
+              alt="Tracker México GPS"
+            />
+          </div>
+          <h1>Planificador Maestro de Flotas</h1>
+          <div class="subtitle">
+            Depto. Inteligencia Artificial | Tracker México GPS
+          </div>
+        </header>
+
+        <nav class="tabs-nav">
+          <button
+            class="tab-btn active"
+            onclick="openTab(event, 'logisticaTab')"
+          >
+            Logística de Unidades
+          </button>
+          <button class="tab-btn" onclick="openTab(event, 'contactosTab')">
+            Datos de Contacto
+          </button>
+          <button class="tab-btn" onclick="openTab(event, 'unidadesSesionTab')">
+            Unidades en Sesión
+          </button>
+        </nav>
+
+        <!-- TAB 1: LOGÍSTICA -->
+        <div id="logisticaTab" class="tab-content active">
+          <form id="masterForm">
+            <div class="section-header"><h2>Datos Generales</h2></div>
+            <div class="grid">
+              <div class="form-group">
+                <label>Fecha de Registro</label
+                ><input type="date" id="fecha_registro" />
+              </div>
+              <div class="form-group">
+                <label>Económico</label
+                ><input type="text" id="id_vehiculo" placeholder="ECO-000" />
+              </div>
+              <div class="form-group">
+                <label>Placas</label
+                ><input type="text" id="placas" placeholder="ABC-1234" />
+              </div>
+              <div class="form-group">
+                <label>Operador</label
+                ><input
+                  type="text"
+                  id="operador"
+                  placeholder="Nombre completo"
+                />
+              </div>
+            </div>
+
+            <div class="grid" style="margin-top: 20px">
+              <div class="dynamic-list-box">
+                <label>Teléfonos de Contacto Operador</label>
+                <div id="phoneRows">
+                  <div class="dynamic-row">
+                    <input
+                      type="tel"
+                      class="u-telefono"
+                      placeholder="10 dígitos"
+                    />
+                    <button
+                      type="button"
+                      class="add-row-btn"
+                      onclick="addPhoneField()"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="dynamic-list-box">
+                <label>IDs Equipos Aliados</label>
+                <div id="equipmentRows">
+                  <div class="dynamic-row">
+                    <input
+                      type="text"
+                      class="id_equipo"
+                      placeholder="ID Equipo / Marca"
+                    />
+                    <button
+                      type="button"
+                      class="add-row-btn"
+                      onclick="addEquipmentField()"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 50px">
+              <h2>Planificación de Tramos Logísticos</h2>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="addDispatch()"
+                style="padding: 8px 15px; font-size: 10px"
+              >
+                + Nuevo Tramo
+              </button>
+            </div>
+            <div id="dispatchContainer"></div>
+
+            <div class="controls">
+              <button
+                type="button"
+                id="exportBtn"
+                class="btn btn-primary"
+                onclick="exportFinalExcel()"
+              >
+                Exportar Logística
+              </button>
+              <button
+                type="button"
+                id="syncLogisticaBtn"
+                class="btn btn-success"
+                onclick="syncLogisticaToSheets()"
+              >
+                Sincronizar a Google Sheets
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 2: CONTACTOS -->
+        <div id="contactosTab" class="tab-content">
+          <div class="section-header">
+            <h2>Directorio de Monitoreo</h2>
+            <div class="controls" style="border-top: none; padding-top: 0">
+              <button
+                type="button"
+                id="exportContactsBtn"
+                class="btn btn-success"
+                onclick="exportContactsExcel()"
+                style="display: none"
+              >
+                Descargar Directorio
+              </button>
+              <button
+                type="button"
+                id="syncContactosBtn"
+                class="btn btn-primary"
+                onclick="syncContactosToSheets()"
+                style="display: none"
+              >
+                Guardar Contactos a Sheets
+              </button>
+            </div>
+          </div>
+
+          <div class="grid" style="margin-bottom: 30px">
+            <!-- Datos Base -->
+            <div class="form-group">
+              <label>Nombre del Contacto</label>
+              <input
+                type="text"
+                id="c_nombre"
+                placeholder="Ej: Central de Emergencias"
+              />
+            </div>
+            <div class="form-group">
+              <label>Cargo / Posición</label>
+              <input
+                type="text"
+                id="c_cargo"
+                placeholder="Ej: Gerente de Tráfico"
+              />
+            </div>
+            <div class="form-group">
+              <label>Área / Departamento</label>
+              <select id="c_area">
+                <option value="Monitoreo">Monitoreo / Tráfico</option>
+                <option value="Seguridad">Seguridad Patrimonial</option>
+                <option value="Emergencias">Autoridades / Emergencias</option>
+                <option value="Mantenimiento">
+                  Mantenimiento / Auxilio Vial
+                </option>
+              </select>
+            </div>
+
+            <!-- Prioridad -->
+            <div class="form-group">
+              <label>Prioridad de Contacto</label>
+              <div class="priority-container">
+                <label class="priority-option">
+                  <input
+                    type="radio"
+                    name="c_prioridad"
+                    value="Critica"
+                    checked
+                  />
+                  <span class="priority-label">Incidencias Críticas</span>
+                </label>
+                <label class="priority-option">
+                  <input type="radio" name="c_prioridad" value="Relevante" />
+                  <span class="priority-label">Incidencias Relevantes</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Teléfonos -->
+            <div class="form-group" style="grid-column: 1 / span 2">
+              <label>Teléfonos Directos</label>
+              <div
+                id="contactPhoneRows"
+                class="dynamic-list-box"
+                style="background: #fff; padding: 10px"
+              >
+                <div class="dynamic-row">
+                  <input
+                    type="tel"
+                    class="c-telefono"
+                    placeholder="Número 10 dígitos"
+                  />
+                  <button
+                    type="button"
+                    class="add-row-btn"
+                    onclick="addContactPhoneField()"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Correos -->
+            <div class="form-group" style="grid-column: 1 / span 2">
+              <label>Correos Electrónicos</label>
+              <div
+                id="contactEmailRows"
+                class="dynamic-list-box"
+                style="background: #fff; padding: 10px"
+              >
+                <div class="dynamic-row">
+                  <input
+                    type="email"
+                    class="c-correo"
+                    placeholder="ejemplo@empresa.com"
+                  />
+                  <button
+                    type="button"
+                    class="add-row-btn"
+                    onclick="addContactEmailField()"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1">
+              <label>Acciones a Tomar (Múltiple)</label>
+              <div class="multi-action-container">
+                <label class="action-chip"
+                  ><input
+                    type="checkbox"
+                    name="accion"
+                    value="Realizar Llamada Telefónica"
+                  />
+                  Realizar Llamada</label
+                >
+                <label class="action-chip"
+                  ><input type="checkbox" name="accion" value="Enviar Correo" />
+                  Enviar Correo</label
+                >
+                <label class="action-chip"
+                  ><input
+                    type="checkbox"
+                    name="accion"
+                    value="Generar Informe"
+                  />
+                  Generar Informe</label
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Observaciones</label>
+              <input
+                type="text"
+                id="c_obs"
+                placeholder="Ej: Disponibilidad 24/7"
+              />
+            </div>
+            <div class="form-group" style="justify-content: flex-end">
+              <button
+                type="button"
+                class="btn btn-accent"
+                onclick="addContact()"
+              >
+                Agregar Contacto al Directorio
+              </button>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto">
+            <table class="contact-table">
+              <thead>
+                <tr>
+                  <th>Prioridad / Área</th>
+                  <th>Nombre / Cargo</th>
+                  <th>Medios de Contacto</th>
+                  <th>Protocolo de Acción</th>
+                  <th>Observaciones</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="contactBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: UNIDADES EN SESIÓN -->
+        <div id="unidadesSesionTab" class="tab-content">
+          <div class="section-header">
+            <h2>Unidades en Sesión</h2>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="loadUnitsFromSheets()"
+              style="padding: 10px 20px; font-size: 13px"
+            >
+              🔄 Actualizar desde Google Sheets
+            </button>
+          </div>
+
+          <div
+            id="loadingUnits"
+            style="display: none; text-align: center; padding: 40px"
+          >
+            <div style="font-size: 18px; color: var(--accent)">
+              ⏳ Cargando unidades...
+            </div>
+          </div>
+
+          <div
+            id="sessionUnitsContainer"
+            style="overflow-x: auto; padding: 20px"
+          >
+            <p
+              style="
+                text-align: center;
+                color: var(--text-muted);
+                padding: 40px;
+              "
+            >
+              Haz clic en "Actualizar" para cargar las unidades desde Google
+              Sheets
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <div id="syncStatus" class="sync-status" style="display: none">
+      <span class="sync-dot"></span>
+      <span id="syncStatusText">Conectado a Google Sheets</span>
+    </div>
+
+    <script>
+      // const GOOGLE_API_KEY = "AIzaSyDtA5bl8XuclA92cz2f-eCswuWQul87f0I";
+      // const GOOGLE_SPREADSHEET_ID =
+      //   "1T_y3nppbiWK6pNiIyh5yqa57IgrHwN4Dt7ysCGx43N4";
+
+      // // Nombres de las hojas en tu Google Sheets
+      // const SHEET_LOGISTICA = "Logística ";
+      // const SHEET_CONTACTOS = "Contactos";
+
+      let tokenClient;
+      let gapiInited = false;
+      let gisInited = false;
+      let dispatchCount = 0;
+      let unitsQueue = [];
+      let contactsList = [];
+
+      function showSyncStatus(message, isError = false) {
+        const status = document.getElementById("syncStatus");
+        const text = document.getElementById("syncStatusText");
+        const dot = status.querySelector(".sync-dot");
+
+        status.style.display = "flex";
+        text.textContent = message;
+
+        if (isError) {
+          status.classList.add("sync-error");
+          dot.style.background = "#ef4444";
+        } else {
+          status.classList.remove("sync-error");
+          dot.style.background = "#10b981";
+        }
+
+        setTimeout(() => {
+          status.style.display = "none";
+        }, 5000);
+      }
+
+      async function loadUnitsFromSheets() {
+        const loadingDiv = document.getElementById("loadingUnits");
+        const containerDiv = document.getElementById("sessionUnitsContainer");
+
+        loadingDiv.style.display = "block";
+        containerDiv.innerHTML = "";
+
+        try {
+          const res = await fetch("api/sheets.php?action=read&tipo=logistica", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+          });
+
+          const text = await res.text();
+          console.log("Respuesta raw:", text);
+
+          let json;
+          try {
+            json = JSON.parse(text);
+          } catch (parseError) {
+            console.error("Error parseando JSON:", parseError);
+            throw new Error("El servidor no devolvió JSON válido");
+          }
+
+          if (json.ok && json.data) {
+            renderUnitsTable(json.data);
+            showToast("✓ Unidades cargadas exitosamente");
+          } else {
+            throw new Error(json.error || "No se pudieron cargar los datos");
+          }
+        } catch (error) {
+          containerDiv.innerHTML = `<p style="text-align: center; color: #ef4444; padding: 40px;">❌ Error: ${error.message}</p>`;
+          showToast("❌ Error al cargar unidades");
+          console.error("Error completo:", error);
+        } finally {
+          loadingDiv.style.display = "none";
+        }
+      }
+
+      function renderUnitsTable(data) {
+        const container = document.getElementById("sessionUnitsContainer");
+
+        if (!data || data.length === 0) {
+          container.innerHTML =
+            '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No hay unidades registradas en Google Sheets</p>';
+          return;
+        }
+
+        // Agrupar por unidad (económico)
+        const unitGroups = {};
+        data.forEach((row) => {
+          const economico = row[1] || "SIN ECONÓMICO";
+          if (!unitGroups[economico]) {
+            unitGroups[economico] = [];
+          }
+          unitGroups[economico].push(row);
+        });
+
+        let html = "";
+
+        Object.keys(unitGroups).forEach((economico, index) => {
+          const rows = unitGroups[economico];
+          const firstRow = rows[0];
+
+          html += `
+            <div style="margin-bottom: 30px; border: 2px solid var(--border); border-radius: 12px; overflow: hidden;">
+              <div style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); padding: 15px 20px; color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 700;">🚛 ${economico}</h3>
+                    <div style="font-size: 12px; opacity: 0.9; margin-top: 5px;">
+                      Placas: ${firstRow[2] || "N/A"} | Operador: ${
+            firstRow[3] || "N/A"
+          }
+                    </div>
+                  </div>
+                  <div style="text-align: right; font-size: 11px;">
+                    <div>📅 ${firstRow[0] || "Sin fecha"}</div>
+                    <div style="margin-top: 3px;">📞 ${
+                      firstRow[4] || "Sin teléfono"
+                    }</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="overflow-x: auto;">
+                <table class="contact-table" style="margin: 0;">
+                  <thead>
+                    <tr style="">
+                      <th>Tramo</th>
+                      <th>Ruta</th>
+                      <th>Origen</th>
+                      <th>Destino</th>
+                      <th>Salida Patio</th>
+                      <th>Cita Carga</th>
+                      <th>Salida Carga</th>
+                      <th>Descarga</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    </div>
+          `;
+
+          rows.forEach((row, i) => {
+            html += `
+              <tr>
+                <td style="font-weight: 700; color: var(--accent);">Tramo ${
+                  i + 1
+                }</td>
+                <td>${row[6] || "-"}</td>
+                <td>${row[7] || "-"}</td>
+                <td>${row[8] || "-"}</td>
+                <td>${row[9] ? formatDateTime(row[9]) : "-"}</td>
+                <td>${row[10] ? formatDateTime(row[10]) : "-"}</td>
+                <td>${row[11] ? formatDateTime(row[11]) : "-"}</td>
+                <td>${row[12] ? formatDateTime(row[12]) : "-"}</td>
+              </tr>
+            `;
+          });
+
+          html += `
+                  </tbody>
+                </table>
+              </div>
+              
+              <div style="background: #f8fafc; padding: 10px 20px; font-size: 11px; color: var(--text-muted);">
+                <strong>IDs Equipos:</strong> ${
+                  firstRow[5] || "No especificado"
+                }
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function formatDateTime(dateTimeStr) {
+        if (!dateTimeStr) return "-";
+        try {
+          const date = new Date(dateTimeStr);
+          return date.toLocaleString("es-MX", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch (e) {
+          return dateTimeStr;
+        }
+      }
+
+      async function syncLogisticaToSheets() {
+        // Validar campos obligatorios
+        const idV = document.getElementById("id_vehiculo").value;
+        const op = document.getElementById("operador").value;
+
+        if (!idV || !op) {
+          showToast("⚠️ Económico y Operador son obligatorios");
+          return;
+        }
+
+        // Capturar datos del formulario
+        const unitData = {
+          id: idV,
+          operador: op,
+          fecha: document.getElementById("fecha_registro").value,
+          placas: document.getElementById("placas").value,
+          telefonos: Array.from(document.querySelectorAll(".u-telefono"))
+            .map((i) => i.value)
+            .filter((v) => v),
+          equipos: Array.from(document.querySelectorAll(".id_equipo"))
+            .map((i) => i.value)
+            .filter((v) => v),
+          tramos: Array.from(document.querySelectorAll(".dispatch-card")).map(
+            (card) => ({
+              ruta: card.querySelector(".d-ruta").value,
+              origen: card.querySelector(".d-origen").value,
+              destino: card.querySelector(".d-destino").value,
+              patio: card.querySelector(".d-salida-patio").value,
+              cita: card.querySelector(".d-cita-carga").value,
+              salida: card.querySelector(".d-salida-carga").value,
+              descarga: card.querySelector(".d-descarga").value,
+            })
+          ),
+        };
+
+        const btn = document.getElementById("syncLogisticaBtn");
+        btn.disabled = true;
+        btn.textContent = "Sincronizando...";
+
+        try {
+          const rows = [];
+
+          // Generar filas para cada tramo
+          unitData.tramos.forEach((t, i) => {
+            rows.push([
+              unitData.fecha || "",
+              unitData.id || "",
+              unitData.placas || "",
+              unitData.operador || "",
+              unitData.telefonos.join(" / ") || "",
+              unitData.equipos.join(" / ") || "",
+              t.ruta || "",
+              t.origen || "",
+              t.destino || "",
+              t.patio || "",
+              t.cita || "",
+              t.salida || "",
+              t.descarga || "",
+            ]);
+          });
+
+          console.log("Enviando datos:", { tipo: "logistica", rows: rows });
+
+          const res = await fetch("api/sheets.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              tipo: "logistica",
+              rows: rows,
+            }),
+          });
+
+          console.log("Status:", res.status);
+
+          // Solo leer UNA VEZ el body de la respuesta
+          const text = await res.text();
+          console.log("Respuesta raw:", text);
+
+          // Verificar si es JSON válido
+          let json;
+          try {
+            json = JSON.parse(text);
+          } catch (parseError) {
+            console.error("Error parseando JSON:", parseError);
+            console.error("Texto recibido:", text);
+            throw new Error("El servidor no devolvió JSON válido");
+          }
+
+          console.log("Respuesta JSON:", json);
+
+          if (json.ok) {
+            showToast("✓ Logística sincronizada exitosamente");
+            showSyncStatus("Sincronizado correctamente", false);
+
+            // Limpiar formulario después de sincronizar exitosamente
+            document.getElementById("id_vehiculo").value = "";
+            document.getElementById("operador").value = "";
+            document.getElementById("placas").value = "";
+            document.getElementById("fecha_registro").value = "";
+
+            // Limpiar teléfonos
+            document.getElementById("phoneRows").innerHTML = `
+              <div class="dynamic-row">
+                <input type="tel" class="u-telefono" placeholder="10 dígitos" />
+                <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
+              </div>
+            `;
+
+            // Limpiar equipos
+            document.getElementById("equipmentRows").innerHTML = `
+              <div class="dynamic-row">
+                <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
+                <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
+              </div>
+            `;
+
+            // Limpiar tramos
+            document.getElementById("dispatchContainer").innerHTML = "";
+            dispatchCount = 0;
+            addDispatch(); // Agregar un tramo inicial vacío
+          } else {
+            throw new Error(json.error || "Error desconocido");
+          }
+        } catch (error) {
+          showToast("❌ Error: " + error.message);
+          showSyncStatus("Error al sincronizar", true);
+          console.error("Error completo:", error);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Sincronizar a Google Sheets";
+        }
+      }
+
+      async function syncContactosToSheets() {
+        if (!contactsList.length) {
+          showToast("⚠️ No hay contactos para sincronizar");
+          return;
+        }
+
+        const btn = document.getElementById("syncContactosBtn");
+        btn.disabled = true;
+        btn.textContent = "Sincronizando...";
+
+        try {
+          const rows = contactsList.map((c) => [
+            c.nombre || "",
+            c.cargo || "",
+            c.area || "",
+            c.prioridad || "",
+            c.telefonos || "",
+            c.correos || "",
+            c.acciones || "",
+            c.observaciones || "",
+          ]);
+
+          console.log("Enviando contactos:", { tipo: "contactos", rows: rows });
+
+          const res = await fetch("api/sheets.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              tipo: "contactos",
+              rows: rows,
+            }),
+          });
+
+          // Solo leer UNA VEZ el body de la respuesta
+          const text = await res.text();
+          console.log("Respuesta raw:", text);
+
+          // Verificar si es JSON válido
+          let json;
+          try {
+            json = JSON.parse(text);
+          } catch (parseError) {
+            console.error("Error parseando JSON:", parseError);
+            console.error("Texto recibido:", text);
+            throw new Error("El servidor no devolvió JSON válido");
+          }
+
+          console.log("Respuesta JSON:", json);
+
+          if (json.ok) {
+            showToast("✓ Contactos sincronizados exitosamente");
+            showSyncStatus("Sincronizado correctamente", false);
+          } else {
+            throw new Error(json.error || "Error desconocido");
+          }
+        } catch (error) {
+          showToast("❌ Error: " + error.message);
+          showSyncStatus("Error al sincronizar", true);
+          console.error("Error completo:", error);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Sincronizar Contactos a Sheets";
+        }
+      }
+
+      function openTab(evt, tabName) {
+        const contents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contents.length; i++)
+          contents[i].style.display = "none";
+        const buttons = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < buttons.length; i++)
+          buttons[i].classList.remove("active");
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.classList.add("active");
+      }
+
+      /* Filas dinámicas */
+      function addPhoneField() {
+        const container = document.getElementById("phoneRows");
+        const div = document.createElement("div");
+        div.className = "dynamic-row";
+        div.innerHTML = `<input type="tel" class="u-telefono" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+        container.appendChild(div);
+      }
+
+      function addEquipmentField() {
+        const container = document.getElementById("equipmentRows");
+        const div = document.createElement("div");
+        div.className = "dynamic-row";
+        div.innerHTML = `<input type="text" class="id_equipo" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+        container.appendChild(div);
+      }
+
+      function addContactPhoneField() {
+        const container = document.getElementById("contactPhoneRows");
+        const div = document.createElement("div");
+        div.className = "dynamic-row";
+        div.innerHTML = `<input type="tel" class="c-telefono" placeholder="Otro número"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+        container.appendChild(div);
+      }
+
+      function addContactEmailField() {
+        const container = document.getElementById("contactEmailRows");
+        const div = document.createElement("div");
+        div.className = "dynamic-row";
+        div.innerHTML = `<input type="email" class="c-correo" placeholder="Otro correo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+        container.appendChild(div);
+      }
+
+      function addDispatch() {
+        dispatchCount++;
+        const container = document.getElementById("dispatchContainer");
+        const div = document.createElement("div");
+        div.className = "dispatch-card";
+        div.innerHTML = `
+            <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
+            <div class="grid">
+                <div class="form-group"><label>Ruta / Identificador</label><input type="text" class="d-ruta"></div>
+                <div class="form-group"><label>Punto de Origen</label><input type="text" class="d-origen"></div>
+                <div class="form-group"><label>Punto de Destino</label><input type="text" class="d-destino"></div>
+            </div>
+            
+            <div class="grid" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
+                <div class="form-group"><label>Salida de Patio</label><input type="datetime-local" class="d-salida-patio"></div>
+                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga"></div>
+                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga"></div>
+                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga"></div>
+            </div>
+            ${
+              dispatchCount > 1
+                ? '<button type="button" class="remove-btn" style="position:absolute; top: 10px; right: 10px;" onclick="this.parentElement.remove()">×</button>'
+                : ""
+            }
+        `;
+        container.appendChild(div);
+      }
+
+      /* Gestión de Directorio */
+      function addContact() {
+        const nombre = document.getElementById("c_nombre").value;
+        const cargo = document.getElementById("c_cargo").value;
+        const area = document.getElementById("c_area").value;
+        const obs = document.getElementById("c_obs").value;
+        const prioridad = document.querySelector(
+          'input[name="c_prioridad"]:checked'
+        ).value;
+
+        const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
+          .map((i) => i.value)
+          .filter((v) => v);
+        const correos = Array.from(document.querySelectorAll(".c-correo"))
+          .map((i) => i.value)
+          .filter((v) => v);
+        const acciones = Array.from(
+          document.querySelectorAll('input[name="accion"]:checked')
+        ).map((cb) => cb.value);
+
+        if (!nombre || (telefonos.length === 0 && correos.length === 0)) {
+          showToast("⚠️ Nombre y al menos un medio de contacto son requeridos");
+          return;
+        }
+
+        const contactObj = {
+          id: Date.now(),
+          prioridad: prioridad,
+          area: area,
+          nombre: nombre,
+          cargo: cargo || "N/A",
+          telefonos: telefonos.join(" / "),
+          correos: correos.join(" / "),
+          acciones: acciones.join(", "),
+          observaciones: obs,
+        };
+
+        contactsList.push(contactObj);
+        renderContacts();
+        showToast("✓ Contacto registrado");
+
+        // Reset campos
+        document.getElementById("c_nombre").value = "";
+        document.getElementById("c_cargo").value = "";
+        document.getElementById("c_obs").value = "";
+        document.getElementById("contactPhoneRows").innerHTML = `
+            <div class="dynamic-row">
+                <input type="tel" class="c-telefono" placeholder="Número 10 dígitos">
+                <button type="button" class="add-row-btn" onclick="addContactPhoneField()">+</button>
+            </div>
+        `;
+        document.getElementById("contactEmailRows").innerHTML = `
+            <div class="dynamic-row">
+                <input type="email" class="c-correo" placeholder="ejemplo@empresa.com">
+                <button type="button" class="add-row-btn" onclick="addContactEmailField()">+</button>
+            </div>
+        `;
+        document.querySelectorAll('input[name="accion"]').forEach((cb) => {
+          cb.checked = false;
+          cb.parentElement.classList.remove("selected");
+        });
+      }
+
+      function renderContacts() {
+        const body = document.getElementById("contactBody");
+        const btnExport = document.getElementById("exportContactsBtn");
+        const btnSync = document.getElementById("syncContactosBtn");
+
+        const hasContacts = contactsList.length > 0;
+        body.innerHTML = "";
+        btnExport.style.display = hasContacts ? "block" : "none";
+        btnSync.style.display = hasContacts ? "block" : "none";
+
+        contactsList.forEach((c) => {
+          const row = document.createElement("tr");
+          let badgesHTML = '<div class="badge-group">';
+          c.acciones.split(", ").forEach((acc) => {
+            let label =
+              acc === "Realizar Llamada Telefónica"
+                ? "Llamada"
+                : acc === "Enviar Correo"
+                ? "Correo"
+                : "Informe";
+            let cls =
+              acc === "Enviar Correo"
+                ? "bg-email"
+                : acc === "Generar Informe"
+                ? "bg-report"
+                : "bg-call";
+            if (acc)
+              badgesHTML += `<span class="badge-action ${cls}">${label}</span>`;
+          });
+          badgesHTML += "</div>";
+
+          const pClass =
+            c.prioridad === "Critica" ? "p-critica" : "p-relevante";
+
+          row.innerHTML = `
+                <td>
+                    <span class="badge-priority ${pClass}">${
+            c.prioridad
+          }</span><br>
+                    <small><b>${c.area.toUpperCase()}</b></small>
+                </td>
+                <td>
+                    <b>${c.nombre}</b><br>
+                    <span style="color: var(--accent); font-size: 11px;">${
+                      c.cargo
+                    }</span>
+                </td>
+                <td>
+                    <div style="margin-bottom: 5px;">📞 ${
+                      c.telefonos || "-"
+                    }</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">✉️ ${
+                      c.correos || "-"
+                    }</div>
+                </td>
+                <td>${badgesHTML}</td>
+                <td style="font-size: 11px;">${c.observaciones}</td>
+                <td><button class="remove-btn" onclick="removeContact(${
+                  c.id
+                })">×</button></td>
+            `;
+          body.appendChild(row);
+        });
+      }
+
+      function removeContact(id) {
+        contactsList = contactsList.filter((c) => c.id !== id);
+        renderContacts();
+      }
+
+      /* Gestión de Directorio */
+      function addContact() {
+        const nombre = document.getElementById("c_nombre").value;
+        const cargo = document.getElementById("c_cargo").value;
+        const area = document.getElementById("c_area").value;
+        const obs = document.getElementById("c_obs").value;
+        const prioridad = document.querySelector(
+          'input[name="c_prioridad"]:checked'
+        ).value;
+
+        const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
+          .map((i) => i.value)
+          .filter((v) => v);
+        const correos = Array.from(document.querySelectorAll(".c-correo"))
+          .map((i) => i.value)
+          .filter((v) => v);
+        const acciones = Array.from(
+          document.querySelectorAll('input[name="accion"]:checked')
+        ).map((cb) => cb.value);
+
+        if (!nombre || (telefonos.length === 0 && correos.length === 0)) {
+          showToast("⚠️ Nombre y al menos un medio de contacto son requeridos");
+          return;
+        }
+
+        const contactObj = {
+          id: Date.now(),
+          prioridad: prioridad,
+          area: area,
+          nombre: nombre,
+          cargo: cargo || "N/A",
+          telefonos: telefonos.join(" / "),
+          correos: correos.join(" / "),
+          acciones: acciones.join(", "),
+          observaciones: obs,
+        };
+
+        contactsList.push(contactObj);
+        renderContacts();
+        showToast("✓ Contacto registrado");
+
+        // Limpiar formulario
+        document.getElementById("c_nombre").value = "";
+        document.getElementById("c_cargo").value = "";
+        document.getElementById("c_obs").value = "";
+        document.getElementById("contactPhoneRows").innerHTML = `
+            <div class="dynamic-row">
+                <input type="tel" class="c-telefono" placeholder="Número 10 dígitos">
+                <button type="button" class="add-row-btn" onclick="addContactPhoneField()">+</button>
+            </div>
+        `;
+        document.getElementById("contactEmailRows").innerHTML = `
+            <div class="dynamic-row">
+                <input type="email" class="c-correo" placeholder="ejemplo@empresa.com">
+                <button type="button" class="add-row-btn" onclick="addContactEmailField()">+</button>
+            </div>
+        `;
+        document.querySelectorAll('input[name="accion"]').forEach((cb) => {
+          cb.checked = false;
+          cb.parentElement.classList.remove("selected");
+        });
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.innerText = msg;
+        t.style.display = "block";
+        setTimeout(() => (t.style.display = "none"), 3000);
+      }
+
+      /* Exportaciones Excel */
+      async function exportFinalExcel() {
+        const btn = document.getElementById("exportBtn");
+        btn.disabled = true;
+        btn.textContent = "Exportando...";
+
+        try {
+          // Obtener datos desde Google Sheets
+          const res = await fetch("api/sheets.php?action=read&tipo=logistica", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+          });
+
+          const text = await res.text();
+          let json;
+
+          try {
+            json = JSON.parse(text);
+          } catch (parseError) {
+            throw new Error("Error al obtener datos de Google Sheets");
+          }
+
+          if (!json.ok || !json.data || json.data.length === 0) {
+            showToast("⚠️ No hay datos para exportar en Google Sheets");
+            return;
+          }
+
+          // Transformar datos al formato Excel
+          const dataForExcel = json.data.map((row) => ({
+            "Fecha Registro": row[0] || "",
+            Económico: row[1] || "",
+            Placas: row[2] || "",
+            Operador: row[3] || "",
+            "Tels Operador": row[4] || "",
+            "Equipos Aliados": row[5] || "",
+            Ruta: row[6] || "",
+            Origen: row[7] || "",
+            Destino: row[8] || "",
+            "Salida Patio": row[9] || "",
+            "Cita Carga": row[10] || "",
+            "Salida Carga": row[11] || "",
+            Descarga: row[12] || "",
+          }));
+
+          const ws = XLSX.utils.json_to_sheet(dataForExcel);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Logistica");
+          XLSX.writeFile(wb, "Logistica_Tracker_GPS.xlsx");
+
+          showToast("✓ Archivo exportado exitosamente");
+        } catch (error) {
+          showToast("❌ Error al exportar: " + error.message);
+          console.error(error);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Exportar Logística";
+        }
+      }
+
+      function exportContactsExcel() {
+        const dataForExcel = contactsList.map((c) => ({
+          Prioridad: c.prioridad,
+          Área: c.area,
+          Nombre: c.nombre,
+          Cargo: c.cargo,
+          Teléfonos: c.telefonos,
+          Correos: c.correos,
+          "Protocolo Acción": c.acciones,
+          Observaciones: c.observaciones,
+        }));
+        const ws = XLSX.utils.json_to_sheet(dataForExcel);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Directorio");
+        XLSX.writeFile(wb, "Directorio_Seguridad_Tracker.xlsx");
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("fecha_registro").value = new Date()
+          .toISOString()
+          .split("T")[0];
+        addDispatch();
+      });
+
+      document.addEventListener("change", (e) => {
+        if (e.target.name === "accion") {
+          e.target.parentElement.classList.toggle("selected", e.target.checked);
+        }
+      });
+
+      window.openTab = openTab;
+      window.addPhoneField = addPhoneField;
+      window.addEquipmentField = addEquipmentField;
+      window.addContactPhoneField = addContactPhoneField;
+      window.addContactEmailField = addContactEmailField;
+      window.addDispatch = addDispatch;
+      window.addContact = addContact;
+      window.removeContact = removeContact;
+      window.saveUnitToQueue = saveUnitToQueue;
+      window.exportFinalExcel = exportFinalExcel;
+      window.exportContactsExcel = exportContactsExcel;
+      window.syncLogisticaToSheets = syncLogisticaToSheets;
+      window.syncContactosToSheets = syncContactosToSheets;
+    </script>
+  </body>
+</html>
