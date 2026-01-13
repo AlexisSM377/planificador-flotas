@@ -1,3 +1,25 @@
 
 ### vendor
 vendor/
+
+### Credenciales y variables de entorno
+credentials/
+.env
+.env.local
+.env.*.local
+
+### IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+### OS
+.DS_Store
+Thumbs.db
+
+### Logs
+*.log
+logs/
+

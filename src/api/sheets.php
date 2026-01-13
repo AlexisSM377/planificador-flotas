@@ -1,90 +1,121 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+/**
+ * Google Sheets API endpoint with security
+ */
+
+// Load configuration
+require __DIR__ . '/../config.php';
+require __DIR__ . '/../RequestValidator.php';
 
 header('Content-Type: application/json');
 
-require __DIR__ . '/../../vendor/autoload.php';
-
-$SPREADSHEET_ID = '1bx2zR637XcmkNVR7osxllsz7MD9SZHTtAHvNSseuuKc';
-
-$SHEETS = [
-    'logistica' => 'Logistica',
-    'contactos' => 'Contactos'
-];
-
-// Configurar cliente de Google
-$client = new Google_Client();
-$client->setApplicationName('Tracker Sheets');
-$client->setScopes([
-    'https://www.googleapis.com/auth/spreadsheets'
-]);
-$client->setAuthConfig(__DIR__ . '/../../credentials/google.json');
-$client->setAccessType('offline');
-
-$service = new Google_Service_Sheets($client);
-
-// Determinar si es lectura o escritura
-$action = $_GET['action'] ?? 'write';
-
-if ($action === 'read') {
-    // LECTURA: Obtener datos desde Sheets
-    $tipo = $_GET['tipo'] ?? '';
+try {
+    // Validate incoming request
+    RequestValidator::validateRequest();
     
-    if (empty($tipo) || !isset($SHEETS[$tipo])) {
-        echo json_encode(['ok' => false, 'error' => 'Tipo inválido']);
-        exit;
+    // Load Google API
+    require __DIR__ . '/../../vendor/autoload.php';
+    
+    // Initialize Google Sheets service
+    $client = new Google_Client();
+    $client->setApplicationName('Tracker Sheets');
+    $client->setScopes(['https://www.googleapis.com/auth/spreadsheets']);
+    $client->setAuthConfig(GOOGLE_CREDENTIALS_PATH);
+    $client->setAccessType('offline');
+    
+    $service = new Google_Service_Sheets($client);
+    
+    $sheets = [
+        'logistica' => 'BITACORA',
+        'contactos' => 'Contactos'
+    ];
+    
+    // Handle request
+    $action = RequestValidator::sanitizeInput($_GET['action'] ?? 'write', 'string');
+    
+    if ($action === 'read') {
+        handleRead($service, $sheets);
+    } elseif ($action === 'write') {
+        handleWrite($service, $sheets);
+    } else {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Invalid action']);
     }
     
-    try {
-        $range = $SHEETS[$tipo] . '!A2:M1000'; // Leer hasta 1000 filas
-        $response = $service->spreadsheets_values->get($SPREADSHEET_ID, $range);
-        $values = $response->getValues();
-        
-        if (empty($values)) {
-            echo json_encode(['ok' => true, 'data' => []]);
-        } else {
-            echo json_encode(['ok' => true, 'data' => $values]);
-        }
-    } catch (Exception $e) {
+} catch (Exception $e) {
+    // Log error securely
+    error_log('API Error: ' . $e->getMessage());
+    
+    // Return error response
+    $code = is_numeric($e->getCode()) ? $e->getCode() : 500;
+    http_response_code($code);
+    
+    // Don't expose detailed error in production
+    if (ENVIRONMENT === 'development') {
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    } else {
+        echo json_encode(['ok' => false, 'error' => 'An error occurred']);
     }
-} else {
-    // ESCRITURA: Agregar datos a Sheets
+}
+
+/**
+ * Handle read request
+ */
+function handleRead($service, $sheets) {
+    $tipo = RequestValidator::sanitizeInput($_GET['tipo'] ?? '', 'string');
+    $tipo = RequestValidator::validateTipo($tipo);
+    
+    $range = $sheets[$tipo] . '!A2:N1000';
+    $response = $service->spreadsheets_values->get(SPREADSHEET_ID, $range);
+    $values = $response->getValues();
+    
+    echo json_encode([
+        'ok' => true,
+        'data' => $values ?? []
+    ]);
+}
+
+/**
+ * Handle write request
+ */
+function handleWrite($service, $sheets) {
     $input = json_decode(file_get_contents('php://input'), true);
-
-    if (!$input) {
-        echo json_encode(['ok' => false, 'error' => 'JSON inválido']);
-        exit;
+    
+    if (!is_array($input)) {
+        throw new Exception('Invalid JSON input', 400);
     }
-
-    if (empty($input['tipo']) || empty($input['rows'])) {
-        echo json_encode(['ok' => false, 'error' => 'Faltan datos']);
-        exit;
+    
+    $tipo = RequestValidator::sanitizeInput($input['tipo'] ?? '', 'string');
+    $rows = $input['rows'] ?? [];
+    
+    // Validate inputs
+    $tipo = RequestValidator::validateTipo($tipo);
+    $rows = RequestValidator::validateRows($rows);
+    
+    // Sanitize each row
+    $sanitizedRows = [];
+    foreach ($rows as $row) {
+        $sanitizedRow = [];
+        foreach ($row as $cell) {
+            $sanitizedRow[] = RequestValidator::sanitizeInput($cell, 'string');
+        }
+        $sanitizedRows[] = $sanitizedRow;
     }
-
-    if (!isset($SHEETS[$input['tipo']])) {
-        echo json_encode(['ok' => false, 'error' => 'Tipo inválido']);
-        exit;
-    }
-
-    try {
-        $body = new Google_Service_Sheets_ValueRange([
-            'values' => $input['rows']
-        ]);
-
-        $service->spreadsheets_values->append(
-            $SPREADSHEET_ID,
-            $SHEETS[$input['tipo']] . '!A2',
-            $body,
-            [
-                'valueInputOption' => 'RAW',
-                'insertDataOption' => 'INSERT_ROWS'
-            ]
-        );
-
-        echo json_encode(['ok' => true]);
-    } catch (Exception $e) {
-        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
-    }
+    
+    // Write to Google Sheets
+    $body = new Google_Service_Sheets_ValueRange([
+        'values' => $sanitizedRows
+    ]);
+    
+    $service->spreadsheets_values->append(
+        SPREADSHEET_ID,
+        $sheets[$tipo] . '!A2',
+        $body,
+        [
+            'valueInputOption' => 'RAW',
+            'insertDataOption' => 'INSERT_ROWS'
+        ]
+    );
+    
+    echo json_encode(['ok' => true]);
 }
