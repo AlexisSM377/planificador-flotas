@@ -13,12 +13,12 @@ class RequestValidator {
             return;
         }
         
-        // Skip validation in development environment if no API_KEY is set
-        if (ENVIRONMENT === 'development' && empty(API_KEY)) {
+        // In development environment, allow requests without API_KEY
+        if (ENVIRONMENT === 'development') {
             return;
         }
         
-        // Check API key
+        // Check API key (production only)
         $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? null;
         
         if (empty($apiKey) || $apiKey !== API_KEY) {
