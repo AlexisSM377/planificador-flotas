@@ -23,6 +23,7 @@
         --shadow-input: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         --priority-critical: #e53e3e;
         --priority-relevant: #d97706;
+        --priority-ordinary: #047857;
       }
 
       * {
@@ -231,6 +232,11 @@
         color: var(--priority-relevant);
         background: #fffbeb;
       }
+      .priority-option input[value="Ordinaria"]:checked + .priority-label {
+        border-color: var(--priority-ordinary);
+        color: var(--priority-ordinary);
+        background: #fffbeb;
+      }
 
       /* Dynamic Lists */
       .dynamic-list-box {
@@ -375,6 +381,10 @@
         background: #fef3c7;
         color: #b45309;
       }
+      .p-ordinaria {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
 
       .badge-group {
         display: flex;
@@ -472,8 +482,25 @@
                 ><input type="date" id="fecha_registro" />
               </div>
               <div class="form-group">
-                <label>Económico</label
-                ><input type="text" id="id_vehiculo" placeholder="ECO-000" />
+                <label
+                  >Económico
+                  <span
+                    style="
+                      font-size: 9px;
+                      color: var(--accent);
+                      cursor: pointer;
+                    "
+                    onclick="loadUnitsHistory()"
+                    title="Recargar historial"
+                    >🔄</span
+                  ></label
+                ><input
+                  type="text"
+                  id="id_vehiculo"
+                  list="economicosList"
+                  placeholder="ECO-000"
+                />
+                <datalist id="economicosList"></datalist>
               </div>
               <div class="form-group">
                 <label>Placas</label
@@ -485,6 +512,14 @@
                   type="text"
                   id="operador"
                   placeholder="Nombre completo"
+                />
+              </div>
+              <div class="form-group">
+                <label>Cliente</label
+                ><input
+                  type="text"
+                  id="cliente"
+                  placeholder="Nombre completo del cliente"
                 />
               </div>
             </div>
@@ -546,6 +581,14 @@
             <div class="controls">
               <button
                 type="button"
+                id="clearFormBtn"
+                class="btn btn-secondary"
+                onclick="clearLogisticaForm()"
+              >
+                Limpiar Formulario
+              </button>
+              <button
+                type="button"
                 id="exportBtn"
                 class="btn btn-primary"
                 onclick="exportFinalExcel()"
@@ -558,7 +601,7 @@
                 class="btn btn-success"
                 onclick="syncLogisticaToSheets()"
               >
-                Sincronizar a Google Sheets
+                Guardar
               </button>
             </div>
           </form>
@@ -626,7 +669,7 @@
               <div class="priority-container">
                 <label class="priority-option">
                   <input
-                    type="radio"
+                    type="checkbox"
                     name="c_prioridad"
                     value="Critica"
                     checked
@@ -634,8 +677,12 @@
                   <span class="priority-label">Incidencias Críticas</span>
                 </label>
                 <label class="priority-option">
-                  <input type="radio" name="c_prioridad" value="Relevante" />
+                  <input type="checkbox" name="c_prioridad" value="Relevante" />
                   <span class="priority-label">Incidencias Relevantes</span>
+                </label>
+                <label class="priority-option">
+                  <input type="checkbox" name="c_prioridad" value="Ordinaria" />
+                  <span class="priority-label">Incidencias Ordinarias</span>
                 </label>
               </div>
             </div>
@@ -755,15 +802,40 @@
         <!-- TAB 3: UNIDADES EN SESIÓN -->
         <div id="unidadesSesionTab" class="tab-content">
           <div class="section-header">
-            <h2>Unidades en Sesión</h2>
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick="loadUnitsFromSheets()"
-              style="padding: 10px 20px; font-size: 13px"
-            >
-              🔄 Actualizar desde Google Sheets
-            </button>
+            <div>
+              <h2>Unidades en Sesión</h2>
+              <div
+                id="unitsCounter"
+                style="
+                  font-size: 12px;
+                  color: var(--accent);
+                  font-weight: 600;
+                  margin-top: 5px;
+                "
+              >
+                <span id="filterIndicator">📅 Mostrando: Hoy</span> |
+                <span id="unitCount">0 unidades</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px">
+              <button
+                type="button"
+                id="toggleFilterBtn"
+                class="btn btn-secondary"
+                onclick="toggleDateFilter()"
+                style="padding: 10px 20px; font-size: 13px"
+              >
+                🗓️ Ver Todo el Historial
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="loadUnitsFromSheets()"
+                style="padding: 10px 20px; font-size: 13px"
+              >
+                🔄 Actualizar
+              </button>
+            </div>
           </div>
 
           <div
@@ -775,10 +847,7 @@
             </div>
           </div>
 
-          <div
-            id="sessionUnitsContainer"
-            style="overflow-x: auto; padding: 20px"
-          >
+          <div id="sessionUnitsContainer" style="overflow-x: auto">
             <p
               style="
                 text-align: center;
@@ -816,6 +885,138 @@
       let dispatchCount = 0;
       let unitsQueue = [];
       let contactsList = [];
+      let unitsHistory = {}; // Cache de unidades para autocompletado
+      let showOnlyToday = true; // Filtro para mostrar solo registros de hoy
+      let allUnitsData = []; // Almacenar todos los datos
+
+      // Cargar historial de unidades desde Google Sheets
+      async function loadUnitsHistory() {
+        try {
+          const res = await fetch("api/sheets.php?action=read&tipo=logistica", {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          });
+          const text = await res.text();
+          const json = JSON.parse(text);
+
+          if (json.ok && json.data) {
+            // Procesar y almacenar última entrada de cada económico
+            const units = {};
+            json.data.forEach((row) => {
+              const economico = row[1];
+              if (economico && !units[economico]) {
+                units[economico] = {
+                  placas: row[2] || "",
+                  equipos: row[3] ? row[3].split(" / ") : [],
+                  operador: row[4] || "",
+                  telefonos: row[5] ? row[5].split(" / ") : [],
+                  cliente: row[13] || "",
+                };
+              }
+            });
+            unitsHistory = units;
+            updateEconomicosDatalist();
+          }
+        } catch (error) {
+          console.error("Error cargando historial:", error);
+        }
+      }
+
+      // Actualizar datalist con económicos disponibles
+      function updateEconomicosDatalist() {
+        const datalist = document.getElementById("economicosList");
+        datalist.innerHTML = "";
+        Object.keys(unitsHistory).forEach((eco) => {
+          const option = document.createElement("option");
+          option.value = eco;
+          datalist.appendChild(option);
+        });
+      }
+
+      // Autocompletar datos de la unidad
+      function autofillUnitData(economico) {
+        const unitData = unitsHistory[economico];
+        if (!unitData) return;
+
+        // Llenar campos básicos
+        document.getElementById("placas").value = unitData.placas;
+        document.getElementById("operador").value = unitData.operador;
+        document.getElementById("cliente").value = unitData.cliente;
+
+        // Llenar teléfonos
+        const phoneContainer = document.getElementById("phoneRows");
+        phoneContainer.innerHTML = "";
+        if (unitData.telefonos.length > 0) {
+          unitData.telefonos.forEach((tel, i) => {
+            const div = document.createElement("div");
+            div.className = "dynamic-row";
+            if (i === 0) {
+              div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>`;
+            } else {
+              div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+            }
+            phoneContainer.appendChild(div);
+          });
+        } else {
+          phoneContainer.innerHTML = `<div class="dynamic-row"><input type="tel" class="u-telefono" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()">+</button></div>`;
+        }
+
+        // Llenar equipos
+        const equipmentContainer = document.getElementById("equipmentRows");
+        equipmentContainer.innerHTML = "";
+        if (unitData.equipos.length > 0) {
+          unitData.equipos.forEach((equip, i) => {
+            const div = document.createElement("div");
+            div.className = "dynamic-row";
+            if (i === 0) {
+              div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>`;
+            } else {
+              div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+            }
+            equipmentContainer.appendChild(div);
+          });
+        } else {
+          equipmentContainer.innerHTML = `<div class="dynamic-row"><input type="text" class="id_equipo" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button></div>`;
+        }
+
+        // Mostrar indicador visual
+        showToast("✓ Datos autocompletados desde historial");
+      }
+
+      // Limpiar formulario de logística
+      function clearLogisticaForm() {
+        // Limpiar campos básicos
+        document.getElementById("id_vehiculo").value = "";
+        document.getElementById("placas").value = "";
+        document.getElementById("operador").value = "";
+        document.getElementById("cliente").value = "";
+        document.getElementById("fecha_registro").value = new Date()
+          .toISOString()
+          .split("T")[0];
+
+        // Limpiar teléfonos
+        document.getElementById("phoneRows").innerHTML = `
+          <div class="dynamic-row">
+            <input type="tel" class="u-telefono" placeholder="10 dígitos" />
+            <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
+          </div>
+        `;
+
+        // Limpiar equipos
+        document.getElementById("equipmentRows").innerHTML = `
+          <div class="dynamic-row">
+            <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
+            <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
+          </div>
+        `;
+
+        // Limpiar tramos
+        document.getElementById("dispatchContainer").innerHTML = "";
+        dispatchCount = 0;
+        addDispatch();
+
+        showToast("✓ Formulario limpiado");
+      }
 
       function showSyncStatus(message, isError = false) {
         const status = document.getElementById("syncStatus");
@@ -854,18 +1055,17 @@
           });
 
           const text = await res.text();
-          console.log("Respuesta raw:", text);
 
           let json;
           try {
             json = JSON.parse(text);
           } catch (parseError) {
-            console.error("Error parseando JSON:", parseError);
             throw new Error("El servidor no devolvió JSON válido");
           }
 
           if (json.ok && json.data) {
-            renderUnitsTable(json.data);
+            allUnitsData = json.data; // Almacenar todos los datos
+            renderUnitsTable(allUnitsData, showOnlyToday);
             showToast("✓ Unidades cargadas exitosamente");
           } else {
             throw new Error(json.error || "No se pudieron cargar los datos");
@@ -873,30 +1073,50 @@
         } catch (error) {
           containerDiv.innerHTML = `<p style="text-align: center; color: #ef4444; padding: 40px;">❌ Error: ${error.message}</p>`;
           showToast("❌ Error al cargar unidades");
-          console.error("Error completo:", error);
         } finally {
           loadingDiv.style.display = "none";
         }
       }
 
-      function renderUnitsTable(data) {
+      function renderUnitsTable(data, filterToday = true) {
         const container = document.getElementById("sessionUnitsContainer");
 
         if (!data || data.length === 0) {
           container.innerHTML =
             '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No hay unidades registradas en Google Sheets</p>';
+          updateUnitCounter(0, filterToday);
+          return;
+        }
+
+        // Filtrar por fecha si está activado
+        let filteredData = data;
+        if (filterToday) {
+          const today = new Date().toISOString().split("T")[0];
+          filteredData = data.filter((row) => {
+            const rowDate = row[0] ? row[0].split("T")[0] : "";
+            return rowDate === today;
+          });
+        }
+
+        if (filteredData.length === 0) {
+          container.innerHTML =
+            '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No hay unidades registradas para hoy</p>';
+          updateUnitCounter(0, filterToday);
           return;
         }
 
         // Agrupar por unidad (económico)
         const unitGroups = {};
-        data.forEach((row) => {
+        filteredData.forEach((row) => {
           const economico = row[1] || "SIN ECONÓMICO";
           if (!unitGroups[economico]) {
             unitGroups[economico] = [];
           }
           unitGroups[economico].push(row);
         });
+
+        // Actualizar contador
+        updateUnitCounter(Object.keys(unitGroups).length, filterToday);
 
         let html = "";
 
@@ -912,14 +1132,14 @@
                     <h3 style="margin: 0; font-size: 18px; font-weight: 700;">🚛 ${economico}</h3>
                     <div style="font-size: 12px; opacity: 0.9; margin-top: 5px;">
                       Placas: ${firstRow[2] || "N/A"} | Operador: ${
-            firstRow[3] || "N/A"
-          }
+            firstRow[4] || "N/A"
+          } | Cliente: ${firstRow[13] || "N/A"}
                     </div>
                   </div>
                   <div style="text-align: right; font-size: 11px;">
                     <div>📅 ${firstRow[0] || "Sin fecha"}</div>
                     <div style="margin-top: 3px;">📞 ${
-                      firstRow[4] || "Sin teléfono"
+                      firstRow[5] || "Sin teléfono"
                     }</div>
                   </div>
                 </div>
@@ -967,7 +1187,7 @@
               
               <div style="background: #f8fafc; padding: 10px 20px; font-size: 11px; color: var(--text-muted);">
                 <strong>IDs Equipos:</strong> ${
-                  firstRow[5] || "No especificado"
+                  firstRow[3] || "No especificado"
                 }
               </div>
             </div>
@@ -977,17 +1197,48 @@
         container.innerHTML = html;
       }
 
+      // Toggle entre mostrar hoy o todo el historial
+      function toggleDateFilter() {
+        showOnlyToday = !showOnlyToday;
+        const btn = document.getElementById("toggleFilterBtn");
+
+        if (showOnlyToday) {
+          btn.innerHTML = "🗓️ Ver Todo el Historial";
+          btn.classList.remove("btn-accent");
+          btn.classList.add("btn-secondary");
+        } else {
+          btn.innerHTML = "📅 Ver Solo Hoy";
+          btn.classList.remove("btn-secondary");
+          btn.classList.add("btn-accent");
+        }
+
+        // Volver a renderizar con el nuevo filtro
+        if (allUnitsData.length > 0) {
+          renderUnitsTable(allUnitsData, showOnlyToday);
+        }
+      }
+
+      // Actualizar contador e indicador
+      function updateUnitCounter(count, isToday) {
+        const indicator = document.getElementById("filterIndicator");
+        const counter = document.getElementById("unitCount");
+
+        if (isToday) {
+          indicator.innerHTML = "📅 Unidades de hoy";
+          indicator.style.color = "var(--accent)";
+        } else {
+          indicator.innerHTML = "📃 Ver todo el historial";
+          indicator.style.color = "var(--text-muted)";
+        }
+
+        counter.textContent = `${count} unidad${count !== 1 ? "es" : ""}`;
+      }
+
       function formatDateTime(dateTimeStr) {
         if (!dateTimeStr) return "-";
         try {
           const date = new Date(dateTimeStr);
-          return date.toLocaleString("es-MX", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          });
+          return date.format("DD/MM/YYYY HH:mm");
         } catch (e) {
           return dateTimeStr;
         }
@@ -996,6 +1247,7 @@
       async function syncLogisticaToSheets() {
         // Validar campos obligatorios
         const idV = document.getElementById("id_vehiculo").value;
+        const cliente = document.getElementById("cliente").value;
         const op = document.getElementById("operador").value;
 
         if (!idV || !op) {
@@ -1026,6 +1278,7 @@
               descarga: card.querySelector(".d-descarga").value,
             })
           ),
+          cliente: cliente,
         };
 
         const btn = document.getElementById("syncLogisticaBtn");
@@ -1041,9 +1294,9 @@
               unitData.fecha || "",
               unitData.id || "",
               unitData.placas || "",
+              unitData.equipos.join(" / ") || "",
               unitData.operador || "",
               unitData.telefonos.join(" / ") || "",
-              unitData.equipos.join(" / ") || "",
               t.ruta || "",
               t.origen || "",
               t.destino || "",
@@ -1051,10 +1304,9 @@
               t.cita || "",
               t.salida || "",
               t.descarga || "",
+              unitData.cliente || "",
             ]);
           });
-
-          console.log("Enviando datos:", { tipo: "logistica", rows: rows });
 
           const res = await fetch("api/sheets.php", {
             method: "POST",
@@ -1068,34 +1320,27 @@
             }),
           });
 
-          console.log("Status:", res.status);
-
           // Solo leer UNA VEZ el body de la respuesta
           const text = await res.text();
-          console.log("Respuesta raw:", text);
 
           // Verificar si es JSON válido
           let json;
           try {
             json = JSON.parse(text);
           } catch (parseError) {
-            console.error("Error parseando JSON:", parseError);
-            console.error("Texto recibido:", text);
             throw new Error("El servidor no devolvió JSON válido");
           }
 
-          console.log("Respuesta JSON:", json);
-
           if (json.ok) {
-            showToast("✓ Logística sincronizada exitosamente");
-            showSyncStatus("Sincronizado correctamente", false);
+            showToast("✓ Logística guardada exitosamente");
+            showSyncStatus("Guardado correctamente", false);
 
             // Limpiar formulario después de sincronizar exitosamente
             document.getElementById("id_vehiculo").value = "";
             document.getElementById("operador").value = "";
             document.getElementById("placas").value = "";
             document.getElementById("fecha_registro").value = "";
-
+            document.getElementById("cliente").value = "";
             // Limpiar teléfonos
             document.getElementById("phoneRows").innerHTML = `
               <div class="dynamic-row">
@@ -1122,10 +1367,9 @@
         } catch (error) {
           showToast("❌ Error: " + error.message);
           showSyncStatus("Error al sincronizar", true);
-          console.error("Error completo:", error);
         } finally {
           btn.disabled = false;
-          btn.textContent = "Sincronizar a Google Sheets";
+          btn.textContent = "Guardar";
         }
       }
 
@@ -1151,8 +1395,6 @@
             c.observaciones || "",
           ]);
 
-          console.log("Enviando contactos:", { tipo: "contactos", rows: rows });
-
           const res = await fetch("api/sheets.php", {
             method: "POST",
             headers: {
@@ -1167,19 +1409,14 @@
 
           // Solo leer UNA VEZ el body de la respuesta
           const text = await res.text();
-          console.log("Respuesta raw:", text);
 
           // Verificar si es JSON válido
           let json;
           try {
             json = JSON.parse(text);
           } catch (parseError) {
-            console.error("Error parseando JSON:", parseError);
-            console.error("Texto recibido:", text);
             throw new Error("El servidor no devolvió JSON válido");
           }
-
-          console.log("Respuesta JSON:", json);
 
           if (json.ok) {
             showToast("✓ Contactos sincronizados exitosamente");
@@ -1190,10 +1427,9 @@
         } catch (error) {
           showToast("❌ Error: " + error.message);
           showSyncStatus("Error al sincronizar", true);
-          console.error("Error completo:", error);
         } finally {
           btn.disabled = false;
-          btn.textContent = "Sincronizar Contactos a Sheets";
+          btn.textContent = "Guardar";
         }
       }
 
@@ -1275,9 +1511,9 @@
         const cargo = document.getElementById("c_cargo").value;
         const area = document.getElementById("c_area").value;
         const obs = document.getElementById("c_obs").value;
-        const prioridad = document.querySelector(
-          'input[name="c_prioridad"]:checked'
-        ).value;
+        const prioridades = Array.from(
+          document.querySelectorAll('input[name="c_prioridad"]:checked')
+        ).map((cb) => cb.value);
 
         const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
           .map((i) => i.value)
@@ -1294,9 +1530,14 @@
           return;
         }
 
+        if (prioridades.length === 0) {
+          showToast("⚠️ Debes seleccionar al menos una prioridad");
+          return;
+        }
+
         const contactObj = {
           id: Date.now(),
-          prioridad: prioridad,
+          prioridad: prioridades.join(", "),
           area: area,
           nombre: nombre,
           cargo: cargo || "N/A",
@@ -1329,6 +1570,9 @@
         document.querySelectorAll('input[name="accion"]').forEach((cb) => {
           cb.checked = false;
           cb.parentElement.classList.remove("selected");
+        });
+        document.querySelectorAll('input[name="c_prioridad"]').forEach((cb) => {
+          cb.checked = false;
         });
       }
 
@@ -1363,14 +1607,21 @@
           });
           badgesHTML += "</div>";
 
-          const pClass =
-            c.prioridad === "Critica" ? "p-critica" : "p-relevante";
+          // Generar badges de prioridad múltiple
+          let prioridadHTML = "";
+          c.prioridad.split(", ").forEach((prio) => {
+            const pClass =
+              prio === "Critica"
+                ? "p-critica"
+                : prio === "Relevante"
+                ? "p-relevante"
+                : "p-ordinaria";
+            prioridadHTML += `<span class="badge-priority ${pClass}" style="display: block; margin-bottom: 3px;">${prio}</span>`;
+          });
 
           row.innerHTML = `
                 <td>
-                    <span class="badge-priority ${pClass}">${
-            c.prioridad
-          }</span><br>
+                    ${prioridadHTML}
                     <small><b>${c.area.toUpperCase()}</b></small>
                 </td>
                 <td>
@@ -1408,9 +1659,9 @@
         const cargo = document.getElementById("c_cargo").value;
         const area = document.getElementById("c_area").value;
         const obs = document.getElementById("c_obs").value;
-        const prioridad = document.querySelector(
-          'input[name="c_prioridad"]:checked'
-        ).value;
+        const prioridades = Array.from(
+          document.querySelectorAll('input[name="c_prioridad"]:checked')
+        ).map((cb) => cb.value);
 
         const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
           .map((i) => i.value)
@@ -1427,9 +1678,14 @@
           return;
         }
 
+        if (prioridades.length === 0) {
+          showToast("⚠️ Debes seleccionar al menos una prioridad");
+          return;
+        }
+
         const contactObj = {
           id: Date.now(),
-          prioridad: prioridad,
+          prioridad: prioridades.join(", "),
           area: area,
           nombre: nombre,
           cargo: cargo || "N/A",
@@ -1462,6 +1718,9 @@
         document.querySelectorAll('input[name="accion"]').forEach((cb) => {
           cb.checked = false;
           cb.parentElement.classList.remove("selected");
+        });
+        document.querySelectorAll('input[name="c_prioridad"]').forEach((cb) => {
+          cb.checked = false;
         });
       }
 
@@ -1506,9 +1765,9 @@
             "Fecha Registro": row[0] || "",
             Económico: row[1] || "",
             Placas: row[2] || "",
-            Operador: row[3] || "",
-            "Tels Operador": row[4] || "",
-            "Equipos Aliados": row[5] || "",
+            "Equipos Aliados": row[3] || "",
+            Operador: row[4] || "",
+            "Tels Operador": row[5] || "",
             Ruta: row[6] || "",
             Origen: row[7] || "",
             Destino: row[8] || "",
@@ -1516,6 +1775,7 @@
             "Cita Carga": row[10] || "",
             "Salida Carga": row[11] || "",
             Descarga: row[12] || "",
+            Cliente: row[13] || "",
           }));
 
           const ws = XLSX.utils.json_to_sheet(dataForExcel);
@@ -1526,7 +1786,6 @@
           showToast("✓ Archivo exportado exitosamente");
         } catch (error) {
           showToast("❌ Error al exportar: " + error.message);
-          console.error(error);
         } finally {
           btn.disabled = false;
           btn.textContent = "Exportar Logística";
@@ -1555,6 +1814,19 @@
           .toISOString()
           .split("T")[0];
         addDispatch();
+
+        // Cargar historial de unidades
+        loadUnitsHistory();
+
+        // Event listener para autocompletado
+        document
+          .getElementById("id_vehiculo")
+          .addEventListener("change", (e) => {
+            const economico = e.target.value.trim();
+            if (economico && unitsHistory[economico]) {
+              autofillUnitData(economico);
+            }
+          });
       });
 
       document.addEventListener("change", (e) => {
@@ -1571,11 +1843,14 @@
       window.addDispatch = addDispatch;
       window.addContact = addContact;
       window.removeContact = removeContact;
-      window.saveUnitToQueue = saveUnitToQueue;
       window.exportFinalExcel = exportFinalExcel;
       window.exportContactsExcel = exportContactsExcel;
       window.syncLogisticaToSheets = syncLogisticaToSheets;
       window.syncContactosToSheets = syncContactosToSheets;
+      window.loadUnitsHistory = loadUnitsHistory;
+      window.clearLogisticaForm = clearLogisticaForm;
+      window.loadUnitsFromSheets = loadUnitsFromSheets;
+      window.toggleDateFilter = toggleDateFilter;
     </script>
   </body>
 </html>
