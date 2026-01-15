@@ -112,7 +112,8 @@ function handleWrite($service, $sheets) {
         $sheets[$tipo] . '!A2',
         $body,
         [
-            'valueInputOption' => 'RAW',
+            // USER_ENTERED permite que Sheets interprete fechas numéricas sin prefijar "'"
+            'valueInputOption' => 'USER_ENTERED',
             'insertDataOption' => 'INSERT_ROWS'
         ]
     );

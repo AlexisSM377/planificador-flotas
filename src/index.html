@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -18,8 +18,7 @@
         --text-main: #051937;
         --text-muted: #4a5568;
         --border: #cbd5e1;
-        --shadow-card:
-          0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
           0 10px 10px -5px rgba(0, 0, 0, 0.04);
         --shadow-input: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         --priority-critical: #e53e3e;
@@ -872,18 +871,7 @@
     </div>
 
     <script>
-      // API Configuration
-      const API_KEY =
-        "9c51f42b6b69988baefdcf1aa305552d18c373de2af1741b50f1e97d7137f15d";
-
-      // const GOOGLE_API_KEY = "AIzaSyDtA5bl8XuclA92cz2f-eCswuWQul87f0I";
-      // const GOOGLE_SPREADSHEET_ID =
-      //   "1T_y3nppbiWK6pNiIyh5yqa57IgrHwN4Dt7ysCGx43N4";
-
-      // // Nombres de las hojas en tu Google Sheets
-      // const SHEET_LOGISTICA = "Logística ";
-      // const SHEET_CONTACTOS = "Contactos";
-
+      // Cliente configurado - la autenticación se maneja en el servidor
       let tokenClient;
       let gapiInited = false;
       let gisInited = false;
@@ -901,7 +889,6 @@
             method: "GET",
             headers: {
               Accept: "application/json",
-              "X-API-Key": API_KEY,
             },
           });
           const text = await res.text();
@@ -1059,7 +1046,6 @@
             method: "GET",
             headers: {
               Accept: "application/json",
-              "X-API-Key": API_KEY,
             },
           });
 
@@ -1141,8 +1127,8 @@
                     <h3 style="margin: 0; font-size: 18px; font-weight: 700;">🚛 ${economico}</h3>
                     <div style="font-size: 12px; opacity: 0.9; margin-top: 5px;">
                       Placas: ${firstRow[2] || "N/A"} | Operador: ${
-                        firstRow[4] || "N/A"
-                      } | Cliente: ${firstRow[13] || "N/A"}
+            firstRow[4] || "N/A"
+          } | Cliente: ${firstRow[13] || "N/A"}
                     </div>
                   </div>
                   <div style="text-align: right; font-size: 11px;">
@@ -1206,6 +1192,30 @@
         container.innerHTML = html;
       }
 
+      // Formatea fechas a DD/MM/YYYY HH:MM:SS (hora local) para Sheets
+      function formatDateForSheets(dateTimeStr) {
+        if (!dateTimeStr) return "";
+        const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateTimeStr);
+
+        // Construir fecha en horario local para evitar desfases por UTC
+        const date = isDateOnly
+          ? (() => {
+              const [y, m, d] = dateTimeStr.split("-").map(Number);
+              return new Date(y, m - 1, d, 0, 0, 0);
+            })()
+          : new Date(dateTimeStr.replace(" ", "T"));
+
+        const pad = (v) => String(v).padStart(2, "0");
+        const day = pad(date.getDate());
+        const month = pad(date.getMonth() + 1);
+        const year = date.getFullYear();
+        const hours = date.getHours(); // sin pad para obtener 8 en lugar de 08
+        const minutes = pad(date.getMinutes());
+        const seconds = pad(date.getSeconds());
+
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+      }
+
       // Toggle entre mostrar hoy o todo el historial
       function toggleDateFilter() {
         showOnlyToday = !showOnlyToday;
@@ -1243,16 +1253,6 @@
         counter.textContent = `${count} unidad${count !== 1 ? "es" : ""}`;
       }
 
-      function formatDateTime(dateTimeStr) {
-        if (!dateTimeStr) return "-";
-        try {
-          const date = new Date(dateTimeStr);
-          return date.format("DD/MM/YYYY HH:mm");
-        } catch (e) {
-          return dateTimeStr;
-        }
-      }
-
       async function syncLogisticaToSheets() {
         // Validar campos obligatorios
         const idV = document.getElementById("id_vehiculo").value;
@@ -1265,10 +1265,13 @@
         }
 
         // Capturar datos del formulario
+        const fechaInput = document.getElementById("fecha_registro").value;
+        const fechaFormateada = formatDateForSheets(fechaInput);
+
         const unitData = {
           id: idV,
           operador: op,
-          fecha: document.getElementById("fecha_registro").value,
+          fecha: fechaFormateada,
           placas: document.getElementById("placas").value,
           telefonos: Array.from(document.querySelectorAll(".u-telefono"))
             .map((i) => i.value)
@@ -1281,11 +1284,19 @@
               ruta: card.querySelector(".d-ruta").value,
               origen: card.querySelector(".d-origen").value,
               destino: card.querySelector(".d-destino").value,
-              patio: card.querySelector(".d-salida-patio").value,
-              cita: card.querySelector(".d-cita-carga").value,
-              salida: card.querySelector(".d-salida-carga").value,
-              descarga: card.querySelector(".d-descarga").value,
-            }),
+              patio: formatDateForSheets(
+                card.querySelector(".d-salida-patio").value
+              ),
+              cita: formatDateForSheets(
+                card.querySelector(".d-cita-carga").value
+              ),
+              salida: formatDateForSheets(
+                card.querySelector(".d-salida-carga").value
+              ),
+              descarga: formatDateForSheets(
+                card.querySelector(".d-descarga").value
+              ),
+            })
           ),
           cliente: cliente,
         };
@@ -1322,7 +1333,6 @@
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-API-Key": API_KEY,
             },
             body: JSON.stringify({
               tipo: "logistica",
@@ -1410,7 +1420,6 @@
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "X-API-Key": API_KEY,
             },
             body: JSON.stringify({
               tipo: "contactos",
@@ -1523,7 +1532,7 @@
         const area = document.getElementById("c_area").value;
         const obs = document.getElementById("c_obs").value;
         const prioridades = Array.from(
-          document.querySelectorAll('input[name="c_prioridad"]:checked'),
+          document.querySelectorAll('input[name="c_prioridad"]:checked')
         ).map((cb) => cb.value);
 
         const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
@@ -1533,7 +1542,7 @@
           .map((i) => i.value)
           .filter((v) => v);
         const acciones = Array.from(
-          document.querySelectorAll('input[name="accion"]:checked'),
+          document.querySelectorAll('input[name="accion"]:checked')
         ).map((cb) => cb.value);
 
         if (!nombre || (telefonos.length === 0 && correos.length === 0)) {
@@ -1605,14 +1614,14 @@
               acc === "Realizar Llamada Telefónica"
                 ? "Llamada"
                 : acc === "Enviar Correo"
-                  ? "Correo"
-                  : "Informe";
+                ? "Correo"
+                : "Informe";
             let cls =
               acc === "Enviar Correo"
                 ? "bg-email"
                 : acc === "Generar Informe"
-                  ? "bg-report"
-                  : "bg-call";
+                ? "bg-report"
+                : "bg-call";
             if (acc)
               badgesHTML += `<span class="badge-action ${cls}">${label}</span>`;
           });
@@ -1625,8 +1634,8 @@
               prio === "Critica"
                 ? "p-critica"
                 : prio === "Relevante"
-                  ? "p-relevante"
-                  : "p-ordinaria";
+                ? "p-relevante"
+                : "p-ordinaria";
             prioridadHTML += `<span class="badge-priority ${pClass}" style="display: block; margin-bottom: 3px;">${prio}</span>`;
           });
 
@@ -1671,7 +1680,7 @@
         const area = document.getElementById("c_area").value;
         const obs = document.getElementById("c_obs").value;
         const prioridades = Array.from(
-          document.querySelectorAll('input[name="c_prioridad"]:checked'),
+          document.querySelectorAll('input[name="c_prioridad"]:checked')
         ).map((cb) => cb.value);
 
         const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
@@ -1681,7 +1690,7 @@
           .map((i) => i.value)
           .filter((v) => v);
         const acciones = Array.from(
-          document.querySelectorAll('input[name="accion"]:checked'),
+          document.querySelectorAll('input[name="accion"]:checked')
         ).map((cb) => cb.value);
 
         if (!nombre || (telefonos.length === 0 && correos.length === 0)) {
@@ -1754,7 +1763,6 @@
             method: "GET",
             headers: {
               Accept: "application/json",
-              "X-API-Key": API_KEY,
             },
           });
 

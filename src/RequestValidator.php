@@ -18,15 +18,21 @@ class RequestValidator {
             return;
         }
         
-        // Check API key (production only)
-        $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? null;
-        
-        if (empty($apiKey) || $apiKey !== API_KEY) {
-            throw new Exception('Invalid or missing API key', 401);
-        }
-        
-        // Validate CORS
+        // Validate CORS - peticiones deben venir del mismo origen
         self::validateCORS();
+        
+        // Validar que la petición viene del mismo dominio
+        // No requerimos API_KEY en el cliente, solo validamos origen
+        $referer = $_SERVER['HTTP_REFERER'] ?? '';
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        
+        // Si hay referer, debe ser del mismo dominio
+        if (!empty($referer)) {
+            $refererHost = parse_url($referer, PHP_URL_HOST);
+            if ($refererHost !== $host) {
+                throw new Exception('Invalid request origin', 403);
+            }
+        }
         
         // Validate request method
         $method = $_SERVER['REQUEST_METHOD'];
