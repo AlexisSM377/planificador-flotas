@@ -1391,12 +1391,12 @@
 
         // Capturar datos del formulario
         const fechaInput = document.getElementById("fecha_registro").value;
-        const fechaFormateada = formatDateForSheets(fechaInput);
+        // const fechaFormateada = formatDateForSheets(fechaInput);
 
         const unitData = {
           id: idV,
           operador: op,
-          fecha: fechaFormateada,
+          fecha: fechaInput,
           placas: document.getElementById("placas").value,
           telefonos: Array.from(document.querySelectorAll(".u-telefono"))
             .map((i) => i.value)
