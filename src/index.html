@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -18,7 +18,8 @@
         --text-main: #051937;
         --text-muted: #4a5568;
         --border: #cbd5e1;
-        --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        --shadow-card:
+          0 20px 25px -5px rgba(0, 0, 0, 0.1),
           0 10px 10px -5px rgba(0, 0, 0, 0.04);
         --shadow-input: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
         --priority-critical: #e53e3e;
@@ -817,14 +818,7 @@
                 <span id="unitCount">0 unidades</span>
               </div>
             </div>
-            <div
-              style="
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-                align-items: center;
-              "
-            >
+            <div style="display: flex; gap: 10px; align-items: center">
               <div style="display: flex; gap: 5px; align-items: center">
                 <label
                   for="unitFilter"
@@ -860,22 +854,29 @@
                   ✕
                 </button>
               </div>
-              <button
-                type="button"
-                id="toggleFilterBtn"
+              <select
+                id="dateFilterSelect"
                 class="btn btn-secondary"
-                onclick="toggleDateFilter()"
-                style="padding: 10px 20px; font-size: 13px"
+                onchange="changeDateFilter(this.value)"
+                style="
+                  padding: 10px 15px;
+                  font-size: 13px;
+                  cursor: pointer;
+                  border-radius: 8px;
+                "
               >
-                🗓️ Ver Todo el Historial
-              </button>
+                <option value="today">Hoy</option>
+                <option value="tomorrow">Mañana (Programados)</option>
+                <option value="week">Próximos 7 días</option>
+                <option value="all">Todo el Historial</option>
+              </select>
               <button
                 type="button"
                 class="btn btn-primary"
                 onclick="loadUnitsFromSheets()"
-                style="padding: 10px 20px; font-size: 13px"
+                style="padding: 13px 15px; font-size: 10px"
               >
-                🔄 Actualizar
+                Actualizar
               </button>
             </div>
           </div>
@@ -921,7 +922,7 @@
       let unitsQueue = [];
       let contactsList = [];
       let unitsHistory = {}; // Cache de unidades para autocompletado
-      let showOnlyToday = true; // Filtro para mostrar solo registros de hoy
+      let dateFilter = "today"; // Filtro de fecha: 'today', 'tomorrow', 'all'
       let allUnitsData = []; // Almacenar todos los datos
       let filterByUnit = ""; // Filtro para mostrar solo una unidad específica
 
@@ -1104,7 +1105,7 @@
           if (json.ok && json.data) {
             allUnitsData = json.data; // Almacenar todos los datos
             updateUnitFilterDatalist(json.data); // Actualizar datalist de unidades
-            renderUnitsTable(allUnitsData, showOnlyToday);
+            renderUnitsTable(allUnitsData, dateFilter);
             showToast("✓ Unidades cargadas exitosamente");
           } else {
             throw new Error(json.error || "No se pudieron cargar los datos");
@@ -1117,25 +1118,39 @@
         }
       }
 
-      function renderUnitsTable(data, filterToday = true) {
+      function renderUnitsTable(data, filter = "today") {
         const container = document.getElementById("sessionUnitsContainer");
 
         if (!data || data.length === 0) {
           container.innerHTML =
             '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No hay unidades registradas en Google Sheets</p>';
-          updateUnitCounter(0, filterToday);
+          updateUnitCounter(0, filter);
           return;
         }
 
-        // Filtrar por fecha si está activado
+        // Filtrar por fecha según el filtro seleccionado
         let filteredData = data;
-        if (filterToday) {
-          const today = new Date().toISOString().split("T")[0];
+        const today = new Date().toISOString().split("T")[0];
+        const tomorrow = getTomorrowDate();
+        const weekEnd = getWeekEndDate();
+
+        if (filter === "today") {
           filteredData = data.filter((row) => {
             const rowDate = row[0] ? row[0].split("T")[0] : "";
             return rowDate === today;
           });
+        } else if (filter === "tomorrow") {
+          filteredData = data.filter((row) => {
+            const rowDate = row[0] ? row[0].split("T")[0] : "";
+            return rowDate === tomorrow;
+          });
+        } else if (filter === "week") {
+          filteredData = data.filter((row) => {
+            const rowDate = row[0] ? row[0].split("T")[0] : "";
+            return rowDate >= today && rowDate <= weekEnd;
+          });
         }
+        // Si filter === 'all', no filtramos por fecha
 
         // Filtrar por unidad específica si está activado
         if (filterByUnit) {
@@ -1146,9 +1161,17 @@
         }
 
         if (filteredData.length === 0) {
-          container.innerHTML =
-            '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No hay unidades registradas para hoy</p>';
-          updateUnitCounter(0, filterToday);
+          let emptyMessage = "No hay unidades registradas";
+          if (filter === "today")
+            emptyMessage = "No hay unidades registradas para hoy";
+          else if (filter === "tomorrow")
+            emptyMessage = "No hay unidades programadas para mañana";
+          else if (filter === "week")
+            emptyMessage =
+              "No hay unidades programadas para los próximos 7 días";
+
+          container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px;">${emptyMessage}</p>`;
+          updateUnitCounter(0, filter);
           return;
         }
 
@@ -1163,7 +1186,7 @@
         });
 
         // Actualizar contador
-        updateUnitCounter(Object.keys(unitGroups).length, filterToday);
+        updateUnitCounter(Object.keys(unitGroups).length, filter);
 
         let html = "";
 
@@ -1179,8 +1202,8 @@
                     <h3 style="margin: 0; font-size: 18px; font-weight: 700;">🚛 ${economico}</h3>
                     <div style="font-size: 12px; opacity: 0.9; margin-top: 5px;">
                       Placas: ${firstRow[2] || "N/A"} | Operador: ${
-            firstRow[4] || "N/A"
-          } | Cliente: ${firstRow[13] || "N/A"}
+                        firstRow[4] || "N/A"
+                      } | Cliente: ${firstRow[13] || "N/A"}
                     </div>
                   </div>
                   <div style="text-align: right; font-size: 11px;">
@@ -1296,47 +1319,57 @@
         }
       }
 
-      // Toggle entre mostrar hoy o todo el historial
-      function toggleDateFilter() {
-        showOnlyToday = !showOnlyToday;
-        const btn = document.getElementById("toggleFilterBtn");
-
-        if (showOnlyToday) {
-          btn.innerHTML = "🗓️ Ver Todo el Historial";
-          btn.classList.remove("btn-accent");
-          btn.classList.add("btn-secondary");
-        } else {
-          btn.innerHTML = "📅 Ver Solo Hoy";
-          btn.classList.remove("btn-secondary");
-          btn.classList.add("btn-accent");
-        }
+      // Cambiar filtro de fecha
+      function changeDateFilter(filter) {
+        dateFilter = filter;
 
         // Volver a renderizar con el nuevo filtro
         if (allUnitsData.length > 0) {
-          renderUnitsTable(allUnitsData, showOnlyToday);
+          renderUnitsTable(allUnitsData, dateFilter);
         }
       }
 
+      // Obtener fecha de mañana en formato YYYY-MM-DD
+      function getTomorrowDate() {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow.toISOString().split("T")[0];
+      }
+
+      // Obtener fecha límite de la semana (7 días) en formato YYYY-MM-DD
+      function getWeekEndDate() {
+        const weekEnd = new Date();
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        return weekEnd.toISOString().split("T")[0];
+      }
+
       // Actualizar contador e indicador
-      function updateUnitCounter(count, isToday) {
+      function updateUnitCounter(count, filter) {
         const indicator = document.getElementById("filterIndicator");
         const counter = document.getElementById("unitCount");
 
         let filterText = "";
+        let filterColor = "var(--accent)";
+
         if (filterByUnit) {
           filterText = `🚛 ${filterByUnit}`;
-        } else if (isToday) {
+          filterColor = "#f59e0b";
+        } else if (filter === "today") {
           filterText = "📅 Unidades de hoy";
+          filterColor = "var(--accent)";
+        } else if (filter === "tomorrow") {
+          filterText = "📆 Programadas para mañana";
+          filterColor = "#8b5cf6"; // Morado para programados
+        } else if (filter === "week") {
+          filterText = "📋 Próximos 7 días";
+          filterColor = "#0ea5e9"; // Azul para semana
         } else {
-          filterText = "📃 Ver todo el historial";
+          filterText = "🗓️ Todo el historial";
+          filterColor = "var(--text-muted)";
         }
 
         indicator.innerHTML = filterText;
-        indicator.style.color = filterByUnit
-          ? "#f59e0b"
-          : isToday
-          ? "var(--accent)"
-          : "var(--text-muted)";
+        indicator.style.color = filterColor;
 
         counter.textContent = `${count} unidad${count !== 1 ? "es" : ""}`;
       }
@@ -1365,7 +1398,7 @@
       function applyUnitFilter(value) {
         filterByUnit = value.trim();
         if (allUnitsData.length > 0) {
-          renderUnitsTable(allUnitsData, showOnlyToday);
+          renderUnitsTable(allUnitsData, dateFilter);
         }
       }
 
@@ -1374,7 +1407,7 @@
         filterByUnit = "";
         document.getElementById("unitFilter").value = "";
         if (allUnitsData.length > 0) {
-          renderUnitsTable(allUnitsData, showOnlyToday);
+          renderUnitsTable(allUnitsData, dateFilter);
         }
       }
 
@@ -1622,11 +1655,23 @@
         container.appendChild(div);
       }
 
+      // Obtener fecha y hora actual en formato datetime-local (YYYY-MM-DDTHH:MM)
+      function getCurrentDateTimeLocal() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
       function addDispatch() {
         dispatchCount++;
         const container = document.getElementById("dispatchContainer");
         const div = document.createElement("div");
         div.className = "dispatch-card";
+        const currentDateTime = getCurrentDateTimeLocal();
         div.innerHTML = `
             <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
             <div class="grid">
@@ -1636,10 +1681,13 @@
             </div>
             
             <div class="grid" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
-                <div class="form-group"><label>Salida de Patio</label><input type="datetime-local" class="d-salida-patio"></div>
-                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga"></div>
-                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga"></div>
-                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga"></div>
+                <div class="form-group">
+                  <label>Salida de Patio</label>
+                  <input type="datetime-local" class="d-salida-patio" value="${currentDateTime}"/>
+                  </div>
+                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga" value="${currentDateTime}"></div>
+                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga" value="${currentDateTime}"></div>
+                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga" value="${currentDateTime}"></div>
             </div>
             ${
               dispatchCount > 1
@@ -1739,14 +1787,14 @@
               acc === "Realizar Llamada Telefónica"
                 ? "Llamada"
                 : acc === "Enviar Correo"
-                ? "Correo"
-                : "Informe";
+                  ? "Correo"
+                  : "Informe";
             let cls =
               acc === "Enviar Correo"
                 ? "bg-email"
                 : acc === "Generar Informe"
-                ? "bg-report"
-                : "bg-call";
+                  ? "bg-report"
+                  : "bg-call";
             if (acc)
               badgesHTML += `<span class="badge-action ${cls}">${label}</span>`;
           });
@@ -1759,8 +1807,8 @@
               prio === "Critica"
                 ? "p-critica"
                 : prio === "Relevante"
-                ? "p-relevante"
-                : "p-ordinaria";
+                  ? "p-relevante"
+                  : "p-ordinaria";
             prioridadHTML += `<span class="badge-priority ${pClass}" style="display: block; margin-bottom: 3px;">${prio}</span>`;
           });
 
