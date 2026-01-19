@@ -473,7 +473,6 @@
           </button>
         </nav>
 
-        <!-- TAB 1: LOGÍSTICA -->
         <div id="logisticaTab" class="tab-content active">
           <form id="masterForm">
             <div class="section-header"><h2>Datos Generales</h2></div>
@@ -608,7 +607,6 @@
           </form>
         </div>
 
-        <!-- TAB 2: CONTACTOS -->
         <div id="contactosTab" class="tab-content">
           <div class="section-header">
             <h2>Directorio de Monitoreo</h2>
@@ -618,24 +616,13 @@
                 id="exportContactsBtn"
                 class="btn btn-success"
                 onclick="exportContactsExcel()"
-                style="display: none"
               >
                 Descargar Directorio
-              </button>
-              <button
-                type="button"
-                id="syncContactosBtn"
-                class="btn btn-primary"
-                onclick="syncContactosToSheets()"
-                style="display: none"
-              >
-                Guardar Contactos a Sheets
               </button>
             </div>
           </div>
 
           <div class="grid" style="margin-bottom: 30px">
-            <!-- Datos Base -->
             <div class="form-group">
               <label>Nombre del Contacto</label>
               <input
@@ -664,7 +651,6 @@
               </select>
             </div>
 
-            <!-- Prioridad -->
             <div class="form-group">
               <label>Prioridad de Contacto</label>
               <div class="priority-container">
@@ -688,7 +674,6 @@
               </div>
             </div>
 
-            <!-- Teléfonos -->
             <div class="form-group" style="grid-column: 1 / span 2">
               <label>Teléfonos Directos</label>
               <div
@@ -713,7 +698,6 @@
               </div>
             </div>
 
-            <!-- Correos -->
             <div class="form-group" style="grid-column: 1 / span 2">
               <label>Correos Electrónicos</label>
               <div
@@ -772,15 +756,13 @@
                 placeholder="Ej: Disponibilidad 24/7"
               />
             </div>
-            <div class="form-group" style="justify-content: flex-end">
-              <button
-                type="button"
-                class="btn btn-accent"
-                onclick="addContact()"
-              >
-                Agregar Contacto al Directorio
-              </button>
-            </div>
+          </div>
+          <div
+            style="justify-content: flex-end; display: flex; align-items: end"
+          >
+            <button type="button" class="btn btn-accent" onclick="addContact()">
+              Guardar Contacto
+            </button>
           </div>
 
           <div style="overflow-x: auto">
@@ -854,22 +836,71 @@
                   ✕
                 </button>
               </div>
-              <select
-                id="dateFilterSelect"
-                class="btn btn-secondary"
-                onchange="changeDateFilter(this.value)"
-                style="
-                  padding: 10px 15px;
-                  font-size: 13px;
-                  cursor: pointer;
-                  border-radius: 8px;
-                "
-              >
-                <option value="today">Hoy</option>
-                <option value="tomorrow">Mañana (Programados)</option>
-                <option value="week">Próximos 7 días</option>
-                <option value="all">Todo el Historial</option>
-              </select>
+               <div style="display: flex; flex-direction: column; gap: 10px;">
+                 <select
+                   id="dateFilterSelect"
+                   class="btn btn-secondary"
+                   onchange="changeDateFilter(this.value)"
+                   style="
+                     padding: 10px 15px;
+                     font-size: 13px;
+                     cursor: pointer;
+                     border-radius: 8px;
+                     align-self: flex-start;
+                   "
+                 >
+                   <option value="today">Hoy</option>
+                   <option value="tomorrow">Mañana</option>
+                   <option value="week">Próximos 7 días</option>
+                   <option value="custom">Rango Personalizado</option>
+                 </select>
+
+                 <div
+                   id="customDateRange"
+                   style="
+                     display: none;
+                     flex-direction: row;
+                     gap: 8px;
+                     align-items: center;
+                     margin-left: 0;
+                   "
+                 >
+                   <label
+                     for="startDate"
+                     style="font-size: 12px; color: var(--text-muted); white-space: nowrap;"
+                     >Desde:</label
+                   >
+                   <input
+                     type="date"
+                     id="startDate"
+                     class="btn btn-secondary"
+                     onchange="applyCustomDateFilter()"
+                     style="
+                       padding: 8px 12px;
+                       font-size: 13px;
+                       border-radius: 6px;
+                       width: 140px;
+                     "
+                   />
+                   <label
+                     for="endDate"
+                     style="font-size: 12px; color: var(--text-muted); white-space: nowrap;"
+                     >Hasta:</label
+                   >
+                   <input
+                     type="date"
+                     id="endDate"
+                     class="btn btn-secondary"
+                     onchange="applyCustomDateFilter()"
+                     style="
+                       padding: 8px 12px;
+                       font-size: 13px;
+                       border-radius: 6px;
+                       width: 140px;
+                     "
+                   />
+                 </div>
+               </div>
               <button
                 type="button"
                 class="btn btn-primary"
@@ -914,19 +945,17 @@
     </div>
 
     <script>
-      // Cliente configurado - la autenticación se maneja en el servidor
       let tokenClient;
       let gapiInited = false;
       let gisInited = false;
       let dispatchCount = 0;
       let unitsQueue = [];
       let contactsList = [];
-      let unitsHistory = {}; // Cache de unidades para autocompletado
-      let dateFilter = "today"; // Filtro de fecha: 'today', 'tomorrow', 'all'
-      let allUnitsData = []; // Almacenar todos los datos
-      let filterByUnit = ""; // Filtro para mostrar solo una unidad específica
+      let unitsHistory = {};
+      let dateFilter = "today";
+      let allUnitsData = [];
+      let filterByUnit = "";
 
-      // Cargar historial de unidades desde Google Sheets
       async function loadUnitsHistory() {
         try {
           const res = await fetch("api/sheets.php?action=read&tipo=logistica", {
@@ -939,7 +968,6 @@
           const json = JSON.parse(text);
 
           if (json.ok && json.data) {
-            // Procesar y almacenar última entrada de cada económico
             const units = {};
             json.data.forEach((row) => {
               const economico = row[1];
@@ -961,7 +989,6 @@
         }
       }
 
-      // Actualizar datalist con económicos disponibles
       function updateEconomicosDatalist() {
         const datalist = document.getElementById("economicosList");
         datalist.innerHTML = "";
@@ -972,7 +999,6 @@
         });
       }
 
-      // Autocompletar datos de la unidad
       function autofillUnitData(economico) {
         const unitData = unitsHistory[economico];
         if (!unitData) return;
@@ -982,7 +1008,6 @@
         document.getElementById("operador").value = unitData.operador;
         document.getElementById("cliente").value = unitData.cliente;
 
-        // Llenar teléfonos
         const phoneContainer = document.getElementById("phoneRows");
         phoneContainer.innerHTML = "";
         if (unitData.telefonos.length > 0) {
@@ -1000,7 +1025,6 @@
           phoneContainer.innerHTML = `<div class="dynamic-row"><input type="tel" class="u-telefono" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()">+</button></div>`;
         }
 
-        // Llenar equipos
         const equipmentContainer = document.getElementById("equipmentRows");
         equipmentContainer.innerHTML = "";
         if (unitData.equipos.length > 0) {
@@ -1018,11 +1042,9 @@
           equipmentContainer.innerHTML = `<div class="dynamic-row"><input type="text" class="id_equipo" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button></div>`;
         }
 
-        // Mostrar indicador visual
         showToast("✓ Datos autocompletados desde historial");
       }
 
-      // Limpiar formulario de logística
       function clearLogisticaForm() {
         // Limpiar campos básicos
         document.getElementById("id_vehiculo").value = "";
@@ -1033,7 +1055,6 @@
           .toISOString()
           .split("T")[0];
 
-        // Limpiar teléfonos
         document.getElementById("phoneRows").innerHTML = `
           <div class="dynamic-row">
             <input type="tel" class="u-telefono" placeholder="10 dígitos" />
@@ -1041,7 +1062,6 @@
           </div>
         `;
 
-        // Limpiar equipos
         document.getElementById("equipmentRows").innerHTML = `
           <div class="dynamic-row">
             <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
@@ -1049,7 +1069,6 @@
           </div>
         `;
 
-        // Limpiar tramos
         document.getElementById("dispatchContainer").innerHTML = "";
         dispatchCount = 0;
         addDispatch();
@@ -1103,8 +1122,8 @@
           }
 
           if (json.ok && json.data) {
-            allUnitsData = json.data; // Almacenar todos los datos
-            updateUnitFilterDatalist(json.data); // Actualizar datalist de unidades
+            allUnitsData = json.data;
+            updateUnitFilterDatalist(json.data);
             renderUnitsTable(allUnitsData, dateFilter);
             showToast("✓ Unidades cargadas exitosamente");
           } else {
@@ -1118,7 +1137,12 @@
         }
       }
 
-      function renderUnitsTable(data, filter = "today") {
+      function renderUnitsTable(
+        data,
+        filter = "today",
+        startDate = null,
+        endDate = null,
+      ) {
         const container = document.getElementById("sessionUnitsContainer");
 
         if (!data || data.length === 0) {
@@ -1128,7 +1152,6 @@
           return;
         }
 
-        // Filtrar por fecha según el filtro seleccionado
         let filteredData = data;
         const today = new Date().toISOString().split("T")[0];
         const tomorrow = getTomorrowDate();
@@ -1149,10 +1172,13 @@
             const rowDate = row[0] ? row[0].split("T")[0] : "";
             return rowDate >= today && rowDate <= weekEnd;
           });
+        } else if (filter === "custom" && startDate && endDate) {
+          filteredData = data.filter((row) => {
+            const rowDate = row[0] ? row[0].split("T")[0] : "";
+            return rowDate >= startDate && rowDate <= endDate;
+          });
         }
-        // Si filter === 'all', no filtramos por fecha
 
-        // Filtrar por unidad específica si está activado
         if (filterByUnit) {
           filteredData = filteredData.filter((row) => {
             const economico = (row[1] || "").toLowerCase();
@@ -1169,13 +1195,19 @@
           else if (filter === "week")
             emptyMessage =
               "No hay unidades programadas para los próximos 7 días";
+          else if (filter === "custom" && startDate && endDate) {
+            const startFormatted = new Date(startDate).toLocaleDateString(
+              "es-ES",
+            );
+            const endFormatted = new Date(endDate).toLocaleDateString("es-ES");
+            emptyMessage = `No hay unidades registradas entre ${startFormatted} y ${endFormatted}`;
+          }
 
           container.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 40px;">${emptyMessage}</p>`;
           updateUnitCounter(0, filter);
           return;
         }
 
-        // Agrupar por unidad (económico)
         const unitGroups = {};
         filteredData.forEach((row) => {
           const economico = row[1] || "SIN ECONÓMICO";
@@ -1185,7 +1217,6 @@
           unitGroups[economico].push(row);
         });
 
-        // Actualizar contador
         updateUnitCounter(Object.keys(unitGroups).length, filter);
 
         let html = "";
@@ -1267,12 +1298,10 @@
         container.innerHTML = html;
       }
 
-      // Formatea fechas a DD/MM/YYYY HH:MM:SS (hora local) para Sheets
       function formatDateForSheets(dateTimeStr) {
         if (!dateTimeStr) return "";
         const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateTimeStr);
 
-        // Construir fecha en horario local para evitar desfases por UTC
         const date = isDateOnly
           ? (() => {
               const [y, m, d] = dateTimeStr.split("-").map(Number);
@@ -1284,18 +1313,16 @@
         const day = pad(date.getDate());
         const month = pad(date.getMonth() + 1);
         const year = date.getFullYear();
-        const hours = date.getHours(); // sin pad para obtener 8 en lugar de 08
+        const hours = date.getHours();
         const minutes = pad(date.getMinutes());
         const seconds = pad(date.getSeconds());
 
         return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
       }
 
-      // Formatea fechas para mostrar en la tabla (desde formato DD/MM/YYYY HH:MM:SS)
       function formatDateTime(dateTimeStr) {
         if (!dateTimeStr) return "";
 
-        // Si ya viene en formato DD/MM/YYYY HH:MM:SS, solo mostrarlo
         if (/^\d{2}\/\d{2}\/\d{4}/.test(dateTimeStr)) {
           return dateTimeStr;
         }
@@ -1303,7 +1330,7 @@
         // Si viene en formato ISO o similar, convertir
         try {
           const date = new Date(dateTimeStr.replace(" ", "T"));
-          if (isNaN(date.getTime())) return dateTimeStr; // Retornar original si no es válido
+          if (isNaN(date.getTime())) return dateTimeStr;
 
           const pad = (v) => String(v).padStart(2, "0");
           const day = pad(date.getDate());
@@ -1315,35 +1342,58 @@
 
           return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
         } catch (e) {
-          return dateTimeStr; // En caso de error, retornar el valor original
+          return dateTimeStr;
         }
       }
 
-      // Cambiar filtro de fecha
       function changeDateFilter(filter) {
         dateFilter = filter;
 
-        // Volver a renderizar con el nuevo filtro
-        if (allUnitsData.length > 0) {
-          renderUnitsTable(allUnitsData, dateFilter);
+        // Show/hide custom date range inputs
+        const customRange = document.getElementById("customDateRange");
+        if (filter === "custom") {
+          customRange.style.display = "flex";
+          // Set default dates if not set
+          const startDate = document.getElementById("startDate");
+          const endDate = document.getElementById("endDate");
+          if (!startDate.value) {
+            startDate.value = new Date().toISOString().split("T")[0];
+          }
+          if (!endDate.value) {
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            endDate.value = nextWeek.toISOString().split("T")[0];
+          }
+          applyCustomDateFilter();
+        } else {
+          customRange.style.display = "none";
+          if (allUnitsData.length > 0) {
+            renderUnitsTable(allUnitsData, dateFilter);
+          }
         }
       }
 
-      // Obtener fecha de mañana en formato YYYY-MM-DD
+      function applyCustomDateFilter() {
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+
+        if (startDate && endDate && allUnitsData.length > 0) {
+          renderUnitsTable(allUnitsData, "custom", startDate, endDate);
+        }
+      }
+
       function getTomorrowDate() {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         return tomorrow.toISOString().split("T")[0];
       }
 
-      // Obtener fecha límite de la semana (7 días) en formato YYYY-MM-DD
       function getWeekEndDate() {
         const weekEnd = new Date();
         weekEnd.setDate(weekEnd.getDate() + 7);
         return weekEnd.toISOString().split("T")[0];
       }
 
-      // Actualizar contador e indicador
       function updateUnitCounter(count, filter) {
         const indicator = document.getElementById("filterIndicator");
         const counter = document.getElementById("unitCount");
@@ -1359,10 +1409,24 @@
           filterColor = "var(--accent)";
         } else if (filter === "tomorrow") {
           filterText = "📆 Programadas para mañana";
-          filterColor = "#8b5cf6"; // Morado para programados
+          filterColor = "#8b5cf6";
         } else if (filter === "week") {
           filterText = "📋 Próximos 7 días";
-          filterColor = "#0ea5e9"; // Azul para semana
+          filterColor = "#0ea5e9";
+        } else if (filter === "custom") {
+          const startDate = document.getElementById("startDate").value;
+          const endDate = document.getElementById("endDate").value;
+          if (startDate && endDate) {
+            const startFormatted = new Date(startDate).toLocaleDateString(
+              "es-ES",
+            );
+            const endFormatted = new Date(endDate).toLocaleDateString("es-ES");
+            filterText = `📅 ${startFormatted} - ${endFormatted}`;
+            filterColor = "#10b981";
+          } else {
+            filterText = "📅 Rango personalizado";
+            filterColor = "#10b981";
+          }
         } else {
           filterText = "🗓️ Todo el historial";
           filterColor = "var(--text-muted)";
@@ -1374,19 +1438,16 @@
         counter.textContent = `${count} unidad${count !== 1 ? "es" : ""}`;
       }
 
-      // Actualizar datalist con unidades disponibles
       function updateUnitFilterDatalist(data) {
         const datalist = document.getElementById("unitFilterList");
         datalist.innerHTML = "";
 
-        // Extraer económicos únicos
         const economicos = new Set();
         data.forEach((row) => {
           const eco = row[1];
           if (eco) economicos.add(eco);
         });
 
-        // Agregar opciones al datalist
         economicos.forEach((eco) => {
           const option = document.createElement("option");
           option.value = eco;
@@ -1394,7 +1455,6 @@
         });
       }
 
-      // Aplicar filtro por unidad
       function applyUnitFilter(value) {
         filterByUnit = value.trim();
         if (allUnitsData.length > 0) {
@@ -1402,7 +1462,6 @@
         }
       }
 
-      // Limpiar filtro de unidad
       function clearUnitFilter() {
         filterByUnit = "";
         document.getElementById("unitFilter").value = "";
@@ -1412,7 +1471,6 @@
       }
 
       async function syncLogisticaToSheets() {
-        // Validar campos obligatorios
         const idV = document.getElementById("id_vehiculo").value;
         const cliente = document.getElementById("cliente").value;
         const op = document.getElementById("operador").value;
@@ -1422,9 +1480,7 @@
           return;
         }
 
-        // Capturar datos del formulario
         const fechaInput = document.getElementById("fecha_registro").value;
-        // const fechaFormateada = formatDateForSheets(fechaInput);
 
         const unitData = {
           id: idV,
@@ -1443,18 +1499,18 @@
               origen: card.querySelector(".d-origen").value,
               destino: card.querySelector(".d-destino").value,
               patio: formatDateForSheets(
-                card.querySelector(".d-salida-patio").value
+                card.querySelector(".d-salida-patio").value,
               ),
               cita: formatDateForSheets(
-                card.querySelector(".d-cita-carga").value
+                card.querySelector(".d-cita-carga").value,
               ),
               salida: formatDateForSheets(
-                card.querySelector(".d-salida-carga").value
+                card.querySelector(".d-salida-carga").value,
               ),
               descarga: formatDateForSheets(
-                card.querySelector(".d-descarga").value
+                card.querySelector(".d-descarga").value,
               ),
-            })
+            }),
           ),
           cliente: cliente,
         };
@@ -1466,7 +1522,6 @@
         try {
           const rows = [];
 
-          // Generar filas para cada tramo
           unitData.tramos.forEach((t, i) => {
             rows.push([
               unitData.fecha || "",
@@ -1498,10 +1553,8 @@
             }),
           });
 
-          // Solo leer UNA VEZ el body de la respuesta
           const text = await res.text();
 
-          // Verificar si es JSON válido
           let json;
           try {
             json = JSON.parse(text);
@@ -1513,13 +1566,12 @@
             showToast("✓ Logística guardada exitosamente");
             showSyncStatus("Guardado correctamente", false);
 
-            // Limpiar formulario después de sincronizar exitosamente
             document.getElementById("id_vehiculo").value = "";
             document.getElementById("operador").value = "";
             document.getElementById("placas").value = "";
             document.getElementById("fecha_registro").value = "";
             document.getElementById("cliente").value = "";
-            // Limpiar teléfonos
+
             document.getElementById("phoneRows").innerHTML = `
               <div class="dynamic-row">
                 <input type="tel" class="u-telefono" placeholder="10 dígitos" />
@@ -1527,7 +1579,6 @@
               </div>
             `;
 
-            // Limpiar equipos
             document.getElementById("equipmentRows").innerHTML = `
               <div class="dynamic-row">
                 <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
@@ -1535,10 +1586,9 @@
               </div>
             `;
 
-            // Limpiar tramos
             document.getElementById("dispatchContainer").innerHTML = "";
             dispatchCount = 0;
-            addDispatch(); // Agregar un tramo inicial vacío
+            addDispatch();
           } else {
             throw new Error(json.error || "Error desconocido");
           }
@@ -1551,15 +1601,59 @@
         }
       }
 
+      async function syncContactToSheets(contact) {
+        try {
+          const row = [
+            contact.nombre || "",
+            contact.cargo || "",
+            contact.area || "",
+            contact.prioridad || "",
+            contact.telefonos || "",
+            contact.correos || "",
+            contact.acciones || "",
+            contact.observaciones || "",
+          ];
+
+          const res = await fetch("api/sheets.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              tipo: "contactos",
+              rows: [row], // Solo enviar este contacto
+            }),
+          });
+
+          const text = await res.text();
+
+          let json;
+          try {
+            json = JSON.parse(text);
+          } catch (parseError) {
+            console.error("Respuesta del servidor:", text);
+            throw new Error("El servidor no devolvió JSON válido");
+          }
+
+          if (!json.ok) {
+            throw new Error(json.error || "Error desconocido");
+          }
+
+          showSyncStatus("Sincronizado correctamente", false);
+          return true;
+        } catch (error) {
+          console.error("Error al sincronizar contacto:", error);
+          showSyncStatus("Error al sincronizar", true);
+          throw error;
+        }
+      }
+
       async function syncContactosToSheets() {
         if (!contactsList.length) {
           showToast("⚠️ No hay contactos para sincronizar");
           return;
         }
-
-        const btn = document.getElementById("syncContactosBtn");
-        btn.disabled = true;
-        btn.textContent = "Sincronizando...";
 
         try {
           const rows = contactsList.map((c) => [
@@ -1585,10 +1679,8 @@
             }),
           });
 
-          // Solo leer UNA VEZ el body de la respuesta
           const text = await res.text();
 
-          // Verificar si es JSON válido
           let json;
           try {
             json = JSON.parse(text);
@@ -1605,9 +1697,6 @@
         } catch (error) {
           showToast("❌ Error: " + error.message);
           showSyncStatus("Error al sincronizar", true);
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Guardar";
         }
       }
 
@@ -1622,7 +1711,6 @@
         evt.currentTarget.classList.add("active");
       }
 
-      /* Filas dinámicas */
       function addPhoneField() {
         const container = document.getElementById("phoneRows");
         const div = document.createElement("div");
@@ -1655,15 +1743,46 @@
         container.appendChild(div);
       }
 
-      // Obtener fecha y hora actual en formato datetime-local (YYYY-MM-DDTHH:MM)
-      function getCurrentDateTimeLocal() {
+      function getCurrentDateTimeLocal(baseDate = null) {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, "0");
-        const day = String(now.getDate()).padStart(2, "0");
+        let year, month, day;
+
+        if (baseDate) {
+          const [y, m, d] = baseDate.split("-").map(Number);
+          year = y;
+          month = String(m).padStart(2, "0");
+          day = String(d).padStart(2, "0");
+        } else {
+          year = now.getFullYear();
+          month = String(now.getMonth() + 1).padStart(2, "0");
+          day = String(now.getDate()).padStart(2, "0");
+        }
+
         const hours = String(now.getHours()).padStart(2, "0");
         const minutes = String(now.getMinutes()).padStart(2, "0");
         return `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      function updateDispatchDates(newDate) {
+        if (!newDate) return;
+
+        const dateTimeInputs = document.querySelectorAll(
+          '.dispatch-card input[type="datetime-local"]',
+        );
+        const currentTime = new Date();
+        const hours = String(currentTime.getHours()).padStart(2, "0");
+        const minutes = String(currentTime.getMinutes()).padStart(2, "0");
+
+        dateTimeInputs.forEach((input) => {
+          if (input.value) {
+            const timePart = input.value.split("T")[1] || `${hours}:${minutes}`;
+            input.value = `${newDate}T${timePart}`;
+          } else {
+            input.value = `${newDate}T${hours}:${minutes}`;
+          }
+        });
+
+        showToast("✓ Fechas de tramos actualizadas");
       }
 
       function addDispatch() {
@@ -1671,7 +1790,10 @@
         const container = document.getElementById("dispatchContainer");
         const div = document.createElement("div");
         div.className = "dispatch-card";
-        const currentDateTime = getCurrentDateTimeLocal();
+
+        const fechaRegistro = document.getElementById("fecha_registro").value;
+        const currentDateTime = getCurrentDateTimeLocal(fechaRegistro || null);
+
         div.innerHTML = `
             <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
             <div class="grid">
@@ -1698,14 +1820,13 @@
         container.appendChild(div);
       }
 
-      /* Gestión de Directorio */
-      function addContact() {
+      async function addContact() {
         const nombre = document.getElementById("c_nombre").value;
         const cargo = document.getElementById("c_cargo").value;
         const area = document.getElementById("c_area").value;
         const obs = document.getElementById("c_obs").value;
         const prioridades = Array.from(
-          document.querySelectorAll('input[name="c_prioridad"]:checked')
+          document.querySelectorAll('input[name="c_prioridad"]:checked'),
         ).map((cb) => cb.value);
 
         const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
@@ -1715,7 +1836,7 @@
           .map((i) => i.value)
           .filter((v) => v);
         const acciones = Array.from(
-          document.querySelectorAll('input[name="accion"]:checked')
+          document.querySelectorAll('input[name="accion"]:checked'),
         ).map((cb) => cb.value);
 
         if (!nombre || (telefonos.length === 0 && correos.length === 0)) {
@@ -1742,9 +1863,8 @@
 
         contactsList.push(contactObj);
         renderContacts();
-        showToast("✓ Contacto registrado");
 
-        // Reset campos
+        // Clear form fields
         document.getElementById("c_nombre").value = "";
         document.getElementById("c_cargo").value = "";
         document.getElementById("c_obs").value = "";
@@ -1767,17 +1887,23 @@
         document.querySelectorAll('input[name="c_prioridad"]').forEach((cb) => {
           cb.checked = false;
         });
+
+        // Sync to Google Sheets
+        try {
+          await syncContactToSheets(contactObj);
+          showToast("✓ Contacto agregado y guardado en Google Sheets");
+        } catch (error) {
+          console.error("Error al sincronizar contacto:", error);
+          showToast(
+            "⚠️ Contacto agregado localmente, pero falló guardar en Google Sheets",
+          );
+        }
       }
 
       function renderContacts() {
         const body = document.getElementById("contactBody");
-        const btnExport = document.getElementById("exportContactsBtn");
-        const btnSync = document.getElementById("syncContactosBtn");
 
-        const hasContacts = contactsList.length > 0;
         body.innerHTML = "";
-        btnExport.style.display = hasContacts ? "block" : "none";
-        btnSync.style.display = hasContacts ? "block" : "none";
 
         contactsList.forEach((c) => {
           const row = document.createElement("tr");
@@ -1800,7 +1926,6 @@
           });
           badgesHTML += "</div>";
 
-          // Generar badges de prioridad múltiple
           let prioridadHTML = "";
           c.prioridad.split(", ").forEach((prio) => {
             const pClass =
@@ -1846,77 +1971,6 @@
         renderContacts();
       }
 
-      /* Gestión de Directorio */
-      function addContact() {
-        const nombre = document.getElementById("c_nombre").value;
-        const cargo = document.getElementById("c_cargo").value;
-        const area = document.getElementById("c_area").value;
-        const obs = document.getElementById("c_obs").value;
-        const prioridades = Array.from(
-          document.querySelectorAll('input[name="c_prioridad"]:checked')
-        ).map((cb) => cb.value);
-
-        const telefonos = Array.from(document.querySelectorAll(".c-telefono"))
-          .map((i) => i.value)
-          .filter((v) => v);
-        const correos = Array.from(document.querySelectorAll(".c-correo"))
-          .map((i) => i.value)
-          .filter((v) => v);
-        const acciones = Array.from(
-          document.querySelectorAll('input[name="accion"]:checked')
-        ).map((cb) => cb.value);
-
-        if (!nombre || (telefonos.length === 0 && correos.length === 0)) {
-          showToast("⚠️ Nombre y al menos un medio de contacto son requeridos");
-          return;
-        }
-
-        if (prioridades.length === 0) {
-          showToast("⚠️ Debes seleccionar al menos una prioridad");
-          return;
-        }
-
-        const contactObj = {
-          id: Date.now(),
-          prioridad: prioridades.join(", "),
-          area: area,
-          nombre: nombre,
-          cargo: cargo || "N/A",
-          telefonos: telefonos.join(" / "),
-          correos: correos.join(" / "),
-          acciones: acciones.join(", "),
-          observaciones: obs,
-        };
-
-        contactsList.push(contactObj);
-        renderContacts();
-        showToast("✓ Contacto registrado");
-
-        // Limpiar formulario
-        document.getElementById("c_nombre").value = "";
-        document.getElementById("c_cargo").value = "";
-        document.getElementById("c_obs").value = "";
-        document.getElementById("contactPhoneRows").innerHTML = `
-            <div class="dynamic-row">
-                <input type="tel" class="c-telefono" placeholder="Número 10 dígitos">
-                <button type="button" class="add-row-btn" onclick="addContactPhoneField()">+</button>
-            </div>
-        `;
-        document.getElementById("contactEmailRows").innerHTML = `
-            <div class="dynamic-row">
-                <input type="email" class="c-correo" placeholder="ejemplo@empresa.com">
-                <button type="button" class="add-row-btn" onclick="addContactEmailField()">+</button>
-            </div>
-        `;
-        document.querySelectorAll('input[name="accion"]').forEach((cb) => {
-          cb.checked = false;
-          cb.parentElement.classList.remove("selected");
-        });
-        document.querySelectorAll('input[name="c_prioridad"]').forEach((cb) => {
-          cb.checked = false;
-        });
-      }
-
       function showToast(msg) {
         const t = document.getElementById("toast");
         t.innerText = msg;
@@ -1924,14 +1978,12 @@
         setTimeout(() => (t.style.display = "none"), 3000);
       }
 
-      /* Exportaciones Excel */
       async function exportFinalExcel() {
         const btn = document.getElementById("exportBtn");
         btn.disabled = true;
         btn.textContent = "Exportando...";
 
         try {
-          // Obtener datos desde Google Sheets
           const res = await fetch("api/sheets.php?action=read&tipo=logistica", {
             method: "GET",
             headers: {
@@ -1953,7 +2005,6 @@
             return;
           }
 
-          // Transformar datos al formato Excel
           const dataForExcel = json.data.map((row) => ({
             "Fecha Registro": row[0] || "",
             Económico: row[1] || "",
@@ -2008,10 +2059,17 @@
           .split("T")[0];
         addDispatch();
 
-        // Cargar historial de unidades
         loadUnitsHistory();
 
-        // Event listener para autocompletado
+        document
+          .getElementById("fecha_registro")
+          .addEventListener("change", (e) => {
+            const newDate = e.target.value;
+            if (newDate) {
+              updateDispatchDates(newDate);
+            }
+          });
+
         document
           .getElementById("id_vehiculo")
           .addEventListener("change", (e) => {
@@ -2043,7 +2101,6 @@
       window.loadUnitsHistory = loadUnitsHistory;
       window.clearLogisticaForm = clearLogisticaForm;
       window.loadUnitsFromSheets = loadUnitsFromSheets;
-      window.toggleDateFilter = toggleDateFilter;
     </script>
   </body>
 </html>
