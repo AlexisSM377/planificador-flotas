@@ -3,11 +3,21 @@
  * Google Sheets API endpoint with security
  */
 
+// Clean output buffer and disable output buffering
+while (ob_get_level()) {
+    ob_end_clean();
+}
+
+// Start output buffering to catch any unwanted output
+ob_start();
+
 // Load configuration
 require __DIR__ . '/../config.php';
 require __DIR__ . '/../RequestValidator.php';
 
-header('Content-Type: application/json');
+// Clear all existing headers and set only JSON header
+header_remove();
+header('Content-Type: application/json; charset=utf-8');
 
 try {
     // Validate incoming request
@@ -22,11 +32,16 @@ try {
     $client->setScopes(['https://www.googleapis.com/auth/spreadsheets']);
     $client->setAuthConfig(GOOGLE_CREDENTIALS_PATH);
     $client->setAccessType('offline');
+
+    // Configure HTTP client - disable SSL verification in development
+    if (ENVIRONMENT === 'development') {
+        $client->setHttpClient(new \GuzzleHttp\Client(['verify' => false]));
+    }
     
     $service = new Google_Service_Sheets($client);
     
     $sheets = [
-        'logistica' => 'BITACORA',
+        'logistica' => 'Datos',  // Alias for datos
         'contactos' => 'Contactos'
     ];
     
@@ -43,11 +58,20 @@ try {
     }
     
 } catch (Exception $e) {
+    // Clean any captured output
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     // Log error securely
     error_log('API Error: ' . $e->getMessage());
     
+    // Clear headers and set JSON
+    header_remove();
+    header('Content-Type: application/json; charset=utf-8');
+    
     // Return error response
-    $code = is_numeric($e->getCode()) ? $e->getCode() : 500;
+    $code = is_numeric($e->getCode()) && $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
     http_response_code($code);
     
     // Don't expose detailed error in production
@@ -56,6 +80,7 @@ try {
     } else {
         echo json_encode(['ok' => false, 'error' => 'An error occurred']);
     }
+    exit;
 }
 
 /**
@@ -65,14 +90,24 @@ function handleRead($service, $sheets) {
     $tipo = RequestValidator::sanitizeInput($_GET['tipo'] ?? '', 'string');
     $tipo = RequestValidator::validateTipo($tipo);
     
-    $range = $sheets[$tipo] . '!A2:N1000';
+    $range = $sheets[$tipo] . '!A7:N1000';
     $response = $service->spreadsheets_values->get(SPREADSHEET_ID, $range);
     $values = $response->getValues();
+    
+    // Clean output buffer before sending JSON
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    // Ensure clean headers
+    header_remove();
+    header('Content-Type: application/json; charset=utf-8');
     
     echo json_encode([
         'ok' => true,
         'data' => $values ?? []
     ]);
+    exit;
 }
 
 /**
@@ -109,7 +144,7 @@ function handleWrite($service, $sheets) {
     
     $service->spreadsheets_values->append(
         SPREADSHEET_ID,
-        $sheets[$tipo] . '!A2',
+        $sheets[$tipo] . '!A7',
         $body,
         [
             // USER_ENTERED permite que Sheets interprete fechas numéricas sin prefijar "'"
@@ -118,5 +153,15 @@ function handleWrite($service, $sheets) {
         ]
     );
     
+    // Clean output buffer before sending JSON
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    // Ensure clean headers
+    header_remove();
+    header('Content-Type: application/json; charset=utf-8');
+    
     echo json_encode(['ok' => true]);
+    exit;
 }
