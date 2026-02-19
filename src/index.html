@@ -432,6 +432,52 @@
         font-weight: 800;
       }
 
+      /* Lectores Styles */
+      .lector-container {
+        background: #f1f5f9;
+        border-radius: 16px;
+        padding: 20px;
+        margin-top: 30px;
+        border: 2px solid var(--accent);
+      }
+      .lector-item {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid var(--border);
+      }
+      .lector-badge {
+        background: linear-gradient(135deg, var(--accent) 0%, #0369a1 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .lector-badge-existing {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .lector-badge-new {
+        background: linear-gradient(135deg, var(--accent) 0%, #0369a1 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
       @media (max-width: 600px) {
         .tabs-nav {
           flex-direction: column;
@@ -521,6 +567,176 @@
                   id="cliente"
                   placeholder="Nombre completo del cliente"
                 />
+              </div>
+            </div>
+
+            <!-- SECCIÓN DE LECTORES -->
+            <div class="lector-container">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 20px;
+                "
+              >
+                <div>
+                  <h3
+                    style="
+                      margin: 0;
+                      color: var(--primary);
+                      font-size: 16px;
+                      font-weight: 800;
+                    "
+                  >
+                    ASIGNAR LECTORES
+                  </h3>
+                  <p
+                    style="
+                      margin: 5px 0 0 0;
+                      color: var(--text-muted);
+                      font-size: 11px;
+                    "
+                  >
+                    Agrega lectores con acceso de solo lectura a las unidades de este cliente
+                  </p>
+                  <div id="lectoresStatus" style="font-size: 11px; color: var(--accent); margin-top: 5px;">
+                    <span id="lectoresCount">0 lectores</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-accent"
+                  onclick="toggleLectorForm()"
+                  style="padding: 10px 18px; font-size: 11px"
+                >
+                  + Agregar Lector
+                </button>
+              </div>
+
+              <!-- Selector de lector responsable -->
+              <div
+                id="lectorResponsableContainer"
+                style="
+                  display: none;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  padding: 15px;
+                  border-radius: 10px;
+                  margin-bottom: 20px;
+                "
+              >
+                <label
+                  style="
+                    display: block;
+                    color: white;
+                    font-weight: 700;
+                    font-size: 12px;
+                    margin-bottom: 8px;
+                  "
+                >
+                  👤 Lector Responsable de esta Unidad
+                </label>
+                <select
+                  id="lectorResponsable"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    border-radius: 6px;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    font-size: 13px;
+                    background: white;
+                  "
+                >
+                  <option value="">Selecciona un lector...</option>
+                </select>
+                <p
+                  style="
+                    margin: 8px 0 0 0;
+                    font-size: 10px;
+                    color: rgba(255,255,255,0.9);
+                  "
+                >
+                  Solo el lector seleccionado podrá ver esta unidad
+                </p>
+              </div>
+
+              <!-- Formulario para agregar lector -->
+              <div
+                id="lectorFormContainer"
+                style="
+                  display: none;
+                  background: white;
+                  padding: 20px;
+                  border-radius: 12px;
+                  margin-bottom: 20px;
+                  border: 2px solid var(--accent);
+                "
+              >
+                <div class="grid" style="gap: 15px">
+                  <div class="form-group">
+                    <label>Email del Lector</label>
+                    <input
+                      type="email"
+                      id="lector_email"
+                      placeholder="usuario@ejemplo.com"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Contraseña</label>
+                    <input
+                      type="text"
+                      id="lector_password"
+                      placeholder="Contraseña para acceso"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Nombre del Lector</label>
+                    <input
+                      type="text"
+                      id="lector_nombre"
+                      placeholder="Nombre del lector"
+                    />
+                  </div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    justify-content: flex-end;
+                    margin-top: 15px;
+                  "
+                >
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="toggleLectorForm()"
+                    style="padding: 10px 18px; font-size: 11px"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-accent"
+                    onclick="addLector()"
+                    style="padding: 10px 18px; font-size: 11px"
+                  >
+                    Agregar
+                  </button>
+                </div>
+              </div>
+
+              <!-- Lista de lectores asignados -->
+              <div id="lectoresList" style="min-height: 50px">
+                <p
+                  style="
+                    text-align: center;
+                    color: var(--text-muted);
+                    font-size: 12px;
+                    padding: 20px;
+                  "
+                >
+                  Ingresa el nombre del Cliente para cargar sus lectores
+                </p>
               </div>
             </div>
 
@@ -836,71 +1052,79 @@
                   ✕
                 </button>
               </div>
-               <div style="display: flex; flex-direction: column; gap: 10px;">
-                 <select
-                   id="dateFilterSelect"
-                   class="btn btn-secondary"
-                   onchange="changeDateFilter(this.value)"
-                   style="
-                     padding: 10px 15px;
-                     font-size: 13px;
-                     cursor: pointer;
-                     border-radius: 8px;
-                     align-self: flex-start;
-                   "
-                 >
-                   <option value="today">Hoy</option>
-                   <option value="tomorrow">Mañana</option>
-                   <option value="week">Próximos 7 días</option>
-                   <option value="custom">Rango Personalizado</option>
-                 </select>
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <select
+                  id="dateFilterSelect"
+                  class="btn btn-secondary"
+                  onchange="changeDateFilter(this.value)"
+                  style="
+                    padding: 10px 15px;
+                    font-size: 13px;
+                    cursor: pointer;
+                    border-radius: 8px;
+                    align-self: flex-start;
+                  "
+                >
+                  <option value="today">Hoy</option>
+                  <option value="tomorrow">Mañana</option>
+                  <option value="week">Próximos 7 días</option>
+                  <option value="custom">Rango Personalizado</option>
+                </select>
 
-                 <div
-                   id="customDateRange"
-                   style="
-                     display: none;
-                     flex-direction: row;
-                     gap: 8px;
-                     align-items: center;
-                     margin-left: 0;
-                   "
-                 >
-                   <label
-                     for="startDate"
-                     style="font-size: 12px; color: var(--text-muted); white-space: nowrap;"
-                     >Desde:</label
-                   >
-                   <input
-                     type="date"
-                     id="startDate"
-                     class="btn btn-secondary"
-                     onchange="applyCustomDateFilter()"
-                     style="
-                       padding: 8px 12px;
-                       font-size: 13px;
-                       border-radius: 6px;
-                       width: 140px;
-                     "
-                   />
-                   <label
-                     for="endDate"
-                     style="font-size: 12px; color: var(--text-muted); white-space: nowrap;"
-                     >Hasta:</label
-                   >
-                   <input
-                     type="date"
-                     id="endDate"
-                     class="btn btn-secondary"
-                     onchange="applyCustomDateFilter()"
-                     style="
-                       padding: 8px 12px;
-                       font-size: 13px;
-                       border-radius: 6px;
-                       width: 140px;
-                     "
-                   />
-                 </div>
-               </div>
+                <div
+                  id="customDateRange"
+                  style="
+                    display: none;
+                    flex-direction: row;
+                    gap: 8px;
+                    align-items: center;
+                    margin-left: 0;
+                  "
+                >
+                  <label
+                    for="startDate"
+                    style="
+                      font-size: 12px;
+                      color: var(--text-muted);
+                      white-space: nowrap;
+                    "
+                    >Desde:</label
+                  >
+                  <input
+                    type="date"
+                    id="startDate"
+                    class="btn btn-secondary"
+                    onchange="applyCustomDateFilter()"
+                    style="
+                      padding: 8px 12px;
+                      font-size: 13px;
+                      border-radius: 6px;
+                      width: 140px;
+                    "
+                  />
+                  <label
+                    for="endDate"
+                    style="
+                      font-size: 12px;
+                      color: var(--text-muted);
+                      white-space: nowrap;
+                    "
+                    >Hasta:</label
+                  >
+                  <input
+                    type="date"
+                    id="endDate"
+                    class="btn btn-secondary"
+                    onchange="applyCustomDateFilter()"
+                    style="
+                      padding: 8px 12px;
+                      font-size: 13px;
+                      border-radius: 6px;
+                      width: 140px;
+                    "
+                  />
+                </div>
+              </div>
               <button
                 type="button"
                 class="btn btn-primary"
@@ -955,6 +1179,9 @@
       let dateFilter = "today";
       let allUnitsData = [];
       let filterByUnit = "";
+      let lectores = []; // Lista de lectores asignados a este cliente
+      let lectoresCache = {}; // Cache de lectores por cliente
+      let currentCliente = ""; // Cliente actual para detectar cambios
 
       async function loadUnitsHistory() {
         try {
@@ -1072,6 +1299,12 @@
         document.getElementById("dispatchContainer").innerHTML = "";
         dispatchCount = 0;
         addDispatch();
+
+        // Limpiar lectores y cache
+        lectores = [];
+        currentCliente = "";
+        document.getElementById("lectorResponsable").value = "";
+        renderLectores();
 
         showToast("✓ Formulario limpiado");
       }
@@ -1245,7 +1478,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <div style="overflow-x: auto;">
                 <table class="contact-table" style="margin: 0;">
                   <thead>
@@ -1285,7 +1518,7 @@
                   </tbody>
                 </table>
               </div>
-              
+
               <div style="background: #f8fafc; padding: 10px 20px; font-size: 11px; color: var(--text-muted);">
                 <strong>IDs Equipos:</strong> ${
                   firstRow[3] || "No especificado"
@@ -1474,9 +1707,16 @@
         const idV = document.getElementById("id_vehiculo").value;
         const cliente = document.getElementById("cliente").value;
         const op = document.getElementById("operador").value;
+        const lectorResponsable = document.getElementById("lectorResponsable").value;
 
         if (!idV || !op) {
           showToast("⚠️ Económico y Operador son obligatorios");
+          return;
+        }
+
+        // Validar que se haya seleccionado un lector responsable si hay lectores
+        if (lectores.length > 0 && !lectorResponsable) {
+          showToast("⚠️ Debes seleccionar un Lector Responsable para esta unidad");
           return;
         }
 
@@ -1513,6 +1753,7 @@
             }),
           ),
           cliente: cliente,
+          lectorResponsable: lectorResponsable,
         };
 
         const btn = document.getElementById("syncLogisticaBtn");
@@ -1538,6 +1779,7 @@
               t.salida || "",
               t.descarga || "",
               unitData.cliente || "",
+              unitData.lectorResponsable || "", // Columna O: Lector Responsable
             ]);
           });
 
@@ -1563,6 +1805,11 @@
           }
 
           if (json.ok) {
+            // Sincronizar lectores si hay
+            if (lectores.length > 0 && cliente) {
+              await syncLectoresToSheets(cliente);
+            }
+
             showToast("✓ Logística guardada exitosamente");
             showSyncStatus("Guardado correctamente", false);
 
@@ -1589,6 +1836,11 @@
             document.getElementById("dispatchContainer").innerHTML = "";
             dispatchCount = 0;
             addDispatch();
+
+            // Limpiar lectores
+            lectores = [];
+            currentCliente = "";
+            renderLectores();
           } else {
             throw new Error(json.error || "Error desconocido");
           }
@@ -1600,6 +1852,34 @@
           btn.textContent = "Guardar";
         }
       }
+      //       document.getElementById("phoneRows").innerHTML = `
+      //         <div class="dynamic-row">
+      //           <input type="tel" class="u-telefono" placeholder="10 dígitos" />
+      //           <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
+      //         </div>
+      //       `;
+
+      //       document.getElementById("equipmentRows").innerHTML = `
+      //         <div class="dynamic-row">
+      //           <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
+      //           <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
+      //         </div>
+      //       `;
+
+      //       document.getElementById("dispatchContainer").innerHTML = "";
+      //       dispatchCount = 0;
+      //       addDispatch();
+      //     } else {
+      //       throw new Error(json.error || "Error desconocido");
+      //     }
+      //   } catch (error) {
+      //     showToast("❌ Error: " + error.message);
+      //     showSyncStatus("Error al sincronizar", true);
+      //   } finally {
+      //     btn.disabled = false;
+      //     btn.textContent = "Guardar";
+      //   }
+      // }
 
       async function syncContactToSheets(contact) {
         try {
@@ -1801,7 +2081,7 @@
                 <div class="form-group"><label>Punto de Origen</label><input type="text" class="d-origen"></div>
                 <div class="form-group"><label>Punto de Destino</label><input type="text" class="d-destino"></div>
             </div>
-            
+
             <div class="grid" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
                 <div class="form-group">
                   <label>Salida de Patio</label>
@@ -2053,6 +2333,270 @@
         XLSX.writeFile(wb, "Directorio_Seguridad_Tracker.xlsx");
       }
 
+      // ========== FUNCIONES DE LECTORES ==========
+
+      async function loadLectoresByCliente(nombreCliente) {
+        if (!nombreCliente || nombreCliente.trim() === "") {
+          lectores = [];
+          renderLectores();
+          return;
+        }
+
+        // Verificar si ya está en cache
+        if (lectoresCache[nombreCliente]) {
+          lectores = lectoresCache[nombreCliente];
+          renderLectores();
+          return;
+        }
+
+        try {
+          const res = await fetch("api/sheets.php?action=read&tipo=usuarios", {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+          });
+
+          const text = await res.text();
+          const json = JSON.parse(text);
+
+          if (json.ok && json.data) {
+            // Filtrar lectores que pertenezcan a este cliente
+            const lectoresDelCliente = json.data
+              .filter((row) => {
+                const role = row[2]; // columna C: role
+                const clientes = row[3]; // columna D: clientes
+                return role === "lector" && clientes === nombreCliente;
+              })
+              .map((row) => ({
+                id: row[0], // usar email como id
+                email: row[0], // columna A: usuario
+                password: row[1], // columna B: password
+                nombre: row[0].split("@")[0], // extraer nombre del email
+                isExisting: true, // estos ya existen en la hoja
+              }));
+
+            // Guardar en cache
+            lectoresCache[nombreCliente] = lectoresDelCliente;
+            lectores = lectoresDelCliente;
+            renderLectores();
+          }
+        } catch (error) {
+          console.error("Error cargando lectores:", error);
+          showToast("⚠️ Error al cargar lectores");
+        }
+      }
+
+      function toggleLectorForm() {
+        const form = document.getElementById("lectorFormContainer");
+        form.style.display = form.style.display === "none" ? "block" : "none";
+
+        // Limpiar el formulario al abrirlo
+        if (form.style.display === "block") {
+          document.getElementById("lector_email").value = "";
+          document.getElementById("lector_password").value = "";
+          document.getElementById("lector_nombre").value = "";
+        }
+      }
+
+      function addLector() {
+        const email = document.getElementById("lector_email").value.trim();
+        const password = document
+          .getElementById("lector_password")
+          .value.trim();
+        const nombre = document
+          .getElementById("lector_nombre")
+          .value.trim();
+        const cliente = document.getElementById("cliente").value.trim();
+
+        if (!email || !password || !nombre) {
+          showToast("⚠️ Todos los campos son requeridos");
+          return;
+        }
+
+        if (!cliente) {
+          showToast("⚠️ Debes ingresar el nombre del Cliente primero");
+          return;
+        }
+
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          showToast("⚠️ Email inválido");
+          return;
+        }
+
+        // Verificar si ya existe en la lista local
+        const existe = lectores.find(
+          (l) => l.email.toLowerCase() === email.toLowerCase(),
+        );
+        if (existe) {
+          showToast("⚠️ Este lector ya está en la lista");
+          return;
+        }
+
+        // Agregar a la lista
+        lectores.push({
+          id: Date.now(),
+          email: email,
+          password: password,
+          nombre: nombre,
+          isExisting: false, // marcar como nuevo
+        });
+
+        renderLectores();
+        toggleLectorForm();
+        showToast(
+          "✓ Lector agregado. Recuerda guardar para sincronizar",
+        );
+      }
+
+      function renderLectores() {
+        const container = document.getElementById("lectoresList");
+        const statusContainer = document.getElementById("lectoresStatus");
+        const countSpan = document.getElementById("lectoresCount");
+        const selectorContainer = document.getElementById("lectorResponsableContainer");
+        const selector = document.getElementById("lectorResponsable");
+
+        if (lectores.length === 0) {
+          container.innerHTML = `
+            <p style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 20px;">
+              Ingresa el nombre del Cliente para cargar sus lectores
+            </p>
+          `;
+          if (statusContainer) statusContainer.style.display = "none";
+          if (selectorContainer) selectorContainer.style.display = "none";
+          return;
+        }
+
+        // Contar existentes y nuevos
+        const existingCount = lectores.filter((l) => l.isExisting).length;
+        const newCount = lectores.filter((l) => !l.isExisting).length;
+
+        // Mostrar contador
+        if (statusContainer && countSpan) {
+          statusContainer.style.display = "flex";
+          countSpan.textContent = `${existingCount} activo${existingCount !== 1 ? "s" : ""} | ${newCount} nuevo${newCount !== 1 ? "s" : ""}`;
+        }
+
+        // Poblar selector de lector responsable
+        if (selector && selectorContainer) {
+          const currentValue = selector.value;
+          selector.innerHTML = '<option value="">Selecciona un lector...</option>';
+          
+          lectores.forEach((lector) => {
+            const option = document.createElement("option");
+            option.value = lector.email;
+            option.textContent = `${lector.nombre} (${lector.email})`;
+            selector.appendChild(option);
+          });
+
+          // Restaurar valor seleccionado si existe
+          if (currentValue && lectores.find(l => l.email === currentValue)) {
+            selector.value = currentValue;
+          }
+
+          selectorContainer.style.display = "block";
+        }
+
+        let html = "";
+        lectores.forEach((lector) => {
+          const badgeClass = lector.isExisting
+            ? "lector-badge-existing"
+            : "lector-badge-new";
+          const badgeText = lector.isExisting ? "Activo" : "Nuevo";
+          const canRemove = !lector.isExisting;
+
+          html += `
+            <div class="lector-item">
+              <div style="flex: 1;">
+                <div style="font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+                  ${lector.nombre}
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted);">
+                  📧 ${lector.email}
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="${badgeClass}">${badgeText}</span>
+                ${
+                  canRemove
+                    ? `<button
+                  class="remove-btn"
+                  onclick="removeLector(${lector.id})"
+                  title="Eliminar lector"
+                >
+                  ×
+                </button>`
+                    : ""
+                }
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function removeLector(id) {
+        // Solo permitir eliminar lectores nuevos (no existentes)
+        const lector = lectores.find((l) => l.id === id);
+        if (lector && lector.isExisting) {
+          showToast("⚠️ No se pueden eliminar lectores existentes desde aquí");
+          return;
+        }
+
+        lectores = lectores.filter((l) => l.id !== id);
+        renderLectores();
+        showToast("✓ Lector eliminado");
+      }
+
+      async function syncLectoresToSheets(cliente) {
+        // Solo sincronizar lectores nuevos (isExisting: false)
+        const newLectores = lectores.filter((l) => !l.isExisting);
+
+        if (newLectores.length === 0) return;
+
+        try {
+          // Crear cada nuevo lector
+          for (const lector of newLectores) {
+            const newRow = [
+              lector.email, // A: usuario
+              lector.password, // B: password
+              "lector", // C: role
+              cliente, // D: clientes
+              "4,5,6,7", // E: tabs_permitidos (solo lectura)
+              "TRUE", // F: activo
+            ];
+
+            await fetch("api/sheets.php", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                tipo: "usuarios",
+                rows: [newRow],
+              }),
+            });
+          }
+
+          console.log("✓ Lectores sincronizados correctamente");
+
+          // Actualizar cache: marcar los nuevos como existentes
+          newLectores.forEach((lector) => {
+            lector.isExisting = true;
+          });
+
+          // Actualizar cache del cliente
+          lectoresCache[cliente] = [...lectores];
+        } catch (error) {
+          console.error("Error sincronizando lectores:", error);
+          throw error;
+        }
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("fecha_registro").value = new Date()
           .toISOString()
@@ -2060,6 +2604,33 @@
         addDispatch();
 
         loadUnitsHistory();
+
+        // Debounced event listener para campo Cliente
+        let clienteDebounceTimer;
+        document.getElementById("cliente")?.addEventListener("input", (e) => {
+          const nombreCliente = e.target.value.trim();
+
+          // Limpiar timeout anterior
+          clearTimeout(clienteDebounceTimer);
+
+          // Verificar si el cliente cambió
+          if (nombreCliente !== currentCliente) {
+            // Limpiar lectores si el cliente cambió
+            lectores = [];
+            renderLectores();
+            currentCliente = nombreCliente;
+          }
+
+          // Esperar 500ms antes de cargar lectores
+          clienteDebounceTimer = setTimeout(() => {
+            if (nombreCliente) {
+              loadLectoresByCliente(nombreCliente);
+            } else {
+              lectores = [];
+              renderLectores();
+            }
+          }, 500);
+        });
 
         document
           .getElementById("fecha_registro")
@@ -2101,6 +2672,9 @@
       window.loadUnitsHistory = loadUnitsHistory;
       window.clearLogisticaForm = clearLogisticaForm;
       window.loadUnitsFromSheets = loadUnitsFromSheets;
+      window.toggleLectorForm = toggleLectorForm;
+      window.addLector = addLector;
+      window.removeLector = removeLector;
     </script>
   </body>
 </html>

@@ -42,7 +42,8 @@ try {
     
     $sheets = [
         'logistica' => 'Datos',  // Alias for datos
-        'contactos' => 'Contactos'
+        'contactos' => 'Contactos',
+        'usuarios' => 'Usuarios'
     ];
     
     // Handle request
@@ -90,7 +91,12 @@ function handleRead($service, $sheets) {
     $tipo = RequestValidator::sanitizeInput($_GET['tipo'] ?? '', 'string');
     $tipo = RequestValidator::validateTipo($tipo);
     
-    $range = $sheets[$tipo] . '!A7:N1000';
+    // Different ranges for different sheets
+    $range = match($tipo) {
+        'usuarios' => $sheets[$tipo] . '!A2:F100',  // Start from row 2 (skip header), columns A-F only
+        default => $sheets[$tipo] . '!A7:O1000'  // Extended to column O for Lector Responsable
+    };
+    
     $response = $service->spreadsheets_values->get(SPREADSHEET_ID, $range);
     $values = $response->getValues();
     
@@ -122,6 +128,7 @@ function handleWrite($service, $sheets) {
     
     $tipo = RequestValidator::sanitizeInput($input['tipo'] ?? '', 'string');
     $rows = $input['rows'] ?? [];
+    $action = RequestValidator::sanitizeInput($input['action'] ?? 'append', 'string');
     
     // Validate inputs
     $tipo = RequestValidator::validateTipo($tipo);
@@ -137,14 +144,16 @@ function handleWrite($service, $sheets) {
         $sanitizedRows[] = $sanitizedRow;
     }
     
-    // Write to Google Sheets
+    // Write to Google Sheets (append)
     $body = new Google_Service_Sheets_ValueRange([
         'values' => $sanitizedRows
     ]);
     
+    $startRow = $tipo === 'usuarios' ? 'A2' : 'A7';
+    
     $service->spreadsheets_values->append(
         SPREADSHEET_ID,
-        $sheets[$tipo] . '!A7',
+        $sheets[$tipo] . '!' . $startRow,
         $body,
         [
             // USER_ENTERED permite que Sheets interprete fechas numéricas sin prefijar "'"
