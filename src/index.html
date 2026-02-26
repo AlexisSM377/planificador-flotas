@@ -598,9 +598,17 @@
                       font-size: 11px;
                     "
                   >
-                    Agrega lectores con acceso de solo lectura a las unidades de este cliente
+                    Agrega lectores con acceso de solo lectura a las unidades de
+                    este cliente
                   </p>
-                  <div id="lectoresStatus" style="font-size: 11px; color: var(--accent); margin-top: 5px;">
+                  <div
+                    id="lectoresStatus"
+                    style="
+                      font-size: 11px;
+                      color: var(--accent);
+                      margin-top: 5px;
+                    "
+                  >
                     <span id="lectoresCount">0 lectores</span>
                   </div>
                 </div>
@@ -642,7 +650,7 @@
                     width: 100%;
                     padding: 10px;
                     border-radius: 6px;
-                    border: 2px solid rgba(255,255,255,0.3);
+                    border: 2px solid rgba(255, 255, 255, 0.3);
                     font-size: 13px;
                     background: white;
                   "
@@ -653,7 +661,7 @@
                   style="
                     margin: 8px 0 0 0;
                     font-size: 10px;
-                    color: rgba(255,255,255,0.9);
+                    color: rgba(255, 255, 255, 0.9);
                   "
                 >
                   Solo el lector seleccionado podrá ver esta unidad
@@ -1707,7 +1715,8 @@
         const idV = document.getElementById("id_vehiculo").value;
         const cliente = document.getElementById("cliente").value;
         const op = document.getElementById("operador").value;
-        const lectorResponsable = document.getElementById("lectorResponsable").value;
+        const lectorResponsable =
+          document.getElementById("lectorResponsable").value;
 
         if (!idV || !op) {
           showToast("⚠️ Económico y Operador son obligatorios");
@@ -1716,7 +1725,9 @@
 
         // Validar que se haya seleccionado un lector responsable si hay lectores
         if (lectores.length > 0 && !lectorResponsable) {
-          showToast("⚠️ Debes seleccionar un Lector Responsable para esta unidad");
+          showToast(
+            "⚠️ Debes seleccionar un Lector Responsable para esta unidad",
+          );
           return;
         }
 
@@ -2404,9 +2415,7 @@
         const password = document
           .getElementById("lector_password")
           .value.trim();
-        const nombre = document
-          .getElementById("lector_nombre")
-          .value.trim();
+        const nombre = document.getElementById("lector_nombre").value.trim();
         const cliente = document.getElementById("cliente").value.trim();
 
         if (!email || !password || !nombre) {
@@ -2446,16 +2455,16 @@
 
         renderLectores();
         toggleLectorForm();
-        showToast(
-          "✓ Lector agregado. Recuerda guardar para sincronizar",
-        );
+        showToast("✓ Lector agregado. Recuerda guardar para sincronizar");
       }
 
       function renderLectores() {
         const container = document.getElementById("lectoresList");
         const statusContainer = document.getElementById("lectoresStatus");
         const countSpan = document.getElementById("lectoresCount");
-        const selectorContainer = document.getElementById("lectorResponsableContainer");
+        const selectorContainer = document.getElementById(
+          "lectorResponsableContainer",
+        );
         const selector = document.getElementById("lectorResponsable");
 
         if (lectores.length === 0) {
@@ -2482,8 +2491,9 @@
         // Poblar selector de lector responsable
         if (selector && selectorContainer) {
           const currentValue = selector.value;
-          selector.innerHTML = '<option value="">Selecciona un lector...</option>';
-          
+          selector.innerHTML =
+            '<option value="">Selecciona un lector...</option>';
+
           lectores.forEach((lector) => {
             const option = document.createElement("option");
             option.value = lector.email;
@@ -2492,7 +2502,7 @@
           });
 
           // Restaurar valor seleccionado si existe
-          if (currentValue && lectores.find(l => l.email === currentValue)) {
+          if (currentValue && lectores.find((l) => l.email === currentValue)) {
             selector.value = currentValue;
           }
 
@@ -2565,7 +2575,7 @@
               lector.password, // B: password
               "lector", // C: role
               cliente, // D: clientes
-              "4,5,6,7", // E: tabs_permitidos (solo lectura)
+              "3,4,5,6,7", // E: tabs_permitidos (solo lectura)
               "TRUE", // F: activo
             ];
 
