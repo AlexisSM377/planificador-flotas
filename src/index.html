@@ -528,6 +528,10 @@
                 ><input type="date" id="fecha_registro" />
               </div>
               <div class="form-group">
+                <label>Folio</label
+                ><input type="text" id="folio" placeholder="Ej: FOL-0001" />
+              </div>
+              <div class="form-group">
                 <label
                   >Económico
                   <span
@@ -1187,9 +1191,9 @@
       let dateFilter = "today";
       let allUnitsData = [];
       let filterByUnit = "";
-      let lectores = []; // Lista de lectores asignados a este cliente
-      let lectoresCache = {}; // Cache de lectores por cliente
-      let currentCliente = ""; // Cliente actual para detectar cambios
+      let lectores = [];
+      let lectoresCache = {};
+      let currentCliente = "";
 
       async function loadUnitsHistory() {
         try {
@@ -1205,14 +1209,15 @@
           if (json.ok && json.data) {
             const units = {};
             json.data.forEach((row) => {
-              const economico = row[1];
+              const economico = row[2]; // col C: económico
               if (economico && !units[economico]) {
                 units[economico] = {
-                  placas: row[2] || "",
-                  equipos: row[3] ? row[3].split(" / ") : [],
-                  operador: row[4] || "",
-                  telefonos: row[5] ? row[5].split(" / ") : [],
-                  cliente: row[13] || "",
+                  folio: row[1] || "",
+                  placas: row[3] || "",
+                  equipos: row[4] ? row[4].split(" / ") : [],
+                  operador: row[5] || "",
+                  telefonos: row[6] ? row[6].split(" / ") : [],
+                  cliente: row[14] || "",
                 };
               }
             });
@@ -1239,6 +1244,7 @@
         if (!unitData) return;
 
         // Llenar campos básicos
+        document.getElementById("folio").value = unitData.folio;
         document.getElementById("placas").value = unitData.placas;
         document.getElementById("operador").value = unitData.operador;
         document.getElementById("cliente").value = unitData.cliente;
@@ -1283,6 +1289,7 @@
       function clearLogisticaForm() {
         // Limpiar campos básicos
         document.getElementById("id_vehiculo").value = "";
+        document.getElementById("folio").value = "";
         document.getElementById("placas").value = "";
         document.getElementById("operador").value = "";
         document.getElementById("cliente").value = "";
@@ -1737,6 +1744,7 @@
           id: idV,
           operador: op,
           fecha: fechaInput,
+          folio: document.getElementById("folio").value,
           placas: document.getElementById("placas").value,
           telefonos: Array.from(document.querySelectorAll(".u-telefono"))
             .map((i) => i.value)
@@ -1777,6 +1785,7 @@
           unitData.tramos.forEach((t, i) => {
             rows.push([
               unitData.fecha || "",
+              unitData.folio || "",
               unitData.id || "",
               unitData.placas || "",
               unitData.equipos.join(" / ") || "",
@@ -1790,7 +1799,7 @@
               t.salida || "",
               t.descarga || "",
               unitData.cliente || "",
-              unitData.lectorResponsable || "", // Columna O: Lector Responsable
+              unitData.lectorResponsable || "", // Columna P: Lector Responsable
             ]);
           });
 
@@ -1825,6 +1834,7 @@
             showSyncStatus("Guardado correctamente", false);
 
             document.getElementById("id_vehiculo").value = "";
+            document.getElementById("folio").value = "";
             document.getElementById("operador").value = "";
             document.getElementById("placas").value = "";
             document.getElementById("fecha_registro").value = "";
@@ -1863,34 +1873,6 @@
           btn.textContent = "Guardar";
         }
       }
-      //       document.getElementById("phoneRows").innerHTML = `
-      //         <div class="dynamic-row">
-      //           <input type="tel" class="u-telefono" placeholder="10 dígitos" />
-      //           <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
-      //         </div>
-      //       `;
-
-      //       document.getElementById("equipmentRows").innerHTML = `
-      //         <div class="dynamic-row">
-      //           <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
-      //           <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
-      //         </div>
-      //       `;
-
-      //       document.getElementById("dispatchContainer").innerHTML = "";
-      //       dispatchCount = 0;
-      //       addDispatch();
-      //     } else {
-      //       throw new Error(json.error || "Error desconocido");
-      //     }
-      //   } catch (error) {
-      //     showToast("❌ Error: " + error.message);
-      //     showSyncStatus("Error al sincronizar", true);
-      //   } finally {
-      //     btn.disabled = false;
-      //     btn.textContent = "Guardar";
-      //   }
-      // }
 
       async function syncContactToSheets(contact) {
         try {
@@ -2298,19 +2280,20 @@
 
           const dataForExcel = json.data.map((row) => ({
             "Fecha Registro": row[0] || "",
-            Económico: row[1] || "",
-            Placas: row[2] || "",
-            "Equipos Aliados": row[3] || "",
-            Operador: row[4] || "",
-            "Tels Operador": row[5] || "",
-            Ruta: row[6] || "",
-            Origen: row[7] || "",
-            Destino: row[8] || "",
-            "Salida Patio": row[9] || "",
-            "Cita Carga": row[10] || "",
-            "Salida Carga": row[11] || "",
-            Descarga: row[12] || "",
-            Cliente: row[13] || "",
+            Folio: row[1] || "",
+            Económico: row[2] || "",
+            Placas: row[3] || "",
+            "Equipos Aliados": row[4] || "",
+            Operador: row[5] || "",
+            "Tels Operador": row[6] || "",
+            Ruta: row[7] || "",
+            Origen: row[8] || "",
+            Destino: row[9] || "",
+            "Salida Patio": row[10] || "",
+            "Cita Carga": row[11] || "",
+            "Salida Carga": row[12] || "",
+            Descarga: row[13] || "",
+            Cliente: row[14] || "",
           }));
 
           const ws = XLSX.utils.json_to_sheet(dataForExcel);
