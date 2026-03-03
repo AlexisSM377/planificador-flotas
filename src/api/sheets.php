@@ -97,7 +97,10 @@ function handleRead($service, $sheets) {
         default => $sheets[$tipo] . '!A7:O1000'  // Extended to column O for Lector Responsable
     };
     
-    $response = $service->spreadsheets_values->get(SPREADSHEET_ID, $range);
+    $response = $service->spreadsheets_values->get(SPREADSHEET_ID, $range, [
+        'valueRenderOption' => 'FORMATTED_VALUE',
+        'dateTimeRenderOption' => 'FORMATTED_STRING'
+    ]);
     $values = $response->getValues();
     
     // Clean output buffer before sending JSON
@@ -156,18 +159,15 @@ function handleWrite($service, $sheets) {
         $sheets[$tipo] . '!' . $startRow,
         $body,
         [
-            // USER_ENTERED permite que Sheets interprete fechas numéricas sin prefijar "'"
-            'valueInputOption' => 'USER_ENTERED',
-            'insertDataOption' => 'INSERT_ROWS'
+                'valueInputOption' => 'RAW',
+                'insertDataOption' => 'INSERT_ROWS'
         ]
     );
     
-    // Clean output buffer before sending JSON
     while (ob_get_level()) {
         ob_end_clean();
     }
     
-    // Ensure clean headers
     header_remove();
     header('Content-Type: application/json; charset=utf-8');
     
