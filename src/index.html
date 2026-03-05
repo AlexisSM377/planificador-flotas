@@ -2064,9 +2064,6 @@
         const div = document.createElement("div");
         div.className = "dispatch-card";
 
-        const fechaRegistro = document.getElementById("fecha_registro").value;
-        const currentDateTime = getCurrentDateTimeLocal(fechaRegistro || null);
-
         div.innerHTML = `
             <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
             <div class="grid">
@@ -2078,11 +2075,11 @@
             <div class="grid" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
                 <div class="form-group">
                   <label>Salida de Patio</label>
-                  <input type="datetime-local" class="d-salida-patio" value="${currentDateTime}"/>
+                  <input type="datetime-local" class="d-salida-patio"/>
                   </div>
-                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga" value="${currentDateTime}"></div>
-                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga" value="${currentDateTime}"></div>
-                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga" value="${currentDateTime}"></div>
+                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga"></div>
+                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga"></div>
+                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga"></div>
             </div>
             ${
               dispatchCount > 1
