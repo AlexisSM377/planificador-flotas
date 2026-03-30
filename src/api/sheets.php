@@ -94,7 +94,7 @@ function handleRead($service, $sheets) {
     // Different ranges for different sheets
     $range = match($tipo) {
         'usuarios' => $sheets[$tipo] . '!A2:F100',  // Start from row 2 (skip header), columns A-F only
-        default => $sheets[$tipo] . '!A7:O1000'  // Extended to column O for Lector Responsable
+        default => $sheets[$tipo] . '!A2:R1000'  // Extended to column O for Lector Responsable
     };
     
     $response = $service->spreadsheets_values->get(SPREADSHEET_ID, $range, [
@@ -152,7 +152,7 @@ function handleWrite($service, $sheets) {
         'values' => $sanitizedRows
     ]);
     
-    $startRow = $tipo === 'usuarios' ? 'A2' : 'A7';
+    $startRow = $tipo === 'usuarios' ? 'A2' : 'A2';
     
     $service->spreadsheets_values->append(
         SPREADSHEET_ID,
