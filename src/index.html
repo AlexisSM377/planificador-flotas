@@ -1217,7 +1217,7 @@
                   equipos: row[4] ? row[4].split(" / ") : [],
                   operador: row[5] || "",
                   telefonos: row[6] ? row[6].split(" / ") : [],
-                  cliente: row[14] || "",
+                  cliente: row[16] || "",
                 };
               }
             });
@@ -1429,7 +1429,7 @@
 
         if (filterByUnit) {
           filteredData = filteredData.filter((row) => {
-            const economico = (row[1] || "").toLowerCase();
+            const economico = (row[2] || "").toLowerCase();
             return economico.includes(filterByUnit.toLowerCase());
           });
         }
@@ -1458,7 +1458,7 @@
 
         const unitGroups = {};
         filteredData.forEach((row) => {
-          const economico = row[1] || "SIN ECONÓMICO";
+          const economico = row[2] || "SIN ECONÓMICO";
           if (!unitGroups[economico]) {
             unitGroups[economico] = [];
           }
@@ -1480,16 +1480,16 @@
                   <div>
                     <h3 style="margin: 0; font-size: 18px; font-weight: 700;">🚛 ${economico}</h3>
                     <div style="font-size: 12px; opacity: 0.9; margin-top: 5px;">
-                      Placas: ${firstRow[2] || "N/A"} | Operador: ${
-                        firstRow[4] || "N/A"
-                      } | Cliente: ${firstRow[13] || "N/A"}
+                      Placas: ${firstRow[3] || "N/A"} | Operador: ${
+                        firstRow[5] || "N/A"
+                      } | Cliente: ${firstRow[16] || "N/A"}
                     </div>
                   </div>
                   <div style="text-align: right; font-size: 11px;">
                     <div>📅 ${firstRow[0] || "Sin fecha"}</div>
-                    <div style="margin-top: 3px;">📞 ${
-                      firstRow[5] || "Sin teléfono"
-                    }</div>
+                      <div style="margin-top: 3px;">📞 ${
+                        firstRow[6] || "Sin teléfono"
+                      }</div>
                   </div>
                 </div>
               </div>
@@ -1501,7 +1501,9 @@
                       <th>Tramo</th>
                       <th>Ruta</th>
                       <th>Origen</th>
+                      <th>Lugar Carga</th>
                       <th>Destino</th>
+                      <th>Instrucciones</th>
                       <th>Salida Patio</th>
                       <th>Cita Carga</th>
                       <th>Salida Carga</th>
@@ -1509,7 +1511,6 @@
                     </tr>
                   </thead>
                   <tbody>
-                    </div>
           `;
 
           rows.forEach((row, i) => {
@@ -1520,11 +1521,13 @@
                 }</td>
                 <td>${row[6] || "-"}</td>
                 <td>${row[7] || "-"}</td>
-                <td>${row[8] || "-"}</td>
-                <td>${row[9] ? formatDateTime(row[9]) : "-"}</td>
-                <td>${row[10] ? formatDateTime(row[10]) : "-"}</td>
-                <td>${row[11] ? formatDateTime(row[11]) : "-"}</td>
+                <td>${row[9] || "-"}</td>
+                <td>${row[10] || "-"}</td>
+                <td style="font-size: 11px; max-width: 150px;">${row[11] || "-"}</td>
                 <td>${row[12] ? formatDateTime(row[12]) : "-"}</td>
+                <td>${row[13] ? formatDateTime(row[13]) : "-"}</td>
+                <td>${row[14] ? formatDateTime(row[14]) : "-"}</td>
+                <td>${row[15] ? formatDateTime(row[15]) : "-"}</td>
               </tr>
             `;
           });
@@ -1536,7 +1539,7 @@
 
               <div style="background: #f8fafc; padding: 10px 20px; font-size: 11px; color: var(--text-muted);">
                 <strong>IDs Equipos:</strong> ${
-                  firstRow[3] || "No especificado"
+                  firstRow[4] || "No especificado"
                 }
               </div>
             </div>
@@ -1692,7 +1695,7 @@
 
         const economicos = new Set();
         data.forEach((row) => {
-          const eco = row[1];
+          const eco = row[2];
           if (eco) economicos.add(eco);
         });
 
@@ -1756,7 +1759,9 @@
             (card) => ({
               ruta: card.querySelector(".d-ruta").value,
               origen: card.querySelector(".d-origen").value,
+              lugarCarga: card.querySelector(".d-lugar-carga").value,
               destino: card.querySelector(".d-destino").value,
+              instrucciones: card.querySelector(".d-instrucciones").value,
               patio: formatDateForSheets(
                 card.querySelector(".d-salida-patio").value,
               ),
@@ -1793,13 +1798,15 @@
               unitData.telefonos.join(" / ") || "",
               t.ruta || "",
               t.origen || "",
+              t.lugarCarga || "",
               t.destino || "",
               t.patio || "",
               t.cita || "",
               t.salida || "",
               t.descarga || "",
+              t.instrucciones || "",
               unitData.cliente || "",
-              unitData.lectorResponsable || "", // Columna P: Lector Responsable
+              unitData.lectorResponsable || "",
             ]);
           });
 
@@ -2069,7 +2076,12 @@
             <div class="grid">
                 <div class="form-group"><label>Ruta / Identificador</label><input type="text" class="d-ruta"></div>
                 <div class="form-group"><label>Punto de Origen</label><input type="text" class="d-origen"></div>
+                <div class="form-group"><label>Lugar de Carga</label><input type="text" class="d-lugar-carga" placeholder="Bodega / CEDIS"></div>
                 <div class="form-group"><label>Punto de Destino</label><input type="text" class="d-destino"></div>
+                <div class="form-group" style="grid-column: 1 / -1; margin-top: 5px;">
+                  <label>Instrucciones especiales</label>
+                  <input type="text" class="d-instrucciones" placeholder="Ej: No pernoctar en zonas no autorizadas / Prioridad alta">
+                </div>
             </div>
 
             <div class="grid" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
@@ -2285,12 +2297,14 @@
             "Tels Operador": row[6] || "",
             Ruta: row[7] || "",
             Origen: row[8] || "",
-            Destino: row[9] || "",
-            "Salida Patio": row[10] || "",
-            "Cita Carga": row[11] || "",
-            "Salida Carga": row[12] || "",
-            Descarga: row[13] || "",
-            Cliente: row[14] || "",
+            "Lugar Carga": row[9] || "",
+            Destino: row[10] || "",
+            "Salida Patio": row[11] || "",
+            "Cita Carga": row[12] || "",
+            "Salida Carga": row[13] || "",
+            Descarga: row[14] || "",
+            Instrucciones: row[15] || "",
+            Cliente: row[16] || "",
           }));
 
           const ws = XLSX.utils.json_to_sheet(dataForExcel);
