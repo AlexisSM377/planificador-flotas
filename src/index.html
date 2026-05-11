@@ -1485,7 +1485,7 @@
                       } | Cliente: ${firstRow[16] || "N/A"}
                     </div>
                   </div>
-                  <div style="text-align: right; font-size: 11px;">
+                  <div style="text-align: right; font-size: 13px;">
                     <div>📅 ${firstRow[0] || "Sin fecha"}</div>
                       <div style="margin-top: 3px;">📞 ${
                         firstRow[6] || "Sin teléfono"
@@ -1503,11 +1503,11 @@
                       <th>Origen</th>
                       <th>Lugar Carga</th>
                       <th>Destino</th>
-                      <th>Instrucciones</th>
                       <th>Salida Patio</th>
                       <th>Cita Carga</th>
                       <th>Salida Carga</th>
                       <th>Descarga</th>
+                      <th>Instrucciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1519,15 +1519,15 @@
                 <td style="font-weight: 700; color: var(--accent);">Tramo ${
                   i + 1
                 }</td>
-                <td>${row[6] || "-"}</td>
                 <td>${row[7] || "-"}</td>
+                <td>${row[8] || "-"}</td>
                 <td>${row[9] || "-"}</td>
-                <td>${row[10] || "-"}</td>
-                <td style="font-size: 11px; max-width: 150px;">${row[11] || "-"}</td>
-                <td>${row[12] ? formatDateTime(row[12]) : "-"}</td>
-                <td>${row[13] ? formatDateTime(row[13]) : "-"}</td>
-                <td>${row[14] ? formatDateTime(row[14]) : "-"}</td>
-                <td>${row[15] ? formatDateTime(row[15]) : "-"}</td>
+                <td style="font-size: 11px; max-width: 150px;">${row[10] || "-"}</td>
+                <td>${row[11] ? formatDateTime(row[12]) : "-"}</td>
+                <td>${row[12] ? formatDateTime(row[13]) : "-"}</td>
+                <td>${row[13] ? formatDateTime(row[14]) : "-"}</td>
+                <td>${row[14] ? formatDateTime(row[15]) : "-"}</td>
+                <td>${row[15] || "-"}</td>
               </tr>
             `;
           });
@@ -1798,8 +1798,8 @@
               unitData.telefonos.join(" / ") || "",
               t.ruta || "",
               t.origen || "",
-              t.lugarCarga || "",
               t.destino || "",
+              t.lugarCarga || "",
               t.patio || "",
               t.cita || "",
               t.salida || "",
