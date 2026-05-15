@@ -1,29 +1,45 @@
 FROM php:8.2-apache
 
-RUN a2enmod rewrite
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        git \
+        unzip \
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && a2enmod rewrite headers expires deflate \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y \
-    unzip \
-    git \
-    && docker-php-ext-install pdo pdo_mysql mysqli
-
-# Instalar composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copiar TODO el proyecto (no solo src)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
 COPY . /var/www/html/
 
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+    && find /var/www/html -type d -exec chmod 755 {} \; \
+    && find /var/www/html -type f -exec chmod 644 {} \; \
+    && mkdir -p /var/www/html/logs \
+    && chown -R www-data:www-data /var/www/html/logs
 
-RUN echo '<Directory /var/www/html/>\n\
-Options Indexes FollowSymLinks\n\
-AllowOverride All\n\
-Require all granted\n\
-</Directory>' > /etc/apache2/conf-available/docker-php.conf \
- && a2enconf docker-php
+RUN printf '%s\n' \
+    '<VirtualHost *:80>' \
+    '    ServerAdmin webmaster@localhost' \
+    '    DocumentRoot /var/www/html' \
+    '' \
+    '    <Directory /var/www/html>' \
+    '        Options -Indexes +FollowSymLinks' \
+    '        AllowOverride All' \
+    '        Require all granted' \
+    '    </Directory>' \
+    '' \
+    '    ErrorLog ${APACHE_LOG_DIR}/error.log' \
+    '    CustomLog ${APACHE_LOG_DIR}/access.log combined' \
+    '</VirtualHost>' \
+    > /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 80
+
 CMD ["apache2-foreground"]
