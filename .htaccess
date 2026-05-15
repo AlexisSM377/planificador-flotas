@@ -7,3 +7,6 @@ Options -Indexes
     Header set X-Content-Type-Options "nosniff"
 </IfModule>
 
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>
