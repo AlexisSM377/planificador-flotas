@@ -86,31 +86,6 @@ define('API_KEY', getenv('API_KEY') ?: '');
 define('ALLOWED_ORIGINS', explode(',', getenv('ALLOWED_ORIGINS') ?: 'http://localhost'));
 define('ENVIRONMENT', $environment);
 
-// Validate required settings
-function failConfiguration($message) {
-    http_response_code(500);
-    if (php_sapi_name() !== 'cli') {
-        header_remove();
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['ok' => false, 'error' => $message], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    fwrite(STDERR, $message . PHP_EOL);
-    exit(1);
-}
-
-if (empty(SPREADSHEET_ID) && !$isDev) {
-    failConfiguration('Configuration error: SPREADSHEET_ID not configured');
-}
-
-if (empty(API_KEY) && !$isDev) {
-    failConfiguration('Configuration error: API_KEY not configured');
-}
-
-if (!file_exists(GOOGLE_CREDENTIALS_PATH) && !$isDev) {
-    failConfiguration('Credentials file not found: ' . GOOGLE_CREDENTIALS_PATH);
-}
-
 // Call security headers function (only if running as web request)
 if (php_sapi_name() !== 'cli') {
     setSecurityHeaders();
