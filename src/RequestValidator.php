@@ -94,7 +94,7 @@ class RequestValidator {
      * Validate tipo parameter (whitelist)
      */
     public static function validateTipo($tipo) {
-        $validTypes = ['logistica', 'contactos', 'usuarios'];
+        $validTypes = ['logistica', 'contactos', 'usuarios', 'directorio_monitoreo'];
         
         if (!in_array($tipo, $validTypes, true)) {
             throw new Exception('Invalid tipo parameter', 400);

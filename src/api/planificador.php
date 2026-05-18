@@ -449,6 +449,42 @@ function handle_read($conn) {
         json_response(['ok' => true, 'data' => $rows]);
     }
 
+    if ($tipo === 'directorio_monitoreo') {
+        $clienteFilterSql = '';
+        if (count($allowedClienteIds)) {
+            $clienteFilterSql = ' WHERE dm.cliente_id IN (' . implode(',', array_map('intval', $allowedClienteIds)) . ')';
+        }
+
+        $sql = "SELECT c.nombre AS cliente, dm.nombre, dm.cargo, dm.area,
+                       dm.prioridad, dm.telefonos, dm.correos, dm.acciones,
+                       dm.observaciones, dm.activo
+                  FROM directorio_monitoreo dm
+                  INNER JOIN clientes c ON c.id = dm.cliente_id
+                 $clienteFilterSql
+                 ORDER BY c.nombre ASC, dm.nombre ASC";
+        $res = $conn->query($sql);
+        if (!$res) {
+            throw new Exception('Error consultando directorio de monitoreo: ' . $conn->error, 500);
+        }
+
+        $rows = [];
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = [
+                $row['cliente'] ?? '',
+                $row['nombre'] ?? '',
+                $row['cargo'] ?? '',
+                $row['area'] ?? '',
+                $row['prioridad'] ?? '',
+                $row['telefonos'] ?? '',
+                $row['correos'] ?? '',
+                $row['acciones'] ?? '',
+                $row['observaciones'] ?? '',
+                ((int)$row['activo'] === 1 ? 'TRUE' : 'FALSE')
+            ];
+        }
+        json_response(['ok' => true, 'data' => $rows]);
+    }
+
     if ($tipo !== 'logistica') {
         throw new Exception('Tipo no soportado', 400);
     }
@@ -695,6 +731,82 @@ function handle_write_logistica($conn, $rows, $context = null) {
     return $saved;
 }
 
+function handle_write_directorio_monitoreo($conn, $rows, $context = null) {
+    $saved = 0;
+
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+
+        $cliente = clean_string($row[0] ?? '');
+        $allowedIds = allowed_cliente_ids($context);
+        if (count($allowedIds) && count($context['clientes'] ?? []) === 1) {
+            $cliente = $context['clientes'][0]['nombre'];
+        }
+
+        $nombre = clean_string($row[1] ?? '');
+        $cargo = clean_string($row[2] ?? '');
+        $area = clean_string($row[3] ?? '');
+        $prioridad = clean_string($row[4] ?? '');
+        $telefonos = clean_string($row[5] ?? '');
+        $correos = strtolower(clean_string($row[6] ?? ''));
+        $acciones = clean_string($row[7] ?? '');
+        $observaciones = clean_string($row[8] ?? '');
+        $activo = strtoupper(clean_string($row[9] ?? 'TRUE')) !== 'FALSE' ? 1 : 0;
+
+        if ($cliente === '' || $nombre === '') {
+            continue;
+        }
+
+        $clienteId = get_or_create_cliente($conn, $cliente);
+        if (count($allowedIds) && !in_array($clienteId, $allowedIds, true)) {
+            throw new Exception('No tienes permiso para modificar este cliente', 403);
+        }
+
+        $dedupeValue = $correos !== '' ? $correos : ($telefonos !== '' ? $telefonos : $nombre);
+        $legacyKey = substr($clienteId . '|' . strtolower($dedupeValue), 0, 190);
+
+        $stmt = $conn->prepare(
+            'INSERT INTO directorio_monitoreo (
+                cliente_id, nombre, cargo, area, prioridad,
+                telefonos, correos, acciones, observaciones, activo, legacy_key
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+                nombre = VALUES(nombre),
+                cargo = VALUES(cargo),
+                area = VALUES(area),
+                prioridad = VALUES(prioridad),
+                telefonos = VALUES(telefonos),
+                correos = VALUES(correos),
+                acciones = VALUES(acciones),
+                observaciones = VALUES(observaciones),
+                activo = VALUES(activo)'
+        );
+        $stmt->bind_param(
+            'issssssssis',
+            $clienteId,
+            $nombre,
+            $cargo,
+            $area,
+            $prioridad,
+            $telefonos,
+            $correos,
+            $acciones,
+            $observaciones,
+            $activo,
+            $legacyKey
+        );
+        if (!$stmt->execute()) {
+            throw new Exception('Error guardando directorio de monitoreo: ' . $stmt->error, 500);
+        }
+        $stmt->close();
+        $saved++;
+    }
+
+    return $saved;
+}
+
 function handle_write($conn) {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) {
@@ -714,6 +826,8 @@ function handle_write($conn) {
             $count = handle_write_usuarios($conn, $rows, $context);
         } elseif ($tipo === 'logistica') {
             $count = handle_write_logistica($conn, $rows, $context);
+        } elseif ($tipo === 'directorio_monitoreo') {
+            $count = handle_write_directorio_monitoreo($conn, $rows, $context);
         } else {
             throw new Exception('Tipo no soportado', 400);
         }
