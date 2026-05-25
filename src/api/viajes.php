@@ -15,13 +15,14 @@
  *   DELETE ?action=eliminar_tramo    → cancela un tramo (soft: estado='cancelado')
  *   DELETE ?action=eliminar_viaje    → cancela el viaje completo
  *   GET    ?action=unidades          → lista unidades del cliente (autocomplete)
+ *   POST   ?action=duplicar          → clona viaje a nueva fecha (desplaza tramos)
  */
 
 while (ob_get_level()) { ob_end_clean(); }
 ob_start();
 
-require __DIR__ . '/../db.php';
-require __DIR__ . '/../config.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../config.php';
 
 header_remove();
 header('Content-Type: application/json; charset=utf-8');
@@ -307,6 +308,106 @@ function insertar_tramo($conn, $viaje_id, $num, $t) {
 }
 
 // ---------------------------------------------------------------------------
+// Compatibilidad: sincronizar tramos a tabla despachos (tab "Unidades en Sesión")
+// ---------------------------------------------------------------------------
+
+/**
+ * Inserta (o actualiza) cada tramo del viaje en la tabla `despachos`
+ * para que sigan apareciendo en la tab "Unidades en Sesión" del planificador.
+ * Usa el mismo patrón de legacy_key que planificador.php.
+ */
+function sincronizar_despachos($conn, $viaje_id, $cliente_id, $unidad_id, $folio, $fecha_inicio, $tramos, $cliente_nombre) {
+    foreach ($tramos as $idx => $t) {
+        $tramo_numero = (int)($t['tramo_numero'] ?? ($idx + 1));
+        $legacy_key   = substr(
+            $cliente_nombre . '|' . $folio . '|' . $unidad_id . '|' . $fecha_inicio . '|' . $tramo_numero,
+            0, 190
+        );
+
+        $stmt = $conn->prepare(
+            'INSERT INTO despachos (
+                cliente_id, unidad_id, folio, fecha_programada, tramo_numero,
+                ruta, origen, lugar_carga, destino, instrucciones,
+                salida_patio_programada, cita_carga, salida_carga_programada,
+                descarga_programada, source_system, legacy_key
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "planificador", ?)
+             ON DUPLICATE KEY UPDATE
+                ruta                    = VALUES(ruta),
+                origen                  = VALUES(origen),
+                lugar_carga             = VALUES(lugar_carga),
+                destino                 = VALUES(destino),
+                instrucciones           = VALUES(instrucciones),
+                salida_patio_programada = VALUES(salida_patio_programada),
+                cita_carga              = VALUES(cita_carga),
+                salida_carga_programada = VALUES(salida_carga_programada),
+                descarga_programada     = VALUES(descarga_programada),
+                legacy_key              = VALUES(legacy_key)'
+        );
+
+        $ruta        = null_if_empty($t['ruta']              ?? '');
+        $origen      = null_if_empty($t['origen']            ?? '');
+        $lugar_carga = null_if_empty($t['lugar_carga']       ?? '');
+        $destino     = null_if_empty($t['destino']           ?? '');
+        $instruc     = null_if_empty($t['instrucciones']     ?? '');
+        $sal_patio   = to_datetime($t['salida_patio']        ?? '') ?: null;
+        $cita        = to_datetime($t['cita_carga']          ?? '') ?: null;
+        $sal_carga   = to_datetime($t['salida_carga']        ?? '') ?: null;
+        $descarga    = to_datetime($t['descarga_programada'] ?? '') ?: null;
+
+        $stmt->bind_param(
+            'iississssssssss',
+            $cliente_id, $unidad_id, $folio, $fecha_inicio, $tramo_numero,
+            $ruta, $origen, $lugar_carga, $destino, $instruc,
+            $sal_patio, $cita, $sal_carga, $descarga,
+            $legacy_key
+        );
+        if (!$stmt->execute()) {
+            $err = $stmt->error;
+            $stmt->close();
+            throw new Exception('Error sincronizando despacho: ' . $err, 500);
+        }
+        $stmt->close();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Upsert de unidad (crea si no existe, actualiza si ya existe)
+// ---------------------------------------------------------------------------
+
+/**
+ * Inserta o actualiza una unidad para el cliente dado.
+ * Usa UNIQUE KEY (cliente_id, economico) para el ON DUPLICATE KEY UPDATE.
+ * Devuelve el id de la unidad.
+ */
+function upsert_unidad($conn, $cliente_id, $economico, $placas, $operador, $telefonos, $equipos) {
+    $stmt = $conn->prepare(
+        'INSERT INTO unidades (cliente_id, economico, placas, operador, telefonos, equipos, activo)
+         VALUES (?, ?, ?, ?, ?, ?, 1)
+         ON DUPLICATE KEY UPDATE
+           placas    = IF(VALUES(placas)    != \'\', VALUES(placas),    placas),
+           operador  = IF(VALUES(operador)  != \'\', VALUES(operador),  operador),
+           telefonos = IF(VALUES(telefonos) != \'\', VALUES(telefonos), telefonos),
+           equipos   = IF(VALUES(equipos)   != \'\', VALUES(equipos),   equipos),
+           activo    = 1'
+    );
+    $stmt->bind_param('isssss', $cliente_id, $economico, $placas, $operador, $telefonos, $equipos);
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception('Error guardando unidad: ' . $err, 500);
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare('SELECT id FROM unidades WHERE cliente_id = ? AND economico = ? LIMIT 1');
+    $stmt->bind_param('is', $cliente_id, $economico);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row) throw new Exception('No se pudo resolver la unidad tras el upsert', 500);
+    return (int)$row['id'];
+}
+
+// ---------------------------------------------------------------------------
 // HANDLERS
 // ---------------------------------------------------------------------------
 
@@ -341,16 +442,21 @@ function handle_crear($conn, $ctx) {
     $body = json_decode(file_get_contents('php://input'), true);
     if (!is_array($body)) throw new Exception('JSON invalido', 400);
 
-    $cliente_id  = (int)($body['cliente_id'] ?? 0);
-    $unidad_id   = (int)($body['unidad_id'] ?? 0);
-    $folio       = str_val($body['folio'] ?? '');
+    $cliente_id   = (int)($body['cliente_id']  ?? 0);
+    $folio        = str_val($body['folio']      ?? '');
     $fecha_inicio = to_date($body['fecha_inicio'] ?? '');
-    $fecha_fin   = to_date($body['fecha_fin'] ?? '');
-    $notas       = null_if_empty($body['notas'] ?? '');
-    $tramos      = $body['tramos'] ?? [];
+    $fecha_fin    = to_date($body['fecha_fin']  ?? '');
+    $notas        = null_if_empty($body['notas'] ?? '');
+    $tramos       = $body['tramos'] ?? [];
+
+    // Datos de la unidad (pueden venir del formulario si es unidad nueva)
+    $economico    = str_val($body['economico']  ?? '');
+    $placas       = str_val($body['placas']     ?? '');
+    $operador     = str_val($body['operador']   ?? '');
+    $telefonos    = str_val($body['telefonos']  ?? '');
+    $equipos      = str_val($body['equipos']    ?? '');
 
     if ($cliente_id <= 0)  throw new Exception('cliente_id requerido', 400);
-    if ($unidad_id <= 0)   throw new Exception('unidad_id requerido', 400);
     if ($folio === '')     throw new Exception('folio requerido', 400);
     if (!$fecha_inicio)    throw new Exception('fecha_inicio requerida (YYYY-MM-DD)', 400);
     if (!is_array($tramos) || count($tramos) === 0) {
@@ -359,15 +465,31 @@ function handle_crear($conn, $ctx) {
 
     assert_cliente_access($ctx, $cliente_id);
 
-    // Verificar que unidad pertenece al cliente
-    $stmt = $conn->prepare('SELECT id FROM unidades WHERE id = ? AND cliente_id = ? LIMIT 1');
-    $stmt->bind_param('ii', $unidad_id, $cliente_id);
-    $stmt->execute();
-    if (!$stmt->get_result()->fetch_assoc()) {
+    // ── Resolver unidad_id ────────────────────────────────────────────────────
+    // Si el frontend ya resolvió el ID (unidad existente), usarlo directamente.
+    // Si no (unidad nueva), hacer upsert con los datos del formulario.
+    $unidad_id = (int)($body['unidad_id'] ?? 0);
+
+    if ($unidad_id > 0) {
+        // Verificar que la unidad pertenece al cliente
+        $stmt = $conn->prepare('SELECT id FROM unidades WHERE id = ? AND cliente_id = ? AND activo = 1 LIMIT 1');
+        $stmt->bind_param('ii', $unidad_id, $cliente_id);
+        $stmt->execute();
+        $existe = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        throw new Exception('La unidad no pertenece al cliente indicado', 400);
+        if (!$existe) throw new Exception('La unidad no pertenece al cliente indicado', 400);
+    } else {
+        // Unidad nueva o no resuelta por el frontend: upsert por económico
+        if ($economico === '') throw new Exception('economico requerido para registrar una unidad nueva', 400);
+        $unidad_id = upsert_unidad($conn, $cliente_id, $economico, $placas, $operador, $telefonos, $equipos);
     }
-    $stmt->close();
+
+    // Detectar conflictos de solapamiento con viajes activos de la misma unidad
+    $conflictos = detectar_conflictos($conn, $unidad_id, $fecha_inicio, $fecha_fin);
+    if (count($conflictos) > 0) {
+        // Retornar 409 Conflict con detalle de los viajes que se solapan
+        json_err_conflicto($conflictos);
+    }
 
     // Transacción: viaje + todos sus tramos
     $conn->begin_transaction();
@@ -386,6 +508,20 @@ function handle_crear($conn, $ctx) {
         foreach ($tramos as $i => $t) {
             insertar_tramo($conn, $viaje_id, $i + 1, $t);
         }
+
+        // Sincronizar a tabla despachos para compatibilidad con "Unidades en Sesión"
+        $stmt_cn = $conn->prepare('SELECT nombre FROM clientes WHERE id = ? LIMIT 1');
+        $stmt_cn->bind_param('i', $cliente_id);
+        $stmt_cn->execute();
+        $cliente_nombre = $stmt_cn->get_result()->fetch_assoc()['nombre'] ?? '';
+        $stmt_cn->close();
+
+        // Preparar tramos con tramo_numero para sincronizar
+        $tramos_sync = array_values(array_map(function($t, $i) {
+            return array_merge($t, ['tramo_numero' => $i + 1]);
+        }, $tramos, array_keys($tramos)));
+
+        sincronizar_despachos($conn, $viaje_id, $cliente_id, $unidad_id, $folio, $fecha_inicio, $tramos_sync, $cliente_nombre);
 
         $conn->commit();
     } catch (Exception $e) {
@@ -846,6 +982,250 @@ function handle_unidades($conn, $ctx) {
 }
 
 // ---------------------------------------------------------------------------
+// Duplicar viaje
+// ---------------------------------------------------------------------------
+
+/**
+ * POST ?action=duplicar
+ * Body JSON: { viaje_id, nueva_fecha_inicio, ignorar_conflictos? }
+ *
+ * Clona el viaje y todos sus tramos a un nuevo rango de fechas.
+ * La duración del viaje original se preserva (fecha_fin - fecha_inicio).
+ * Los horarios de cada tramo se desplazan el mismo número de días.
+ */
+function handle_duplicar($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $viaje_id          = (int)($body['viaje_id']          ?? 0);
+    $nueva_fecha_inicio = to_date($body['nueva_fecha_inicio'] ?? '');
+    $ignorar_conflictos = !empty($body['ignorar_conflictos']);
+
+    if ($viaje_id <= 0)       throw new Exception('viaje_id requerido', 400);
+    if (!$nueva_fecha_inicio) throw new Exception('nueva_fecha_inicio requerida (YYYY-MM-DD)', 400);
+
+    // Cargar viaje original con sus tramos
+    $stmt = $conn->prepare(
+        'SELECT v.*, c.nombre AS cliente_nombre, u.economico
+           FROM viajes v
+           JOIN clientes c ON c.id = v.cliente_id
+           JOIN unidades u ON u.id = v.unidad_id
+          WHERE v.id = ? LIMIT 1'
+    );
+    $stmt->bind_param('i', $viaje_id);
+    $stmt->execute();
+    $orig = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$orig) throw new Exception('Viaje original no encontrado', 404);
+    assert_cliente_access($ctx, $orig['cliente_id']);
+
+    // Calcular desplazamiento de días
+    $dt_orig_inicio = new DateTime($orig['fecha_inicio']);
+    $dt_nueva       = new DateTime($nueva_fecha_inicio);
+    $delta_dias     = (int)$dt_orig_inicio->diff($dt_nueva)->format('%r%a'); // positivo = hacia adelante
+
+    // Calcular nueva fecha_fin conservando la duración
+    $nueva_fecha_fin = null;
+    if ($orig['fecha_fin']) {
+        $dt_fin = new DateTime($orig['fecha_fin']);
+        $dt_fin->modify("{$delta_dias} days");
+        $nueva_fecha_fin = $dt_fin->format('Y-m-d');
+    }
+
+    // Verificar conflictos en el nuevo rango (a menos que se ignore)
+    if (!$ignorar_conflictos) {
+        $conflictos = detectar_conflictos(
+            $conn,
+            (int)$orig['unidad_id'],
+            $nueva_fecha_inicio,
+            $nueva_fecha_fin
+        );
+        if (count($conflictos) > 0) {
+            json_err_conflicto($conflictos);
+        }
+    }
+
+    // Cargar tramos originales
+    $stmt = $conn->prepare(
+        'SELECT * FROM viaje_tramos WHERE viaje_id = ? ORDER BY tramo_numero ASC'
+    );
+    $stmt->bind_param('i', $viaje_id);
+    $stmt->execute();
+    $tramos_orig = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    // Helper para desplazar datetime
+    $desplazar_dt = function($dt_str) use ($delta_dias) {
+        if (!$dt_str) return null;
+        try {
+            $dt = new DateTime($dt_str);
+            $dt->modify("{$delta_dias} days");
+            return $dt->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            return null;
+        }
+    };
+
+    // Transacción: clonar viaje + tramos
+    $conn->begin_transaction();
+    try {
+        $uid = $ctx['id'];
+        $nuevo_folio = $orig['folio'] . '-COPIA';
+
+        $stmt = $conn->prepare(
+            'INSERT INTO viajes
+               (cliente_id, unidad_id, folio, fecha_inicio, fecha_fin, estado, notas, created_by_usuario_id)
+             VALUES (?, ?, ?, ?, ?, \'planificado\', ?, ?)'
+        );
+        $stmt->bind_param(
+            'iisssis',
+            $orig['cliente_id'], $orig['unidad_id'],
+            $nuevo_folio, $nueva_fecha_inicio, $nueva_fecha_fin,
+            $orig['notas'], $uid
+        );
+        if (!$stmt->execute()) throw new Exception('Error clonando viaje: ' . $stmt->error, 500);
+        $nuevo_viaje_id = (int)$stmt->insert_id;
+        $stmt->close();
+
+        foreach ($tramos_orig as $t) {
+            $tramo_data = [
+                'origen'              => $t['origen'],
+                'lugar_carga'         => $t['lugar_carga'],
+                'destino'             => $t['destino'],
+                'ruta'                => $t['ruta'],
+                'instrucciones'       => $t['instrucciones'],
+                'salida_patio'        => $desplazar_dt($t['salida_patio']),
+                'cita_carga'          => $desplazar_dt($t['cita_carga']),
+                'salida_carga'        => $desplazar_dt($t['salida_carga']),
+                'descarga_programada' => $desplazar_dt($t['descarga_programada']),
+            ];
+            insertar_tramo($conn, $nuevo_viaje_id, (int)$t['tramo_numero'], $tramo_data);
+        }
+
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
+    }
+
+    json_ok(handle_obtener_data($conn, $nuevo_viaje_id), 201);
+}
+
+// ---------------------------------------------------------------------------
+// Detección de conflictos
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna los viajes activos de una unidad que se solapan con el rango dado.
+ * Se excluyen viajes en estado 'cancelado'.
+ * Un viaje con fecha_fin = NULL se trata como si terminara en fecha_inicio.
+ *
+ * Solapamiento: inicio_A <= fin_B  AND  fin_A >= inicio_B
+ *   donde fin = fecha_fin ?? fecha_inicio
+ */
+function detectar_conflictos($conn, $unidad_id, $fecha_inicio, $fecha_fin, $excluir_viaje_id = null) {
+    // Si no hay fecha_fin el viaje dura solo el día de inicio
+    $fin_nuevo = $fecha_fin ?: $fecha_inicio;
+
+    $sql = "
+        SELECT
+            v.id AS viaje_id, v.folio, v.fecha_inicio, v.fecha_fin,
+            v.estado, u.economico
+        FROM viajes v
+        JOIN unidades u ON u.id = v.unidad_id
+        WHERE v.unidad_id = ?
+          AND v.estado NOT IN ('cancelado', 'completado')
+          AND v.fecha_inicio <= ?
+          AND COALESCE(v.fecha_fin, v.fecha_inicio) >= ?
+    ";
+    $params = [$unidad_id, $fin_nuevo, $fecha_inicio];
+    $types  = 'iss';
+
+    if ($excluir_viaje_id) {
+        $sql    .= ' AND v.id != ?';
+        $types  .= 'i';
+        $params[] = $excluir_viaje_id;
+    }
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $res  = $stmt->get_result();
+
+    $conflictos = [];
+    while ($r = $res->fetch_assoc()) {
+        $conflictos[] = [
+            'viaje_id'    => (int)$r['viaje_id'],
+            'folio'       => $r['folio'],
+            'fecha_inicio'=> $r['fecha_inicio'],
+            'fecha_fin'   => $r['fecha_fin'],
+            'estado'      => $r['estado'],
+            'economico'   => $r['economico'],
+        ];
+    }
+    $stmt->close();
+    return $conflictos;
+}
+
+function json_err_conflicto($conflictos) {
+    while (ob_get_level()) { ob_end_clean(); }
+    header_remove();
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(409);
+    echo json_encode([
+        'ok'         => false,
+        'conflicto'  => true,
+        'error'      => 'La unidad ya tiene viajes activos en ese rango de fechas',
+        'conflictos' => $conflictos,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/**
+ * GET ?action=verificar_conflictos&unidad_id=X&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
+ * Permite al frontend consultar conflictos sin crear el viaje.
+ * Param opcional: excluir_viaje_id (para ediciones).
+ */
+function handle_verificar_conflictos($conn, $ctx) {
+    $unidad_id        = (int)($_GET['unidad_id']        ?? 0);
+    $fecha_inicio     = to_date($_GET['fecha_inicio']    ?? '');
+    $fecha_fin        = to_date($_GET['fecha_fin']       ?? '');
+    $excluir_viaje_id = isset($_GET['excluir_viaje_id'])
+        ? (int)$_GET['excluir_viaje_id']
+        : null;
+
+    if ($unidad_id <= 0) throw new Exception('unidad_id requerido', 400);
+    if (!$fecha_inicio)  throw new Exception('fecha_inicio requerida', 400);
+
+    // Verificar acceso a la unidad vía cliente
+    $stmt = $conn->prepare(
+        'SELECT u.id, u.economico, u.cliente_id FROM unidades u WHERE u.id = ? LIMIT 1'
+    );
+    $stmt->bind_param('i', $unidad_id);
+    $stmt->execute();
+    $u = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$u) throw new Exception('Unidad no encontrada', 404);
+    assert_cliente_access($ctx, $u['cliente_id']);
+
+    $conflictos = detectar_conflictos(
+        $conn, $unidad_id, $fecha_inicio, $fecha_fin, $excluir_viaje_id
+    );
+
+    json_ok([
+        'tiene_conflicto' => count($conflictos) > 0,
+        'conflictos'      => $conflictos,
+        'unidad_id'       => $unidad_id,
+        'economico'       => $u['economico'],
+        'fecha_inicio'    => $fecha_inicio,
+        'fecha_fin'       => $fecha_fin,
+    ]);
+}
+
+// ---------------------------------------------------------------------------
 // Router principal
 // ---------------------------------------------------------------------------
 
@@ -858,10 +1238,12 @@ try {
     $ctx = get_usuario_context($conn);
 
     match (true) {
-        $method === 'GET'    && $action === 'listar'          => handle_listar($conn, $ctx),
-        $method === 'GET'    && $action === 'obtener'         => handle_obtener($conn, $ctx),
-        $method === 'GET'    && $action === 'unidades'        => handle_unidades($conn, $ctx),
-        $method === 'POST'   && $action === 'crear'           => handle_crear($conn, $ctx),
+        $method === 'GET'    && $action === 'listar'                 => handle_listar($conn, $ctx),
+        $method === 'GET'    && $action === 'obtener'                => handle_obtener($conn, $ctx),
+        $method === 'GET'    && $action === 'unidades'               => handle_unidades($conn, $ctx),
+        $method === 'GET'    && $action === 'verificar_conflictos'   => handle_verificar_conflictos($conn, $ctx),
+        $method === 'POST'   && $action === 'crear'                  => handle_crear($conn, $ctx),
+        $method === 'POST'   && $action === 'duplicar'               => handle_duplicar($conn, $ctx),
         $method === 'POST'   && $action === 'agregar_tramo'   => handle_agregar_tramo($conn, $ctx),
         $method === 'PUT'    && $action === 'actualizar'      => handle_actualizar($conn, $ctx),
         $method === 'PUT'    && $action === 'actualizar_tramo'=> handle_actualizar_tramo($conn, $ctx),

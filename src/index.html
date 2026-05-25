@@ -629,8 +629,15 @@
                         </div>
                         <div class="grid">
                             <div class="form-group">
-                                <label>Fecha de Registro</label
+                                <label>Fecha Inicio</label
                                 ><input type="date" id="fecha_registro" />
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    Fecha Fin
+                                    <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(dejar vacío = mismo día)</span>
+                                </label>
+                                <input type="date" id="fecha_fin" />
                             </div>
                             <div class="form-group">
                                 <label>Folio</label
@@ -923,6 +930,31 @@
                             </div>
                         </div>
 
+                        <!-- Panel: alerta de conflictos -->
+                        <div id="conflictos-panel" style="display:none; margin-top:16px; padding:14px 18px; background:#fef2f2; border:1px solid #fca5a5; border-radius:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <span style="font-size:13px; font-weight:700; color:#b91c1c;">
+                                    ⚠️ Conflicto de fechas detectado
+                                </span>
+                                <button type="button" onclick="ocultarAlertaConflicto()"
+                                    style="background:none;border:none;cursor:pointer;font-size:16px;color:#64748b;">×</button>
+                            </div>
+                            <p style="font-size:11px;color:#991b1b;margin:0 0 8px;">Esta unidad ya tiene viajes activos en el rango seleccionado:</p>
+                            <div id="conflictos-lista"></div>
+                        </div>
+
+                        <!-- Panel: viajes activos de la unidad seleccionada -->
+                        <div id="viajesActivosPanel" style="display:none; margin-top:30px; padding:16px 20px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <span style="font-size:13px; font-weight:700; color:#0369a1;">
+                                    🚛 Viajes registrados para esta unidad
+                                </span>
+                                <button type="button" onclick="document.getElementById('viajesActivosPanel').style.display='none'"
+                                    style="background:none;border:none;cursor:pointer;font-size:16px;color:#64748b;">×</button>
+                            </div>
+                            <div id="viajesActivosList" style="font-size:12px; color:#334155;"></div>
+                        </div>
+
                         <div class="section-header" style="margin-top: 50px">
                             <h2>Planificación de Tramos Logísticos</h2>
                             <button
@@ -957,9 +989,9 @@
                                 type="button"
                                 id="syncLogisticaBtn"
                                 class="btn btn-success"
-                                onclick="syncLogisticaToSheets()"
+                                onclick="guardarViaje()"
                             >
-                                Guardar
+                                Guardar Viaje
                             </button>
                         </div>
                     </form>
@@ -1396,6 +1428,7 @@
             let planificadorToken = "";
             let planificadorTokenExpiresAt = 0;
             const PLANIFICADOR_API = "api/planificador.php";
+            const VIAJES_API = "api/viajes.php";
 
             function getAuthQuery() {
                 return "";
@@ -1540,6 +1573,9 @@
                     );
                     await loadUnitsHistory();
                     await loadDirectorioMonitoreo();
+                    // Cargar unidades desde la nueva API (con IDs para guardar viajes)
+                    const _cid = planificadorUser?.clientes?.[0]?.id;
+                    if (_cid) loadUnitsFromViajesAPI(_cid);
                 } catch (err) {
                     error.textContent = err.message;
                     error.style.display = "block";
@@ -1672,12 +1708,14 @@
                 document.getElementById("folio").value = "";
                 document.getElementById("placas").value = "";
                 document.getElementById("operador").value = "";
+                document.getElementById("fecha_fin").value = "";
                 document.getElementById("cliente").value = isAdminUser()
                     ? ""
                     : getSelectedCliente();
                 document.getElementById("fecha_registro").value = new Date()
                     .toISOString()
                     .split("T")[0];
+                document.getElementById("viajesActivosPanel").style.display = "none";
 
                 document.getElementById("phoneRows").innerHTML = `
           <div class="dynamic-row">
@@ -2127,182 +2165,366 @@
                 }
             }
 
-            async function syncLogisticaToSheets() {
-                const idV = document.getElementById("id_vehiculo").value;
-                const cliente = getSelectedCliente();
-                document.getElementById("cliente").value = cliente;
-                const op = document.getElementById("operador").value;
-                const lectorResponsable =
-                    document.getElementById("lectorResponsable").value;
+            // ─── NUEVA función principal: guardar viaje completo ────────────────
+            async function guardarViaje() {
+                const economico   = document.getElementById("id_vehiculo").value.trim();
+                const cliente     = getSelectedCliente();
+                const operador    = document.getElementById("operador").value.trim();
+                const folio       = document.getElementById("folio").value.trim();
+                const fechaInicio = document.getElementById("fecha_registro").value;
+                const fechaFin    = document.getElementById("fecha_fin").value || null;
+                const lectorResp  = document.getElementById("lectorResponsable").value;
 
-                if (!idV || !op) {
+                document.getElementById("cliente").value = cliente;
+
+                // Validaciones
+                if (!economico || !operador) {
                     showToast("⚠️ Económico y Operador son obligatorios");
                     return;
                 }
+                if (!folio) {
+                    showToast("⚠️ El Folio es obligatorio");
+                    return;
+                }
+                if (!fechaInicio) {
+                    showToast("⚠️ La Fecha Inicio es obligatoria");
+                    return;
+                }
                 if (!cliente) {
-                    showToast("Cliente requerido para guardar la unidad");
+                    showToast("⚠️ Cliente requerido para guardar el viaje");
+                    return;
+                }
+                if (lectores.length > 0 && !lectorResp) {
+                    showToast("⚠️ Debes seleccionar un Lector Responsable");
                     return;
                 }
 
-                // Validar que se haya seleccionado un lector responsable si hay lectores
-                if (lectores.length > 0 && !lectorResponsable) {
-                    showToast(
-                        "⚠️ Debes seleccionar un Lector Responsable para esta unidad",
-                    );
+                // Buscar unidad_id y cliente_id desde el cache de unidades
+                const clienteObj = planificadorUser?.clientes?.find(
+                    (c) => c.nombre === cliente || (!isAdminUser()),
+                ) || planificadorUser?.clientes?.[0];
+
+                if (!clienteObj?.id) {
+                    showToast("❌ No se pudo determinar el cliente. Recarga la sesión.");
                     return;
                 }
+                const clienteId = clienteObj.id;
 
-                const fechaInput =
-                    document.getElementById("fecha_registro").value;
+                // Intentar resolver unidad_id desde cache.
+                // Si el cache está vacío, recargar primero desde la API.
+                if (!viajesUnidadesCache[clienteId] || viajesUnidadesCache[clienteId].length === 0) {
+                    await loadUnitsFromViajesAPI(clienteId);
+                }
 
-                const unitData = {
-                    id: idV,
-                    operador: op,
-                    fecha: fechaInput,
-                    folio: document.getElementById("folio").value,
-                    placas: document.getElementById("placas").value,
-                    telefonos: Array.from(
-                        document.querySelectorAll(".u-telefono"),
-                    )
-                        .map((i) => i.value)
-                        .filter((v) => v),
-                    equipos: Array.from(document.querySelectorAll(".id_equipo"))
-                        .map((i) => i.value)
-                        .filter((v) => v),
-                    tramos: Array.from(
-                        document.querySelectorAll(".dispatch-card"),
-                    ).map((card) => ({
-                        ruta: card.querySelector(".d-ruta").value,
-                        origen: card.querySelector(".d-origen").value,
-                        lugarCarga: card.querySelector(".d-lugar-carga").value,
-                        destino: card.querySelector(".d-destino").value,
-                        instrucciones:
-                            card.querySelector(".d-instrucciones").value,
-                        patio: formatDateForSheets(
-                            card.querySelector(".d-salida-patio").value,
-                        ),
-                        cita: formatDateForSheets(
-                            card.querySelector(".d-cita-carga").value,
-                        ),
-                        salida: formatDateForSheets(
-                            card.querySelector(".d-salida-carga").value,
-                        ),
-                        descarga: formatDateForSheets(
-                            card.querySelector(".d-descarga").value,
-                        ),
-                    })),
-                    cliente: cliente,
-                    lectorResponsable: lectorResponsable,
+                const unidadObj = (viajesUnidadesCache[clienteId] || []).find(
+                    (u) => u.economico === economico
+                );
+                // unidadId = 0 cuando es unidad nueva — el backend hará upsert con los datos del formulario
+                const unidadId = unidadObj?.id || 0;
+
+                // Recolectar tramos del formulario
+                const tramosCards = Array.from(document.querySelectorAll(".dispatch-card"));
+                if (tramosCards.length === 0) {
+                    showToast("⚠️ Agrega al menos un tramo");
+                    return;
+                }
+                const tramos = tramosCards.map((card) => ({
+                    ruta:                card.querySelector(".d-ruta")?.value || "",
+                    origen:              card.querySelector(".d-origen")?.value || "",
+                    lugar_carga:         card.querySelector(".d-lugar-carga")?.value || "",
+                    destino:             card.querySelector(".d-destino")?.value || "",
+                    instrucciones:       card.querySelector(".d-instrucciones")?.value || "",
+                    salida_patio:        card.querySelector(".d-salida-patio")?.value || "",
+                    cita_carga:          card.querySelector(".d-cita-carga")?.value || "",
+                    salida_carga:        card.querySelector(".d-salida-carga")?.value || "",
+                    descarga_programada: card.querySelector(".d-descarga")?.value || "",
+                }));
+
+                // Recoger datos de la unidad del formulario (para upsert si es unidad nueva)
+                const telefonosVal = Array.from(document.querySelectorAll(".u-telefono"))
+                    .map((i) => i.value.trim()).filter(Boolean).join(" / ");
+                const equiposVal = Array.from(document.querySelectorAll(".id_equipo"))
+                    .map((i) => i.value.trim()).filter(Boolean).join(" / ");
+
+                const payload = {
+                    cliente_id:   clienteId,
+                    unidad_id:    unidadId,   // 0 = unidad nueva, backend hace upsert
+                    economico:    economico,
+                    placas:       document.getElementById("placas").value.trim(),
+                    operador:     operador,
+                    telefonos:    telefonosVal,
+                    equipos:      equiposVal,
+                    folio:        folio,
+                    fecha_inicio: fechaInicio,
+                    fecha_fin:    fechaFin || null,
+                    tramos:       tramos,
                 };
 
                 const btn = document.getElementById("syncLogisticaBtn");
                 btn.disabled = true;
-                btn.textContent = "Sincronizando...";
+                btn.textContent = "Verificando...";
 
                 try {
+                    // ── Verificar conflictos antes de guardar ─────────────
+                    // Solo verificar si la unidad ya existe (unidad_id > 0).
+                    // Si es nueva, no hay conflictos posibles aún.
+                    const chk = unidadId > 0
+                        ? await verificarConflictosViaje(unidadId, fechaInicio, fechaFin)
+                        : null;
+                    if (chk && chk.tiene_conflicto) {
+                        mostrarAlertaConflicto(chk.conflictos);
+                        const folios = chk.conflictos.map((c) => c.folio).join(', ');
+                        const ok = confirm(
+                            `⚠️ La unidad ya tiene viaje(s) activo(s) en ese rango:\n${folios}\n\n¿Deseas guardar de todas formas?`
+                        );
+                        if (!ok) {
+                            btn.disabled = false;
+                            btn.textContent = "Guardar Viaje";
+                            return;
+                        }
+                    } else {
+                        ocultarAlertaConflicto();
+                    }
+
+                    btn.textContent = "Guardando...";
+
+                    // Sincronizar lectores nuevos si hay
                     if (lectores.length > 0 && cliente) {
                         await syncLectoresToSheets(cliente);
                     }
 
-                    const rows = [];
-
-                    unitData.tramos.forEach((t, i) => {
-                        rows.push([
-                            unitData.fecha || "",
-                            unitData.folio || "",
-                            unitData.id || "",
-                            unitData.placas || "",
-                            unitData.equipos.join(" / ") || "",
-                            unitData.operador || "",
-                            unitData.telefonos.join(" / ") || "",
-                            t.ruta || "",
-                            t.origen || "",
-                            t.lugarCarga || "",
-                            t.destino || "",
-                            t.patio || "",
-                            t.cita || "",
-                            t.salida || "",
-                            t.descarga || "",
-                            t.instrucciones || "",
-                            unitData.cliente || "",
-                            unitData.lectorResponsable || "",
-                        ]);
-                    });
-
-                    const res = await fetch(PLANIFICADOR_API, {
+                    const res = await fetch(`${VIAJES_API}?action=crear`, {
                         method: "POST",
                         headers: getAuthHeaders({
                             "Content-Type": "application/json",
                             Accept: "application/json",
                         }),
-                        body: JSON.stringify({
-                            tipo: "logistica",
-                            rows: rows,
-                        }),
+                        body: JSON.stringify(payload),
                     });
 
                     const text = await res.text();
-
                     let json;
-                    try {
-                        json = JSON.parse(text);
-                    } catch (parseError) {
-                        throw new Error("El servidor no devolvió JSON válido");
-                    }
+                    try { json = JSON.parse(text); }
+                    catch { throw new Error("El servidor no devolvió JSON válido"); }
 
-                    if (json.ok) {
-                        // Sincronizar lectores si hay
-                        if (lectores.length > 0 && cliente) {
-                            lectoresCache[cliente] = [...lectores];
-                        }
+                    if (!json.ok) throw new Error(json.error || "Error desconocido");
 
-                        showToast("✓ Logística guardada exitosamente");
-                        showSyncStatus("Guardado correctamente", false);
+                    const totalTramos = json.viaje?.tramos?.length || tramos.length;
+                    const esMultiDia  = fechaFin && fechaFin !== fechaInicio;
 
-                        document.getElementById("id_vehiculo").value = "";
-                        document.getElementById("folio").value = "";
-                        document.getElementById("operador").value = "";
-                        document.getElementById("placas").value = "";
-                        document.getElementById("fecha_registro").value = "";
-                        document.getElementById("cliente").value = isAdminUser()
-                            ? ""
-                            : getSelectedCliente();
+                    showToast(`✓ Viaje ${folio} guardado — ${totalTramos} tramo${totalTramos !== 1 ? "s" : ""}${esMultiDia ? " · multi-día" : ""}`);
+                    showSyncStatus("Guardado correctamente", false);
 
-                        document.getElementById("phoneRows").innerHTML = `
-              <div class="dynamic-row">
-                <input type="tel" class="u-telefono" placeholder="10 dígitos" />
-                <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
-              </div>
-            `;
+                    // Invalidar cache de unidades para que la nueva aparezca en el autofill
+                    delete viajesUnidadesCache[clienteId];
+                    loadUnitsFromViajesAPI(clienteId);
 
-                        document.getElementById("equipmentRows").innerHTML = `
-              <div class="dynamic-row">
-                <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
-                <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
-              </div>
-            `;
+                    // Limpiar formulario
+                    _limpiarFormularioViaje();
 
-                        document.getElementById("dispatchContainer").innerHTML =
-                            "";
-                        dispatchCount = 0;
-                        addDispatch();
+                    // Refrescar panel de viajes de la unidad (usar id real devuelto por el backend)
+                    const unidadIdReal = json.viaje?.unidad_id || unidadId;
+                    if (unidadIdReal) await cargarViajesUnidad(unidadIdReal);
 
-                        // Limpiar lectores
-                        lectores = [];
-                        currentCliente = isAdminUser()
-                            ? ""
-                            : getSelectedCliente();
-                        renderLectores();
-                    } else {
-                        throw new Error(json.error || "Error desconocido");
-                    }
                 } catch (error) {
                     showToast("❌ Error: " + error.message);
-                    showSyncStatus("Error al sincronizar", true);
+                    showSyncStatus("Error al guardar", true);
                 } finally {
                     btn.disabled = false;
-                    btn.textContent = "Guardar";
+                    btn.textContent = "Guardar Viaje";
                 }
+            }
+
+            function _limpiarFormularioViaje() {
+                document.getElementById("id_vehiculo").value = "";
+                document.getElementById("folio").value = "";
+                document.getElementById("operador").value = "";
+                document.getElementById("placas").value = "";
+                document.getElementById("fecha_registro").value =
+                    new Date().toISOString().split("T")[0];
+                document.getElementById("fecha_fin").value = "";
+                document.getElementById("cliente").value = isAdminUser()
+                    ? "" : getSelectedCliente();
+
+                document.getElementById("phoneRows").innerHTML = `
+                  <div class="dynamic-row">
+                    <input type="tel" class="u-telefono" placeholder="10 dígitos" />
+                    <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
+                  </div>`;
+
+                document.getElementById("equipmentRows").innerHTML = `
+                  <div class="dynamic-row">
+                    <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
+                    <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
+                  </div>`;
+
+                document.getElementById("dispatchContainer").innerHTML = "";
+                dispatchCount = 0;
+                addDispatch();
+
+                lectores = [];
+                currentCliente = isAdminUser() ? "" : getSelectedCliente();
+                renderLectores();
+
+                // Ocultar panel de viajes activos
+                document.getElementById("viajesActivosPanel").style.display = "none";
+            }
+
+            // Cache de unidades por cliente_id para la nueva API
+            let viajesUnidadesCache = {};
+
+            // ── Detección de conflictos ───────────────────────────────────────
+            async function verificarConflictosViaje(unidadId, fechaInicio, fechaFin) {
+                if (!unidadId || !fechaInicio || !planificadorUser) return null;
+                try {
+                    const params = new URLSearchParams({
+                        action:       'verificar_conflictos',
+                        unidad_id:    unidadId,
+                        fecha_inicio: fechaInicio,
+                    });
+                    if (fechaFin) params.set('fecha_fin', fechaFin);
+
+                    const res  = await fetch(`${VIAJES_API}?${params}`, {
+                        headers: getAuthHeaders({ Accept: 'application/json' }),
+                    });
+                    return await res.json();
+                } catch (e) {
+                    console.error('Error verificando conflictos:', e);
+                    return null;
+                }
+            }
+
+            function mostrarAlertaConflicto(conflictos) {
+                const panel  = document.getElementById('conflictos-panel');
+                const lista  = document.getElementById('conflictos-lista');
+                if (!panel || !lista) return;
+
+                lista.innerHTML = conflictos.map((c) => {
+                    const fechas = c.fecha_fin && c.fecha_fin !== c.fecha_inicio
+                        ? `${c.fecha_inicio} → ${c.fecha_fin}`
+                        : c.fecha_inicio;
+                    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fca5a5;font-size:12px;">
+                        <span><strong>${escapeHtml(c.folio)}</strong> &mdash; ${fechas}</span>
+                        <span style="color:#b91c1c;font-weight:600;text-transform:capitalize;">${c.estado.replace('_',' ')}</span>
+                    </div>`;
+                }).join('');
+
+                panel.style.display = 'block';
+            }
+
+            function ocultarAlertaConflicto() {
+                const panel = document.getElementById('conflictos-panel');
+                if (panel) panel.style.display = 'none';
+            }
+
+            // Verifica conflictos con los valores actuales del formulario
+            async function _checkConflictosActual() {
+                const economico   = document.getElementById('id_vehiculo').value.trim();
+                const fechaInicio = document.getElementById('fecha_registro').value;
+                const fechaFin    = document.getElementById('fecha_fin').value || null;
+                if (!economico || !fechaInicio) return;
+
+                const clienteObj = planificadorUser?.clientes?.[0];
+                if (!clienteObj?.id) return;
+                const unidades = viajesUnidadesCache[clienteObj.id] || [];
+                const u = unidades.find((x) => x.economico === economico);
+                if (!u?.id) return;
+
+                const chk = await verificarConflictosViaje(u.id, fechaInicio, fechaFin);
+                if (chk?.tiene_conflicto) {
+                    mostrarAlertaConflicto(chk.conflictos);
+                } else {
+                    ocultarAlertaConflicto();
+                }
+            }
+            window.ocultarAlertaConflicto = ocultarAlertaConflicto;
+
+            // Cargar unidades desde viajes.php (nueva API) para tener unidad_id
+            async function loadUnitsFromViajesAPI(clienteId) {
+                if (!clienteId || !planificadorUser) return;
+                if (viajesUnidadesCache[clienteId]) {
+                    _poblarDatalistEconomicos(viajesUnidadesCache[clienteId]);
+                    return;
+                }
+                try {
+                    const res = await fetch(
+                        `${VIAJES_API}?action=unidades&cliente_id=${clienteId}`,
+                        { headers: getAuthHeaders({ Accept: "application/json" }) }
+                    );
+                    const json = await res.json();
+                    if (json.ok && Array.isArray(json.unidades)) {
+                        viajesUnidadesCache[clienteId] = json.unidades;
+                        _poblarDatalistEconomicos(json.unidades);
+                    }
+                } catch (e) {
+                    console.error("Error cargando unidades:", e);
+                }
+            }
+
+            function _poblarDatalistEconomicos(unidades) {
+                const datalist = document.getElementById("economicosList");
+                datalist.innerHTML = "";
+                unidades.forEach((u) => {
+                    const opt = document.createElement("option");
+                    opt.value = u.economico;
+                    opt.dataset.unidadId = u.id;
+                    opt.dataset.placas    = u.placas || "";
+                    opt.dataset.operador  = u.operador || "";
+                    datalist.appendChild(opt);
+                });
+            }
+
+            // Mostrar viajes recientes de una unidad al seleccionarla
+            async function cargarViajesUnidad(unidadId) {
+                if (!unidadId || !planificadorUser) return;
+                const panel = document.getElementById("viajesActivosPanel");
+                const lista = document.getElementById("viajesActivosList");
+                panel.style.display = "none";
+                try {
+                    const hoy = new Date().toISOString().split("T")[0];
+                    const hace30 = new Date(Date.now() - 30 * 86400000)
+                        .toISOString().split("T")[0];
+                    const res = await fetch(
+                        `${VIAJES_API}?action=listar&unidad_id=${unidadId}&fecha_desde=${hace30}&fecha_hasta=${hoy}&limit=5`,
+                        { headers: getAuthHeaders({ Accept: "application/json" }) }
+                    );
+                    const json = await res.json();
+                    if (!json.ok || !json.viajes?.length) return;
+
+                    const estadoColor = {
+                        planificado: "#0369a1",
+                        en_curso:    "#d97706",
+                        completado:  "#047857",
+                        cancelado:   "#9ca3af",
+                    };
+                    lista.innerHTML = json.viajes.map((v) => {
+                        const multiDia = v.fecha_fin && v.fecha_fin !== v.fecha_inicio;
+                        const fechas   = multiDia
+                            ? `${v.fecha_inicio} → ${v.fecha_fin}`
+                            : v.fecha_inicio;
+                        const color    = estadoColor[v.estado] || "#334155";
+                        return `<div style="display:flex;justify-content:space-between;align-items:center;
+                                    padding:6px 0;border-bottom:1px solid #e0f2fe;gap:8px;">
+                            <div>
+                                <span style="font-weight:700;">${escapeHtml(v.folio)}</span>
+                                <span style="color:#64748b;margin-left:8px;">${fechas}</span>
+                                ${multiDia ? '<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:4px;">Multi-día</span>' : ""}
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="color:#64748b;">${v.total_tramos} tramo${v.total_tramos !== 1 ? "s" : ""}</span>
+                                <span style="color:${color};font-weight:600;text-transform:capitalize;">${v.estado}</span>
+                            </div>
+                        </div>`;
+                    }).join("");
+                    panel.style.display = "block";
+                } catch (e) {
+                    console.error("Error cargando viajes de unidad:", e);
+                }
+            }
+
+            // Mantener syncLogisticaToSheets como alias (no romper si algo lo llama)
+            async function syncLogisticaToSheets() {
+                return guardarViaje();
             }
 
             async function syncContactToSheets(contact) {
@@ -3144,6 +3366,14 @@
 
                 if (requirePlanificadorSession()) {
                     loadUnitsHistory();
+                    // Cargar unidades desde la nueva API para tener unidad_id
+                    const clienteId = planificadorUser?.clientes?.[0]?.id;
+                    if (clienteId) loadUnitsFromViajesAPI(clienteId);
+                }
+                // Inicializar fecha_registro con hoy
+                if (!document.getElementById("fecha_registro").value) {
+                    document.getElementById("fecha_registro").value =
+                        new Date().toISOString().split("T")[0];
                 }
 
                 // Debounced event listener para campo Cliente
@@ -3186,19 +3416,45 @@
 
                 document
                     .getElementById("fecha_registro")
-                    .addEventListener("change", (e) => {
+                    .addEventListener("change", async (e) => {
                         const newDate = e.target.value;
                         if (newDate) {
                             updateDispatchDates(newDate);
+                            // Verificar conflictos si hay unidad seleccionada
+                            await _checkConflictosActual();
                         }
                     });
 
                 document
+                    .getElementById("fecha_fin")
+                    .addEventListener("change", async () => {
+                        await _checkConflictosActual();
+                    });
+
+                document
                     .getElementById("id_vehiculo")
-                    .addEventListener("change", (e) => {
+                    .addEventListener("change", async (e) => {
                         const economico = e.target.value.trim();
-                        if (economico && unitsHistory[economico]) {
+                        if (!economico) return;
+
+                        // Autofill desde historial legacy si existe
+                        if (unitsHistory[economico]) {
                             autofillUnitData(economico);
+                        }
+
+                        // Autofill desde cache de la nueva API (placas/operador)
+                        const clienteObj = planificadorUser?.clientes?.[0];
+                        if (clienteObj?.id) {
+                            const unidades = viajesUnidadesCache[clienteObj.id] || [];
+                            const u = unidades.find((x) => x.economico === economico);
+                            if (u) {
+                                if (u.placas && !document.getElementById("placas").value)
+                                    document.getElementById("placas").value = u.placas;
+                                if (u.operador && !document.getElementById("operador").value)
+                                    document.getElementById("operador").value = u.operador;
+                            }
+                            // Mostrar viajes recientes de esta unidad
+                            await cargarViajesUnidad(u?.id);
                         }
                     });
             });
@@ -3222,6 +3478,7 @@
             window.removeContact = removeContact;
             window.exportFinalExcel = exportFinalExcel;
             window.exportContactsExcel = exportContactsExcel;
+            window.guardarViaje = guardarViaje;
             window.syncLogisticaToSheets = syncLogisticaToSheets;
             window.syncContactosToSheets = syncContactosToSheets;
             window.loadDirectorioMonitoreo = loadDirectorioMonitoreo;
