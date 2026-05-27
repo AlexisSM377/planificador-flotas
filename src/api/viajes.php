@@ -12,6 +12,7 @@
  *   PUT    ?action=actualizar        → edita cabecera del viaje
  *   POST   ?action=agregar_tramo     → agrega tramo a viaje existente
  *   PUT    ?action=actualizar_tramo  → edita un tramo
+ *   PUT    ?action=completar_tramo   → completa un tramo y auto-activa el siguiente pendiente
  *   DELETE ?action=eliminar_tramo    → cancela un tramo (soft: estado='cancelado')
  *   DELETE ?action=eliminar_viaje    → cancela el viaje completo
  *   GET    ?action=unidades          → lista unidades del cliente (autocomplete)
@@ -235,21 +236,25 @@ function to_datetime($v) {
 
 function map_tramo_row($r) {
     return [
-        'id'                => (int)$r['id'],
-        'viaje_id'          => (int)$r['viaje_id'],
-        'tramo_numero'      => (int)$r['tramo_numero'],
-        'origen'            => $r['origen'],
-        'lugar_carga'       => $r['lugar_carga'],
-        'destino'           => $r['destino'],
-        'ruta'              => $r['ruta'],
-        'instrucciones'     => $r['instrucciones'],
-        'salida_patio'      => $r['salida_patio'],
-        'cita_carga'        => $r['cita_carga'],
-        'salida_carga'      => $r['salida_carga'],
-        'descarga_programada' => $r['descarga_programada'],
-        'estado'            => $r['estado'],
-        'created_at'        => $r['created_at'],
-        'updated_at'        => $r['updated_at'],
+        'id'                   => (int)$r['id'],
+        'viaje_id'             => (int)$r['viaje_id'],
+        'tramo_numero'         => (int)$r['tramo_numero'],
+        'origen'               => $r['origen'],
+        'lugar_carga'          => $r['lugar_carga'],
+        'destino'              => $r['destino'],
+        'ruta'                 => $r['ruta'],
+        'instrucciones'        => $r['instrucciones'],
+        'salida_patio'         => $r['salida_patio'],
+        'salida_patio_real'    => $r['salida_patio_real'] ?? null,
+        'cita_carga'           => $r['cita_carga'],
+        'cita_carga_real'      => $r['cita_carga_real'] ?? null,
+        'salida_carga'         => $r['salida_carga'],
+        'salida_carga_real'    => $r['salida_carga_real'] ?? null,
+        'descarga_programada'  => $r['descarga_programada'],
+        'descarga_real'        => $r['descarga_real'] ?? null,
+        'estado'               => $r['estado'],
+        'created_at'           => $r['created_at'],
+        'updated_at'           => $r['updated_at'],
     ];
 }
 
@@ -727,13 +732,34 @@ function handle_actualizar($conn, $ctx) {
 
     if (!count($sets)) throw new Exception('No hay campos para actualizar', 400);
 
+    // revertir_tramos: true → revierte tramos completados a pendiente (útil al reabrir un viaje)
+    $revertir_tramos = !empty($body['revertir_tramos']);
+
     $types   .= 'i';
     $params[] = $viaje_id;
 
-    $stmt = $conn->prepare('UPDATE viajes SET ' . implode(', ', $sets) . ' WHERE id = ?');
-    $stmt->bind_param($types, ...$params);
-    if (!$stmt->execute()) throw new Exception('Error actualizando viaje: ' . $stmt->error, 500);
-    $stmt->close();
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare('UPDATE viajes SET ' . implode(', ', $sets) . ' WHERE id = ?');
+        $stmt->bind_param($types, ...$params);
+        if (!$stmt->execute()) throw new Exception('Error actualizando viaje: ' . $stmt->error, 500);
+        $stmt->close();
+
+        if ($revertir_tramos) {
+            $stmt2 = $conn->prepare(
+                "UPDATE viaje_tramos SET estado = 'pendiente'
+                  WHERE viaje_id = ? AND estado = 'completado'"
+            );
+            $stmt2->bind_param('i', $viaje_id);
+            if (!$stmt2->execute()) throw new Exception('Error revirtiendo tramos: ' . $stmt2->error, 500);
+            $stmt2->close();
+        }
+
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
+    }
 
     json_ok(handle_obtener_data($conn, $viaje_id));
 }
@@ -782,9 +808,113 @@ function handle_agregar_tramo($conn, $ctx) {
 }
 
 /**
+ * PUT ?action=completar_tramo
+ * Marca un tramo como completado y auto-avanza el siguiente tramo pendiente a en_curso.
+ * Body JSON: { tramo_id: int }
+ * Response: { tramo_completado: {...}, tramo_activado: {...}|null }
+ */
+function handle_completar_tramo($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $tramo_id = (int)($body['tramo_id'] ?? 0);
+    if ($tramo_id <= 0) throw new Exception('tramo_id requerido', 400);
+
+    // Obtener tramo actual + acceso via viaje
+    $stmt = $conn->prepare(
+        'SELECT vt.id, vt.viaje_id, vt.tramo_numero, vt.estado, v.cliente_id
+           FROM viaje_tramos vt
+           JOIN viajes v ON v.id = vt.viaje_id
+          WHERE vt.id = ? LIMIT 1'
+    );
+    $stmt->bind_param('i', $tramo_id);
+    $stmt->execute();
+    $tramo = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$tramo) throw new Exception('Tramo no encontrado', 404);
+    assert_cliente_access($ctx, $tramo['cliente_id']);
+
+    if ($tramo['estado'] === 'completado') {
+        throw new Exception('El tramo ya estaba completado', 400);
+    }
+    if ($tramo['estado'] === 'cancelado') {
+        throw new Exception('No se puede completar un tramo cancelado', 400);
+    }
+
+    $viaje_id      = (int)$tramo['viaje_id'];
+    $tramo_numero  = (int)$tramo['tramo_numero'];
+
+    $conn->begin_transaction();
+    try {
+        // 1. Completar el tramo actual
+        $stmt = $conn->prepare('UPDATE viaje_tramos SET estado = ? WHERE id = ?');
+        $completado = 'completado';
+        $stmt->bind_param('si', $completado, $tramo_id);
+        if (!$stmt->execute()) throw new Exception('Error completando tramo: ' . $stmt->error, 500);
+        $stmt->close();
+
+        // 2. Buscar el siguiente tramo pendiente (por tramo_numero, excluyendo cancelados)
+        $stmt = $conn->prepare(
+            'SELECT id FROM viaje_tramos
+              WHERE viaje_id = ?
+                AND tramo_numero > ?
+                AND estado = ?
+              ORDER BY tramo_numero ASC
+              LIMIT 1'
+        );
+        $pendiente = 'pendiente';
+        $stmt->bind_param('iis', $viaje_id, $tramo_numero, $pendiente);
+        $stmt->execute();
+        $siguiente = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        $tramo_activado_id = null;
+        if ($siguiente) {
+            $tramo_activado_id = (int)$siguiente['id'];
+            $stmt = $conn->prepare('UPDATE viaje_tramos SET estado = ? WHERE id = ?');
+            $en_curso = 'en_curso';
+            $stmt->bind_param('si', $en_curso, $tramo_activado_id);
+            if (!$stmt->execute()) throw new Exception('Error activando siguiente tramo: ' . $stmt->error, 500);
+            $stmt->close();
+        }
+
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
+    }
+
+    // Leer tramos actualizados para devolver
+    $stmt = $conn->prepare('SELECT * FROM viaje_tramos WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $tramo_id);
+    $stmt->execute();
+    $tramo_completado = map_tramo_row($stmt->get_result()->fetch_assoc());
+    $stmt->close();
+
+    $tramo_activado = null;
+    if ($tramo_activado_id) {
+        $stmt = $conn->prepare('SELECT * FROM viaje_tramos WHERE id = ? LIMIT 1');
+        $stmt->bind_param('i', $tramo_activado_id);
+        $stmt->execute();
+        $tramo_activado = map_tramo_row($stmt->get_result()->fetch_assoc());
+        $stmt->close();
+    }
+
+    json_ok([
+        'tramo_completado' => $tramo_completado,
+        'tramo_activado'   => $tramo_activado,
+    ]);
+}
+
+/**
  * PUT ?action=actualizar_tramo
  * Body JSON: { tramo_id, origen?, lugar_carga?, destino?, ruta?, instrucciones?,
- *              salida_patio?, cita_carga?, salida_carga?, descarga_programada?, estado? }
+ *              salida_patio?, cita_carga?, salida_carga?, descarga_programada?,
+ *              salida_patio_real?, cita_carga_real?, salida_carga_real?, descarga_real?,
+ *              estado? }
  */
 function handle_actualizar_tramo($conn, $ctx) {
     assert_can_write($ctx);
@@ -811,7 +941,10 @@ function handle_actualizar_tramo($conn, $ctx) {
 
     $estados_validos = ['pendiente','en_curso','completado','cancelado'];
     $campos_texto    = ['origen','lugar_carga','destino','ruta','instrucciones'];
-    $campos_dt       = ['salida_patio','cita_carga','salida_carga','descarga_programada'];
+    $campos_dt       = [
+        'salida_patio','cita_carga','salida_carga','descarga_programada',
+        'salida_patio_real','cita_carga_real','salida_carga_real','descarga_real',
+    ];
 
     $sets   = [];
     $types  = '';
@@ -1246,7 +1379,8 @@ try {
         $method === 'POST'   && $action === 'duplicar'               => handle_duplicar($conn, $ctx),
         $method === 'POST'   && $action === 'agregar_tramo'   => handle_agregar_tramo($conn, $ctx),
         $method === 'PUT'    && $action === 'actualizar'      => handle_actualizar($conn, $ctx),
-        $method === 'PUT'    && $action === 'actualizar_tramo'=> handle_actualizar_tramo($conn, $ctx),
+        $method === 'PUT'    && $action === 'actualizar_tramo' => handle_actualizar_tramo($conn, $ctx),
+        $method === 'PUT'    && $action === 'completar_tramo'  => handle_completar_tramo($conn, $ctx),
         $method === 'DELETE' && $action === 'eliminar_tramo'  => handle_eliminar_tramo($conn, $ctx),
         $method === 'DELETE' && $action === 'eliminar_viaje'  => handle_eliminar_viaje($conn, $ctx),
         default => json_err("Accion '$action' no reconocida o metodo '$method' incorrecto", 404),
