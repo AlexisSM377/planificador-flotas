@@ -244,6 +244,8 @@ function map_tramo_row($r) {
         'destino'              => $r['destino'],
         'ruta'                 => $r['ruta'],
         'instrucciones'        => $r['instrucciones'],
+        'gps_estado'           => $r['gps_estado'] ?? null,
+        'gps_timestamp'        => $r['gps_timestamp'] ?? null,
         'salida_patio'         => $r['salida_patio'],
         'salida_patio_real'    => $r['salida_patio_real'] ?? null,
         'cita_carga'           => $r['cita_carga'],
@@ -674,6 +676,39 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null) {
     $stmt->close();
 
     $viaje['tramos'] = $tramos;
+
+    // Incidencias agrupadas por tramo
+    $stmt = $conn->prepare(
+        'SELECT id, tramo_id, tipo, severidad, fecha, direccion, notas, creado_por, created_at
+           FROM viaje_incidencias
+          WHERE viaje_id = ?
+          ORDER BY tramo_id ASC, fecha ASC'
+    );
+    $stmt->bind_param('i', $viaje_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $incidencias_map = [];
+    while ($inc = $res->fetch_assoc()) {
+        $tid = (int)$inc['tramo_id'];
+        $incidencias_map[$tid][] = [
+            'id'         => (int)$inc['id'],
+            'tramo_id'   => $tid,
+            'tipo'       => $inc['tipo'],
+            'severidad'  => $inc['severidad'],
+            'fecha'      => $inc['fecha'],
+            'direccion'  => $inc['direccion'],
+            'notas'      => $inc['notas'],
+            'created_at' => $inc['created_at'],
+        ];
+    }
+    $stmt->close();
+
+    // Inyectar incidencias en cada tramo
+    foreach ($viaje['tramos'] as &$tramo) {
+        $tramo['incidencias'] = $incidencias_map[$tramo['id']] ?? [];
+    }
+    unset($tramo);
+
     return ['viaje' => $viaje];
 }
 
@@ -986,6 +1021,176 @@ function handle_actualizar_tramo($conn, $ctx) {
     $stmt->close();
 
     json_ok(['tramo' => map_tramo_row($t)]);
+}
+
+/**
+ * PUT ?action=guardar_gps
+ * Body JSON: { tramo_id, gps_estado, gps_timestamp? }
+ * gps_estado: JSON string con array de ítems [{ label, ok }]
+ * gps_timestamp: si se omite se usa NOW()
+ */
+function handle_guardar_gps($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $tramo_id = (int)($body['tramo_id'] ?? 0);
+    if ($tramo_id <= 0) throw new Exception('tramo_id requerido', 400);
+
+    $gps_estado = $body['gps_estado'] ?? null;
+    if ($gps_estado === null) throw new Exception('gps_estado requerido', 400);
+
+    // Verificar existencia y acceso
+    $stmt = $conn->prepare(
+        'SELECT vt.id, v.cliente_id
+           FROM viaje_tramos vt
+           JOIN viajes v ON v.id = vt.viaje_id
+          WHERE vt.id = ? LIMIT 1'
+    );
+    $stmt->bind_param('i', $tramo_id);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$r) throw new Exception('Tramo no encontrado', 404);
+    assert_cliente_access($ctx, $r['cliente_id']);
+
+    // gps_estado puede ser string JSON o string simple
+    if (is_array($gps_estado)) {
+        $gps_estado = json_encode($gps_estado, JSON_UNESCAPED_UNICODE);
+    } else {
+        $gps_estado = trim((string)$gps_estado);
+    }
+
+    $ts = isset($body['gps_timestamp']) && $body['gps_timestamp']
+        ? to_datetime($body['gps_timestamp'])
+        : date('Y-m-d H:i:s');
+
+    $stmt = $conn->prepare(
+        'UPDATE viaje_tramos SET gps_estado = ?, gps_timestamp = ? WHERE id = ?'
+    );
+    $stmt->bind_param('ssi', $gps_estado, $ts, $tramo_id);
+    if (!$stmt->execute()) throw new Exception('Error guardando GPS: ' . $stmt->error, 500);
+    $stmt->close();
+
+    $stmt = $conn->prepare('SELECT * FROM viaje_tramos WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $tramo_id);
+    $stmt->execute();
+    $t = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    json_ok(['tramo' => map_tramo_row($t)]);
+}
+
+/**
+ * POST ?action=agregar_incidencia
+ * Body JSON: { tramo_id, tipo, severidad, fecha, direccion?, notas? }
+ */
+function handle_agregar_incidencia($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $tramo_id  = (int)($body['tramo_id'] ?? 0);
+    $tipo      = trim((string)($body['tipo'] ?? ''));
+    $severidad = trim((string)($body['severidad'] ?? 'media'));
+    $fecha     = trim((string)($body['fecha'] ?? ''));
+    $direccion = null_if_empty($body['direccion'] ?? '');
+    $notas     = null_if_empty($body['notas'] ?? '');
+
+    if ($tramo_id <= 0) throw new Exception('tramo_id requerido', 400);
+    if ($tipo === '')   throw new Exception('tipo requerido', 400);
+    if ($fecha === '')  throw new Exception('fecha requerida', 400);
+    if (!in_array($severidad, ['alta','media','baja'], true))
+        throw new Exception('severidad invalida (alta|media|baja)', 400);
+
+    // Verificar acceso vía viaje
+    $stmt = $conn->prepare(
+        'SELECT vt.viaje_id, v.cliente_id
+           FROM viaje_tramos vt
+           JOIN viajes v ON v.id = vt.viaje_id
+          WHERE vt.id = ? LIMIT 1'
+    );
+    $stmt->bind_param('i', $tramo_id);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$r) throw new Exception('Tramo no encontrado', 404);
+    assert_cliente_access($ctx, $r['cliente_id']);
+
+    $viaje_id   = (int)$r['viaje_id'];
+    $creado_por = ((int)($ctx['id'] ?? 0)) ?: null;
+    $fecha_dt   = to_datetime($fecha);
+
+    // Sin creado_por para evitar problemas con NULL en bind_param
+    $stmt = $conn->prepare(
+        'INSERT INTO viaje_incidencias
+             (viaje_id, tramo_id, tipo, severidad, fecha, direccion, notas)
+         VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->bind_param('iisssss',
+        $viaje_id, $tramo_id, $tipo, $severidad,
+        $fecha_dt, $direccion, $notas
+    );
+    if (!$stmt->execute()) throw new Exception('Error guardando incidencia: ' . $stmt->error, 500);
+    $inc_id = $conn->insert_id;
+    $stmt->close();
+
+    $stmt = $conn->prepare('SELECT * FROM viaje_incidencias WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $inc_id);
+    $stmt->execute();
+    $inc = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    json_ok([
+        'incidencia' => [
+            'id'        => (int)$inc['id'],
+            'tramo_id'  => (int)$inc['tramo_id'],
+            'viaje_id'  => (int)$inc['viaje_id'],
+            'tipo'      => $inc['tipo'],
+            'severidad' => $inc['severidad'],
+            'fecha'     => $inc['fecha'],
+            'direccion' => $inc['direccion'],
+            'notas'     => $inc['notas'],
+            'created_at'=> $inc['created_at'],
+        ]
+    ], 201);
+}
+
+/**
+ * DELETE ?action=eliminar_incidencia
+ * Body JSON: { incidencia_id }
+ */
+function handle_eliminar_incidencia($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $inc_id = (int)($body['incidencia_id'] ?? 0);
+    if ($inc_id <= 0) throw new Exception('incidencia_id requerido', 400);
+
+    // Verificar acceso vía viaje
+    $stmt = $conn->prepare(
+        'SELECT vi.id, v.cliente_id
+           FROM viaje_incidencias vi
+           JOIN viajes v ON v.id = vi.viaje_id
+          WHERE vi.id = ? LIMIT 1'
+    );
+    $stmt->bind_param('i', $inc_id);
+    $stmt->execute();
+    $r = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$r) throw new Exception('Incidencia no encontrada', 404);
+    assert_cliente_access($ctx, $r['cliente_id']);
+
+    $stmt = $conn->prepare('DELETE FROM viaje_incidencias WHERE id = ?');
+    $stmt->bind_param('i', $inc_id);
+    if (!$stmt->execute()) throw new Exception('Error eliminando incidencia: ' . $stmt->error, 500);
+    $stmt->close();
+
+    json_ok(['eliminado' => true]);
 }
 
 /**
@@ -1381,7 +1586,10 @@ try {
         $method === 'PUT'    && $action === 'actualizar'      => handle_actualizar($conn, $ctx),
         $method === 'PUT'    && $action === 'actualizar_tramo' => handle_actualizar_tramo($conn, $ctx),
         $method === 'PUT'    && $action === 'completar_tramo'  => handle_completar_tramo($conn, $ctx),
-        $method === 'DELETE' && $action === 'eliminar_tramo'  => handle_eliminar_tramo($conn, $ctx),
+        $method === 'PUT'    && $action === 'guardar_gps'          => handle_guardar_gps($conn, $ctx),
+        $method === 'POST'   && $action === 'agregar_incidencia'   => handle_agregar_incidencia($conn, $ctx),
+        $method === 'DELETE' && $action === 'eliminar_incidencia'  => handle_eliminar_incidencia($conn, $ctx),
+        $method === 'DELETE' && $action === 'eliminar_tramo'       => handle_eliminar_tramo($conn, $ctx),
         $method === 'DELETE' && $action === 'eliminar_viaje'  => handle_eliminar_viaje($conn, $ctx),
         default => json_err("Accion '$action' no reconocida o metodo '$method' incorrecto", 404),
     };
