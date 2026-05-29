@@ -1564,6 +1564,270 @@ function handle_verificar_conflictos($conn, $ctx) {
 }
 
 // ---------------------------------------------------------------------------
+// CATÁLOGO DE PLANTILLAS DE RUTA
+// ---------------------------------------------------------------------------
+
+/**
+ * GET ?action=listar_catalogo&cliente_id=X
+ * Retorna todas las plantillas de ruta activas del cliente.
+ */
+function handle_listar_catalogo($conn, $ctx) {
+    $cliente_id = (int)($_GET['cliente_id'] ?? 0);
+    if ($cliente_id <= 0) throw new Exception('cliente_id requerido', 400);
+    assert_cliente_access($ctx, $cliente_id);
+
+    $stmt = $conn->prepare(
+        'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
+                duracion_estimada_horas, created_at, updated_at
+           FROM tramos_catalogo
+          WHERE cliente_id = ? AND activo = 1
+          ORDER BY etiqueta ASC'
+    );
+    $stmt->bind_param('i', $cliente_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $plantillas = [];
+    while ($r = $res->fetch_assoc()) {
+        $plantillas[] = [
+            'id'                      => (int)$r['id'],
+            'etiqueta'                => $r['etiqueta'],
+            'ruta'                    => $r['ruta'],
+            'origen'                  => $r['origen'],
+            'lugar_carga'             => $r['lugar_carga'],
+            'destino'                 => $r['destino'],
+            'instrucciones'           => $r['instrucciones'],
+            'duracion_estimada_horas' => $r['duracion_estimada_horas'] ? (float)$r['duracion_estimada_horas'] : null,
+            'created_at'              => $r['created_at'],
+            'updated_at'              => $r['updated_at'],
+        ];
+    }
+    $stmt->close();
+
+    json_ok(['plantillas' => $plantillas, 'total' => count($plantillas)]);
+}
+
+/**
+ * POST ?action=crear_plantilla
+ * Body JSON: {
+ *   cliente_id, etiqueta, ruta?, origen?, lugar_carga?, destino?, instrucciones?, duracion_estimada_horas?
+ * }
+ */
+function handle_crear_plantilla($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $cliente_id   = (int)($body['cliente_id'] ?? 0);
+    $etiqueta     = trim((string)($body['etiqueta'] ?? ''));
+    $ruta         = null_if_empty($body['ruta'] ?? '');
+    $origen       = null_if_empty($body['origen'] ?? '');
+    $lugar_carga  = null_if_empty($body['lugar_carga'] ?? '');
+    $destino      = null_if_empty($body['destino'] ?? '');
+    $instrucciones = null_if_empty($body['instrucciones'] ?? '');
+    $duracion     = isset($body['duracion_estimada_horas']) && $body['duracion_estimada_horas'] !== ''
+                        ? (float)$body['duracion_estimada_horas']
+                        : null;
+
+    if ($cliente_id <= 0) throw new Exception('cliente_id requerido', 400);
+    if ($etiqueta === '')  throw new Exception('etiqueta requerida', 400);
+
+    assert_cliente_access($ctx, $cliente_id);
+
+    // Verificar que la etiqueta no exista ya para este cliente
+    $stmt = $conn->prepare(
+        'SELECT id FROM tramos_catalogo WHERE cliente_id = ? AND etiqueta = ? AND activo = 1 LIMIT 1'
+    );
+    $stmt->bind_param('is', $cliente_id, $etiqueta);
+    $stmt->execute();
+    $existe = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($existe) {
+        throw new Exception("Ya existe una plantilla con la etiqueta '$etiqueta' para este cliente", 400);
+    }
+
+    $stmt = $conn->prepare(
+        'INSERT INTO tramos_catalogo
+           (cliente_id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones, duracion_estimada_horas)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    $stmt->bind_param('issssssd', $cliente_id, $etiqueta, $ruta, $origen, $lugar_carga, $destino, $instrucciones, $duracion);
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception('Error creando plantilla: ' . $err, 500);
+    }
+    $plantilla_id = (int)$stmt->insert_id;
+    $stmt->close();
+
+    // Devolver la plantilla recién creada
+    $stmt = $conn->prepare('SELECT * FROM tramos_catalogo WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $plantilla_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    json_ok([
+        'plantilla' => [
+            'id'                      => (int)$p['id'],
+            'etiqueta'                => $p['etiqueta'],
+            'ruta'                    => $p['ruta'],
+            'origen'                  => $p['origen'],
+            'lugar_carga'             => $p['lugar_carga'],
+            'destino'                 => $p['destino'],
+            'instrucciones'           => $p['instrucciones'],
+            'duracion_estimada_horas' => $p['duracion_estimada_horas'] ? (float)$p['duracion_estimada_horas'] : null,
+            'created_at'              => $p['created_at'],
+            'updated_at'              => $p['updated_at'],
+        ]
+    ], 201);
+}
+
+/**
+ * PUT ?action=actualizar_plantilla
+ * Body JSON: { plantilla_id, etiqueta?, ruta?, origen?, lugar_carga?, destino?, instrucciones?, duracion_estimada_horas? }
+ */
+function handle_actualizar_plantilla($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $plantilla_id = (int)($body['plantilla_id'] ?? 0);
+    if ($plantilla_id <= 0) throw new Exception('plantilla_id requerido', 400);
+
+    // Verificar existencia y acceso
+    $stmt = $conn->prepare('SELECT cliente_id FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1');
+    $stmt->bind_param('i', $plantilla_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$p) throw new Exception('Plantilla no encontrada', 404);
+    assert_cliente_access($ctx, $p['cliente_id']);
+
+    $sets   = [];
+    $types  = '';
+    $params = [];
+
+    $campos = ['etiqueta', 'ruta', 'origen', 'lugar_carga', 'destino', 'instrucciones'];
+    foreach ($campos as $campo) {
+        if (array_key_exists($campo, $body)) {
+            $sets[] = "$campo = ?";
+            $types .= 's';
+            $params[] = $campo === 'etiqueta' ? trim((string)$body[$campo]) : null_if_empty($body[$campo]);
+        }
+    }
+
+    if (array_key_exists('duracion_estimada_horas', $body)) {
+        $sets[] = 'duracion_estimada_horas = ?';
+        $types .= 'd';
+        $params[] = $body['duracion_estimada_horas'] !== '' ? (float)$body['duracion_estimada_horas'] : null;
+    }
+
+    if (!count($sets)) throw new Exception('No hay campos para actualizar', 400);
+
+    $types   .= 'i';
+    $params[] = $plantilla_id;
+
+    $stmt = $conn->prepare('UPDATE tramos_catalogo SET ' . implode(', ', $sets) . ' WHERE id = ?');
+    $stmt->bind_param($types, ...$params);
+    if (!$stmt->execute()) throw new Exception('Error actualizando plantilla: ' . $stmt->error, 500);
+    $stmt->close();
+
+    // Devolver plantilla actualizada
+    $stmt = $conn->prepare('SELECT * FROM tramos_catalogo WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $plantilla_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    json_ok([
+        'plantilla' => [
+            'id'                      => (int)$p['id'],
+            'etiqueta'                => $p['etiqueta'],
+            'ruta'                    => $p['ruta'],
+            'origen'                  => $p['origen'],
+            'lugar_carga'             => $p['lugar_carga'],
+            'destino'                 => $p['destino'],
+            'instrucciones'           => $p['instrucciones'],
+            'duracion_estimada_horas' => $p['duracion_estimada_horas'] ? (float)$p['duracion_estimada_horas'] : null,
+            'created_at'              => $p['created_at'],
+            'updated_at'              => $p['updated_at'],
+        ]
+    ]);
+}
+
+/**
+ * DELETE ?action=eliminar_plantilla
+ * Body JSON: { plantilla_id }
+ * Soft delete: cambia activo a 0
+ */
+function handle_eliminar_plantilla($conn, $ctx) {
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($body)) throw new Exception('JSON invalido', 400);
+
+    $plantilla_id = (int)($body['plantilla_id'] ?? 0);
+    if ($plantilla_id <= 0) throw new Exception('plantilla_id requerido', 400);
+
+    // Verificar existencia y acceso
+    $stmt = $conn->prepare('SELECT cliente_id, activo FROM tramos_catalogo WHERE id = ? LIMIT 1');
+    $stmt->bind_param('i', $plantilla_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$p) throw new Exception('Plantilla no encontrada', 404);
+    assert_cliente_access($ctx, $p['cliente_id']);
+
+    if ((int)$p['activo'] === 0) {
+        json_ok(['plantilla_id' => $plantilla_id, 'activo' => 0, 'msg' => 'Ya estaba eliminada']);
+    }
+
+    $stmt = $conn->prepare('UPDATE tramos_catalogo SET activo = 0 WHERE id = ?');
+    $stmt->bind_param('i', $plantilla_id);
+    if (!$stmt->execute()) throw new Exception('Error eliminando plantilla: ' . $stmt->error, 500);
+    $stmt->close();
+
+    json_ok(['plantilla_id' => $plantilla_id, 'activo' => 0]);
+}
+
+/**
+ * GET ?action=obtener_plantilla&plantilla_id=X
+ */
+function handle_obtener_plantilla($conn, $ctx) {
+    $plantilla_id = (int)($_GET['plantilla_id'] ?? 0);
+    if ($plantilla_id <= 0) throw new Exception('plantilla_id requerido', 400);
+
+    $stmt = $conn->prepare('SELECT * FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1');
+    $stmt->bind_param('i', $plantilla_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$p) throw new Exception('Plantilla no encontrada', 404);
+    assert_cliente_access($ctx, $p['cliente_id']);
+
+    json_ok([
+        'plantilla' => [
+            'id'                      => (int)$p['id'],
+            'cliente_id'              => (int)$p['cliente_id'],
+            'etiqueta'                => $p['etiqueta'],
+            'ruta'                    => $p['ruta'],
+            'origen'                  => $p['origen'],
+            'lugar_carga'             => $p['lugar_carga'],
+            'destino'                 => $p['destino'],
+            'instrucciones'           => $p['instrucciones'],
+            'duracion_estimada_horas' => $p['duracion_estimada_horas'] ? (float)$p['duracion_estimada_horas'] : null,
+            'created_at'              => $p['created_at'],
+            'updated_at'              => $p['updated_at'],
+        ]
+    ]);
+}
+
+// ---------------------------------------------------------------------------
 // Router principal
 // ---------------------------------------------------------------------------
 
@@ -1591,6 +1855,12 @@ try {
         $method === 'DELETE' && $action === 'eliminar_incidencia'  => handle_eliminar_incidencia($conn, $ctx),
         $method === 'DELETE' && $action === 'eliminar_tramo'       => handle_eliminar_tramo($conn, $ctx),
         $method === 'DELETE' && $action === 'eliminar_viaje'  => handle_eliminar_viaje($conn, $ctx),
+        // Catálogo de Plantillas de Ruta
+        $method === 'GET'    && $action === 'listar_catalogo'      => handle_listar_catalogo($conn, $ctx),
+        $method === 'GET'    && $action === 'obtener_plantilla'    => handle_obtener_plantilla($conn, $ctx),
+        $method === 'POST'   && $action === 'crear_plantilla'      => handle_crear_plantilla($conn, $ctx),
+        $method === 'PUT'    && $action === 'actualizar_plantilla' => handle_actualizar_plantilla($conn, $ctx),
+        $method === 'DELETE' && $action === 'eliminar_plantilla'   => handle_eliminar_plantilla($conn, $ctx),
         default => json_err("Accion '$action' no reconocida o metodo '$method' incorrecto", 404),
     };
 
