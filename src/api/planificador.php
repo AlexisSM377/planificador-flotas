@@ -489,17 +489,20 @@ function handle_read($conn) {
         throw new Exception('Tipo no soportado', 400);
     }
 
-    $clienteFilterSql = '';
+    // Filtros: siempre excluir despachos eliminados (soft-delete)
+    $whereConds = ['d.eliminado_at IS NULL'];
     if (count($allowedClienteIds)) {
-        $clienteFilterSql = ' WHERE d.cliente_id IN (' . implode(',', array_map('intval', $allowedClienteIds)) . ')';
+        $whereConds[] = 'd.cliente_id IN (' . implode(',', array_map('intval', $allowedClienteIds)) . ')';
     }
+    $clienteFilterSql = ' WHERE ' . implode(' AND ', $whereConds);
 
     $sql = "SELECT d.fecha_programada, d.folio, u.economico, u.placas, u.equipos,
                    u.operador, u.telefonos, d.ruta, d.origen, d.lugar_carga,
                    d.destino, d.salida_patio_programada, d.cita_carga,
                    d.salida_carga_programada, d.descarga_programada,
                    d.instrucciones, c.nombre AS cliente,
-                   GROUP_CONCAT(DISTINCT lu.email ORDER BY lu.email SEPARATOR ' / ') AS lectores
+                   GROUP_CONCAT(DISTINCT lu.email ORDER BY lu.email SEPARATOR ' / ') AS lectores,
+                   u.id AS unidad_id, d.cliente_id, d.id AS despacho_id, d.tramo_numero
               FROM despachos d
               INNER JOIN clientes c ON c.id = d.cliente_id
               INNER JOIN unidades u ON u.id = d.unidad_id
@@ -533,7 +536,11 @@ function handle_read($conn) {
             $row['descarga_programada'] ?? '',
             $row['instrucciones'] ?? '',
             $row['cliente'] ?? '',
-            $row['lectores'] ?? ''
+            $row['lectores'] ?? '',
+            isset($row['unidad_id']) ? (int)$row['unidad_id'] : 0,
+            isset($row['cliente_id']) ? (int)$row['cliente_id'] : 0,
+            isset($row['despacho_id']) ? (int)$row['despacho_id'] : 0,
+            isset($row['tramo_numero']) ? (int)$row['tramo_numero'] : 0
         ];
     }
     json_response(['ok' => true, 'data' => $rows]);

@@ -538,6 +538,139 @@
                     padding: 20px;
                 }
             }
+
+            /* Grilla de Cards para Unidades en Sesión */
+            .units-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+                gap: 24px;
+                padding: 10px 0;
+            }
+
+            .unit-card {
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                border: 1px solid var(--border);
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .unit-card:hover {
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                transform: translateY(-2px);
+            }
+
+            .unit-card-header {
+                background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+                padding: 20px;
+                color: white;
+            }
+
+            .unit-card-title {
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0 0 12px 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .unit-card-meta {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                font-size: 12px;
+                opacity: 0.95;
+            }
+
+            .unit-card-meta-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .unit-card-body {
+                padding: 20px;
+            }
+
+            .tramo-item {
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                border-left: 4px solid var(--accent);
+                transition: all 0.2s;
+            }
+
+            .tramo-item:hover {
+                background: #e0f2fe;
+                border-left-color: var(--primary);
+            }
+
+            .tramo-item:last-child {
+                margin-bottom: 0;
+            }
+
+            .tramo-header {
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--accent);
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .tramo-details {
+                display: grid;
+                gap: 8px;
+                font-size: 12px;
+            }
+
+            .tramo-detail-row {
+                display: grid;
+                grid-template-columns: 100px 1fr;
+                gap: 8px;
+                align-items: start;
+            }
+
+            .tramo-detail-label {
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                font-size: 10px;
+                letter-spacing: 0.5px;
+            }
+
+            .tramo-detail-value {
+                color: var(--text-main);
+                word-break: break-word;
+            }
+
+            .unit-card-footer {
+                padding: 16px 20px;
+                background: #f8fafc;
+                border-top: 1px solid var(--border);
+                font-size: 11px;
+                color: var(--text-muted);
+            }
+
+            .unit-card-footer strong {
+                color: var(--text-main);
+                font-weight: 700;
+            }
+
+            @media (max-width: 768px) {
+                .units-grid {
+                    grid-template-columns: 1fr;
+                    gap: 16px;
+                }
+
+                .unit-card-meta {
+                    grid-template-columns: 1fr;
+                }
+            }
         </style>
     </head>
     <body>
@@ -1731,6 +1864,407 @@
 
         <div id="toast"></div>
 
+        <!-- Modal: Editar datos de unidad -->
+        <div
+            id="editUnitModal"
+            style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(5, 25, 55, 0.45);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            "
+        >
+            <div
+                style="
+                    background: #fff;
+                    border-radius: 14px;
+                    width: 100%;
+                    max-width: 480px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+                    overflow: hidden;
+                "
+            >
+                <div
+                    style="
+                        background: var(--primary);
+                        color: #fff;
+                        padding: 16px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    "
+                >
+                    <strong style="font-size: 15px">✏️ Editar Unidad</strong>
+                    <span
+                        onclick="closeEditUnitModal()"
+                        style="cursor: pointer; font-size: 20px; line-height: 1"
+                        >&times;</span
+                    >
+                </div>
+
+                <div style="padding: 20px">
+                    <input type="hidden" id="editUnitId" />
+
+                    <p
+                        style="
+                            font-size: 12px;
+                            color: var(--text-muted);
+                            margin: 0 0 14px;
+                        "
+                    >
+                        Cliente:
+                        <strong id="editUnitClienteLabel" style="color: var(--primary)"
+                            >—</strong
+                        >
+                    </p>
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Económico</label
+                    >
+                    <input
+                        id="editUnitEconomico"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Placas</label
+                    >
+                    <input
+                        id="editUnitPlacas"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Operador</label
+                    >
+                    <input
+                        id="editUnitOperador"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Teléfonos</label
+                    >
+                    <input
+                        id="editUnitTelefonos"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Equipos (IDs)</label
+                    >
+                    <input
+                        id="editUnitEquipos"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 18px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: flex-end;
+                            gap: 10px;
+                        "
+                    >
+                        <button
+                            onclick="closeEditUnitModal()"
+                            class="btn btn-secondary"
+                            style="padding: 9px 16px; font-size: 13px"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            id="saveUnitEditBtn"
+                            onclick="saveUnitEdit()"
+                            class="btn btn-primary"
+                            style="padding: 9px 16px; font-size: 13px"
+                        >
+                            Guardar cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Editar datos de ruta de un tramo -->
+        <div
+            id="editTramoModal"
+            style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(5, 25, 55, 0.45);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            "
+        >
+            <div
+                style="
+                    background: #fff;
+                    border-radius: 14px;
+                    width: 100%;
+                    max-width: 500px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+                    overflow: hidden;
+                "
+            >
+                <div
+                    style="
+                        background: var(--primary);
+                        color: #fff;
+                        padding: 16px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    "
+                >
+                    <strong style="font-size: 15px">✏️ Editar Tramo</strong>
+                    <span
+                        onclick="closeEditTramoModal()"
+                        style="cursor: pointer; font-size: 20px; line-height: 1"
+                        >&times;</span
+                    >
+                </div>
+
+                <div style="padding: 20px">
+                    <input type="hidden" id="editTramoId" />
+
+                    <p
+                        style="
+                            font-size: 12px;
+                            color: var(--text-muted);
+                            margin: 0 0 14px;
+                        "
+                    >
+                        <strong id="editTramoLabel" style="color: var(--primary)"
+                            >—</strong
+                        >
+                    </p>
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Ruta</label
+                    >
+                    <input
+                        id="editTramoRuta"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Origen</label
+                    >
+                    <input
+                        id="editTramoOrigen"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Lugar de Carga</label
+                    >
+                    <input
+                        id="editTramoLugarCarga"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Destino</label
+                    >
+                    <input
+                        id="editTramoDestino"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 12px;
+                            font-size: 13px;
+                        "
+                    />
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
+                        >Instrucciones</label
+                    >
+                    <textarea
+                        id="editTramoInstrucciones"
+                        rows="3"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 18px;
+                            font-size: 13px;
+                            resize: vertical;
+                            font-family: inherit;
+                        "
+                    ></textarea>
+
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: flex-end;
+                            gap: 10px;
+                        "
+                    >
+                        <button
+                            onclick="closeEditTramoModal()"
+                            class="btn btn-secondary"
+                            style="padding: 9px 16px; font-size: 13px"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            id="saveTramoEditBtn"
+                            onclick="saveTramoEdit()"
+                            class="btn btn-primary"
+                            style="padding: 9px 16px; font-size: 13px"
+                        >
+                            Guardar cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="syncStatus" class="sync-status" style="display: none">
             <span class="sync-dot"></span>
             <span id="syncStatusText">Conectado a Google Sheets</span>
@@ -2231,85 +2765,173 @@
 
                 updateUnitCounter(Object.keys(unitGroups).length, filter);
 
-                let html = "";
+                let html = '<div class="units-grid">';
 
                 Object.keys(unitGroups).forEach((economico, index) => {
                     const rows = unitGroups[economico];
                     const firstRow = rows[0];
 
                     html += `
-            <div style="margin-bottom: 30px; border: 2px solid var(--border); border-radius: 12px; overflow: hidden;">
-              <div style="background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); padding: 15px 20px; color: white;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                  <div>
-                    <h3 style="margin: 0; font-size: 18px; font-weight: 700;">🚛 ${economico}</h3>
-                    <div style="font-size: 12px; opacity: 0.9; margin-top: 5px;">
-                      Placas: ${firstRow[3] || "N/A"} | Operador: ${
-                          firstRow[5] || "N/A"
-                      } | Cliente: ${firstRow[16] || "N/A"}
-                    </div>
+            <div class="unit-card">
+              <div class="unit-card-header">
+                <div class="unit-card-title">
+                  <span>🚛</span>
+                  <span>${economico}</span>
+                </div>
+                <div class="unit-card-meta">
+                  <div class="unit-card-meta-item">
+                    <span>🏷️</span>
+                    <span>Placas: ${firstRow[3] || "N/A"}</span>
                   </div>
-                  <div style="text-align: right; font-size: 13px;">
-                    <div>📅 ${firstRow[0] || "Sin fecha"}</div>
-                      <div style="margin-top: 3px;">📞 ${
-                          firstRow[6] || "Sin teléfono"
-                      }</div>
+                  <div class="unit-card-meta-item">
+                    <span>👤</span>
+                    <span>Operador: ${firstRow[5] || "N/A"}</span>
+                  </div>
+                  <div class="unit-card-meta-item">
+                    <span>📅</span>
+                    <span>${firstRow[0] || "Sin fecha"}</span>
+                  </div>
+                  <div class="unit-card-meta-item">
+                    <span>📞</span>
+                    <span>${firstRow[6] || "Sin teléfono"}</span>
+                  </div>
+                  <div class="unit-card-meta-item" style="grid-column: 1 / -1;">
+                    <span>🏢</span>
+                    <span>Cliente: ${firstRow[16] || "N/A"}</span>
                   </div>
                 </div>
               </div>
 
-              <div style="overflow-x: auto;">
-                <table class="contact-table" style="margin: 0;">
-                  <thead>
-                    <tr style="">
-                      <th>Tramo</th>
-                      <th>Ruta</th>
-                      <th>Origen</th>
-                      <th>Lugar Carga</th>
-                      <th>Destino</th>
-                      <th>Salida Patio</th>
-                      <th>Cita Carga</th>
-                      <th>Salida Carga</th>
-                      <th>Descarga</th>
-                      <th>Instrucciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div class="unit-card-body">
           `;
 
                     rows.forEach((row, i) => {
                         html += `
-              <tr>
-                <td style="font-weight: 700; color: var(--accent);">Tramo ${
-                    i + 1
-                }</td>
-                <td>${row[7] || "-"}</td>
-                <td>${row[8] || "-"}</td>
-                <td>${row[9] || "-"}</td>
-                <td style="font-size: 11px; max-width: 150px;">${row[10] || "-"}</td>
-                <td>${row[11] ? formatDateTime(row[11]) : "-"}</td>
-                <td>${row[12] ? formatDateTime(row[12]) : "-"}</td>
-                <td>${row[13] ? formatDateTime(row[13]) : "-"}</td>
-                <td>${row[14] ? formatDateTime(row[14]) : "-"}</td>
-                <td>${row[15] || "-"}</td>
-              </tr>
+                <div class="tramo-item">
+                  <div class="tramo-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 5px;">
+                      <span>📍</span>
+                      <span>TRAMO ${row[21] || i + 1}</span>
+                      <span style="color: var(--text-muted); font-weight: 400;">· ${row[1] || ""}</span>
+                    </span>
+                    ${
+                        row[20]
+                            ? `<span style="display: flex; gap: 6px;">
+                        <button
+                          onclick="editTramo(${row[20]})"
+                          class="btn btn-secondary"
+                          style="padding: 4px 10px; font-size: 10px; display: flex; align-items: center; gap: 4px;"
+                          title="Editar datos de ruta de este tramo">
+                          ✏️ Editar
+                        </button>
+                        <button
+                          onclick="deleteTramo(${row[20]})"
+                          class="btn"
+                          style="padding: 4px 10px; font-size: 10px; background: #ef4444; color: #fff; border: none; display: flex; align-items: center; gap: 4px;"
+                          title="Eliminar este tramo">
+                          🗑️
+                        </button>
+                      </span>`
+                            : ""
+                    }
+                  </div>
+                  <div class="tramo-details">
+                    ${row[7] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">Ruta</div>
+                      <div class="tramo-detail-value">${row[7]}</div>
+                    </div>` : ''}
+                    ${row[8] || row[9] || row[10] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">Recorrido</div>
+                      <div class="tramo-detail-value">
+                        ${row[8] || "-"} ${row[9] ? `→ 📦 ${row[9]}` : ""} → ${row[10] || "-"}
+                      </div>
+                    </div>` : ''}
+                    ${row[11] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">🚪 Sal. Patio</div>
+                      <div class="tramo-detail-value">${formatDateTime(row[11])}</div>
+                    </div>` : ''}
+                    ${row[12] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">📦 Cita Carga</div>
+                      <div class="tramo-detail-value">${formatDateTime(row[12])}</div>
+                    </div>` : ''}
+                    ${row[13] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">🚚 Sal. Carga</div>
+                      <div class="tramo-detail-value">${formatDateTime(row[13])}</div>
+                    </div>` : ''}
+                    ${row[14] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">🎯 Descarga</div>
+                      <div class="tramo-detail-value">${formatDateTime(row[14])}</div>
+                    </div>` : ''}
+                    ${row[15] ? `
+                    <div class="tramo-detail-row">
+                      <div class="tramo-detail-label">📝 Instrucciones</div>
+                      <div class="tramo-detail-value">${row[15]}</div>
+                    </div>` : ''}
+                  </div>
+                </div>
             `;
                     });
 
+                    // Folios distintos de esta unidad → un botón "eliminar viaje" por folio
+                    const foliosUnidad = [
+                        ...new Map(
+                            rows
+                                .filter((r) => r[1])
+                                .map((r) => [
+                                    r[1],
+                                    {
+                                        folio: r[1],
+                                        clienteId: r[19] || 0,
+                                        unidadId: r[18] || 0,
+                                    },
+                                ]),
+                        ).values(),
+                    ];
+
+                    const botonesEliminarViaje = foliosUnidad
+                        .map(
+                            (f) => `
+                    <button
+                      onclick="deleteRegistro(${f.clienteId}, ${f.unidadId}, '${String(f.folio).replace(/'/g, "\\'")}')"
+                      class="btn"
+                      style="padding: 8px 12px; font-size: 11px; background: #ef4444; color: white; border: none; display: flex; align-items: center; gap: 5px;"
+                      title="Eliminar el viaje completo ${f.folio} (todos sus tramos)">
+                      🗑️ Eliminar viaje ${f.folio}
+                    </button>`,
+                        )
+                        .join("");
+
                     html += `
-                  </tbody>
-                </table>
               </div>
 
-              <div style="background: #f8fafc; padding: 10px 20px; font-size: 11px; color: var(--text-muted);">
-                <strong>IDs Equipos:</strong> ${
-                    firstRow[4] || "No especificado"
-                }
+              <div class="unit-card-footer">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <strong>IDs Equipos:</strong> ${firstRow[4] || "No especificado"}
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button
+                      onclick="editUnit(${(firstRow[18] || 0)})"
+                      class="btn btn-secondary"
+                      style="padding: 8px 12px; font-size: 11px; display: flex; align-items: center; gap: 5px;"
+                      title="Editar datos de la unidad">
+                      ✏️ Editar unidad
+                    </button>
+                    ${botonesEliminarViaje}
+                  </div>
+                </div>
               </div>
             </div>
           `;
                 });
 
+                html += '</div>';
                 container.innerHTML = html;
             }
 
@@ -2461,6 +3083,351 @@
                 indicator.style.color = filterColor;
 
                 counter.textContent = `${count} unidad${count !== 1 ? "es" : ""}`;
+            }
+
+            function editUnit(unidadId) {
+                unidadId = parseInt(unidadId, 10) || 0;
+                if (!unidadId) {
+                    showToast("⚠️ No se pudo identificar la unidad");
+                    return;
+                }
+
+                // Buscar la primera fila de esta unidad para precargar el formulario
+                const fila = allUnitsData.find(
+                    (row) => parseInt(row[18], 10) === unidadId,
+                );
+                if (!fila) {
+                    showToast("⚠️ Unidad no encontrada en los datos cargados");
+                    return;
+                }
+
+                document.getElementById("editUnitId").value = unidadId;
+                document.getElementById("editUnitEconomico").value = fila[2] || "";
+                document.getElementById("editUnitPlacas").value = fila[3] || "";
+                document.getElementById("editUnitOperador").value = fila[5] || "";
+                document.getElementById("editUnitTelefonos").value = fila[6] || "";
+                document.getElementById("editUnitEquipos").value = fila[4] || "";
+                document.getElementById("editUnitClienteLabel").textContent =
+                    fila[16] || "—";
+
+                document.getElementById("editUnitModal").style.display = "flex";
+            }
+
+            function closeEditUnitModal() {
+                document.getElementById("editUnitModal").style.display = "none";
+            }
+
+            async function saveUnitEdit() {
+                const unidadId = parseInt(
+                    document.getElementById("editUnitId").value,
+                    10,
+                );
+                if (!unidadId) {
+                    showToast("⚠️ ID de unidad inválido");
+                    return;
+                }
+
+                const economicoNuevo = document
+                    .getElementById("editUnitEconomico")
+                    .value.trim();
+                if (!economicoNuevo) {
+                    showToast("⚠️ El económico es obligatorio");
+                    return;
+                }
+
+                const payload = {
+                    unidad_id: unidadId,
+                    economico_nuevo: economicoNuevo,
+                    placas: document.getElementById("editUnitPlacas").value.trim(),
+                    operador: document
+                        .getElementById("editUnitOperador")
+                        .value.trim(),
+                    telefonos: document
+                        .getElementById("editUnitTelefonos")
+                        .value.trim(),
+                    equipos: document
+                        .getElementById("editUnitEquipos")
+                        .value.trim(),
+                };
+
+                const btn = document.getElementById("saveUnitEditBtn");
+                const original = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = "Guardando...";
+
+                try {
+                    const res = await fetch(
+                        withAuthUrl(`${VIAJES_API}?action=actualizar_unidad`),
+                        {
+                            method: "PUT",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            }),
+                            body: JSON.stringify(payload),
+                        },
+                    );
+                    const text = await res.text();
+                    let json;
+                    try {
+                        json = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error("El servidor no devolvió JSON válido");
+                    }
+                    if (!res.ok || !json.ok) {
+                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                    }
+
+                    showToast("✓ Unidad actualizada correctamente");
+                    closeEditUnitModal();
+                    loadUnitsFromSheets(); // Recargar tabla
+                } catch (error) {
+                    console.error("Error actualizando unidad:", error);
+                    showToast("❌ " + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = original;
+                }
+            }
+
+            // ─── Editar TRAMO (ruta, origen, lugar carga, destino, instrucciones) ───
+            function editTramo(despachoId) {
+                despachoId = parseInt(despachoId, 10) || 0;
+                if (!despachoId) {
+                    showToast("⚠️ No se pudo identificar el tramo");
+                    return;
+                }
+
+                const fila = allUnitsData.find(
+                    (row) => parseInt(row[20], 10) === despachoId,
+                );
+                if (!fila) {
+                    showToast("⚠️ Tramo no encontrado en los datos cargados");
+                    return;
+                }
+
+                document.getElementById("editTramoId").value = despachoId;
+                document.getElementById("editTramoRuta").value = fila[7] || "";
+                document.getElementById("editTramoOrigen").value = fila[8] || "";
+                document.getElementById("editTramoLugarCarga").value =
+                    fila[9] || "";
+                document.getElementById("editTramoDestino").value = fila[10] || "";
+                document.getElementById("editTramoInstrucciones").value =
+                    fila[15] || "";
+                document.getElementById("editTramoLabel").textContent =
+                    `${fila[2] || "Unidad"} · Folio ${fila[1] || "—"} · Tramo ${fila[21] || ""}`;
+
+                document.getElementById("editTramoModal").style.display = "flex";
+            }
+
+            function closeEditTramoModal() {
+                document.getElementById("editTramoModal").style.display = "none";
+            }
+
+            async function saveTramoEdit() {
+                const despachoId = parseInt(
+                    document.getElementById("editTramoId").value,
+                    10,
+                );
+                if (!despachoId) {
+                    showToast("⚠️ ID de tramo inválido");
+                    return;
+                }
+
+                const payload = {
+                    despacho_id: despachoId,
+                    ruta: document.getElementById("editTramoRuta").value.trim(),
+                    origen: document
+                        .getElementById("editTramoOrigen")
+                        .value.trim(),
+                    lugar_carga: document
+                        .getElementById("editTramoLugarCarga")
+                        .value.trim(),
+                    destino: document
+                        .getElementById("editTramoDestino")
+                        .value.trim(),
+                    instrucciones: document
+                        .getElementById("editTramoInstrucciones")
+                        .value.trim(),
+                };
+
+                const btn = document.getElementById("saveTramoEditBtn");
+                const original = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = "Guardando...";
+
+                try {
+                    const res = await fetch(
+                        withAuthUrl(`${VIAJES_API}?action=actualizar_despacho`),
+                        {
+                            method: "PUT",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            }),
+                            body: JSON.stringify(payload),
+                        },
+                    );
+                    const text = await res.text();
+                    let json;
+                    try {
+                        json = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error("El servidor no devolvió JSON válido");
+                    }
+                    if (!res.ok || !json.ok) {
+                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                    }
+
+                    const sync = json.tramos_sincronizados || 0;
+                    showToast(
+                        sync > 0
+                            ? `✓ Tramo actualizado (viaje sincronizado)`
+                            : `✓ Tramo actualizado`,
+                    );
+                    closeEditTramoModal();
+                    loadUnitsFromSheets();
+                } catch (error) {
+                    console.error("Error actualizando tramo:", error);
+                    showToast("❌ " + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = original;
+                }
+            }
+
+            // ─── Eliminar un TRAMO individual (soft-delete despacho + viaje_tramos) ───
+            async function deleteTramo(despachoId) {
+                despachoId = parseInt(despachoId, 10) || 0;
+                if (!despachoId) {
+                    showToast("⚠️ No se pudo identificar el tramo");
+                    return;
+                }
+
+                const fila = allUnitsData.find(
+                    (row) => parseInt(row[20], 10) === despachoId,
+                );
+                const etiqueta = fila
+                    ? `Tramo ${fila[21] || ""} del folio ${fila[1] || ""}`
+                    : "este tramo";
+
+                if (
+                    !confirm(
+                        `¿Eliminar ${etiqueta}?\n\nSe marcará como eliminado (acción reversible por el administrador).`,
+                    )
+                ) {
+                    return;
+                }
+
+                try {
+                    const res = await fetch(
+                        withAuthUrl(`${VIAJES_API}?action=eliminar_despacho`),
+                        {
+                            method: "DELETE",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            }),
+                            body: JSON.stringify({ despacho_id: despachoId }),
+                        },
+                    );
+                    const text = await res.text();
+                    let json;
+                    try {
+                        json = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error("El servidor no devolvió JSON válido");
+                    }
+                    if (!res.ok || !json.ok) {
+                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                    }
+
+                    showToast("✓ Tramo eliminado");
+                    loadUnitsFromSheets();
+                } catch (error) {
+                    console.error("Error eliminando tramo:", error);
+                    showToast("❌ " + error.message);
+                }
+            }
+
+            // ─── Eliminar el REGISTRO completo (viaje/folio): cancela viaje + tramos ───
+            async function deleteRegistro(clienteId, unidadId, folio) {
+                clienteId = parseInt(clienteId, 10) || 0;
+                unidadId = parseInt(unidadId, 10) || 0;
+                folio = String(folio || "").trim();
+
+                if (!clienteId || !unidadId || !folio) {
+                    showToast("⚠️ Datos insuficientes para eliminar el registro");
+                    return;
+                }
+
+                if (
+                    !confirm(
+                        `¿Eliminar el viaje completo ${folio}?\n\nSe cancelarán TODOS sus tramos. La acción es reversible por el administrador.`,
+                    )
+                ) {
+                    return;
+                }
+
+                try {
+                    const res = await fetch(
+                        withAuthUrl(`${VIAJES_API}?action=eliminar_registro`),
+                        {
+                            method: "DELETE",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            }),
+                            body: JSON.stringify({
+                                cliente_id: clienteId,
+                                unidad_id: unidadId,
+                                folio: folio,
+                            }),
+                        },
+                    );
+                    const text = await res.text();
+                    let json;
+                    try {
+                        json = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error("El servidor no devolvió JSON válido");
+                    }
+                    if (!res.ok || !json.ok) {
+                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                    }
+
+                    showToast(`✓ Viaje ${folio} eliminado`);
+                    loadUnitsFromSheets();
+                } catch (error) {
+                    console.error("Error eliminando registro:", error);
+                    showToast("❌ " + error.message);
+                }
+            }
+
+            // Función legacy conservada (sin uso activo)
+            async function deleteUnit(economico) {
+                if (!confirm(`¿Estás seguro de que deseas eliminar la unidad ${economico} y todos sus tramos?`)) {
+                    return;
+                }
+
+                try {
+                    showToast("⚠️ Use los botones de eliminar por tramo o por viaje");
+                    console.log("Eliminar unidad (legacy):", economico);
+
+                    // Lógica antigua deshabilitada:
+                    // const response = await fetch(`${VIAJES_API}?action=eliminar_unidad`, {
+                    //     method: 'DELETE',
+                    //     headers: getAuthHeaders({'Content-Type': 'application/json'}),
+                    //     body: JSON.stringify({ economico })
+                    // });
+                    // if (response.ok) {
+                    //     showToast(`✓ Unidad ${economico} eliminada correctamente`, "success");
+                    //     loadUnitsFromSheets(); // Recargar datos
+                    // }
+                } catch (error) {
+                    console.error("Error eliminando unidad:", error);
+                    showToast("❌ Error al eliminar unidad", "error");
+                }
             }
 
             function updateUnitFilterDatalist(data) {
