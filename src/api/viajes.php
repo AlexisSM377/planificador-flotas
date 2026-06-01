@@ -285,7 +285,7 @@ function to_date($v)
         return "{$m[3]}-{$m[2]}-{$m[1]}";
     }
     try {
-        return new DateTime($s)->format("Y-m-d");
+        return (new DateTime($s))->format("Y-m-d");
     } catch (Exception $e) {
         return null;
     }
@@ -304,7 +304,7 @@ function to_datetime($v)
         return substr($s, 0, 19);
     }
     try {
-        return new DateTime($s)->format("Y-m-d H:i:s");
+        return (new DateTime($s))->format("Y-m-d H:i:s");
     } catch (Exception $e) {
         return null;
     }
