@@ -2129,6 +2129,38 @@
                             margin-bottom: 4px;
                             color: var(--text-main);
                         "
+                        >Folio</label
+                    >
+                    <input
+                        id="editTramoFolio"
+                        type="text"
+                        style="
+                            width: 100%;
+                            padding: 9px 11px;
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            margin-bottom: 4px;
+                            font-size: 13px;
+                        "
+                    />
+                    <p
+                        style="
+                            font-size: 11px;
+                            color: var(--text-muted, #888);
+                            margin: 0 0 12px;
+                        "
+                    >
+                        ⚠️ Cambiar el folio afecta a todos los tramos de este viaje.
+                    </p>
+
+                    <label
+                        style="
+                            display: block;
+                            font-size: 12px;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            color: var(--text-main);
+                        "
                         >Ruta</label
                     >
                     <input
@@ -3207,6 +3239,7 @@
                 }
 
                 document.getElementById("editTramoId").value = despachoId;
+                document.getElementById("editTramoFolio").value = fila[1] || "";
                 document.getElementById("editTramoRuta").value = fila[7] || "";
                 document.getElementById("editTramoOrigen").value = fila[8] || "";
                 document.getElementById("editTramoLugarCarga").value =
@@ -3234,8 +3267,17 @@
                     return;
                 }
 
+                const folioNuevo = document
+                    .getElementById("editTramoFolio")
+                    .value.trim();
+                if (!folioNuevo) {
+                    showToast("⚠️ El folio no puede quedar vacío");
+                    return;
+                }
+
                 const payload = {
                     despacho_id: despachoId,
+                    folio: folioNuevo,
                     ruta: document.getElementById("editTramoRuta").value.trim(),
                     origen: document
                         .getElementById("editTramoOrigen")
@@ -3280,10 +3322,11 @@
                     }
 
                     const sync = json.tramos_sincronizados || 0;
+                    const folioMsg = json.folio_actualizado ? " · folio cambiado" : "";
                     showToast(
                         sync > 0
-                            ? `✓ Tramo actualizado (viaje sincronizado)`
-                            : `✓ Tramo actualizado`,
+                            ? `✓ Tramo actualizado (viaje sincronizado)${folioMsg}`
+                            : `✓ Tramo actualizado${folioMsg}`,
                     );
                     closeEditTramoModal();
                     loadUnitsFromSheets();

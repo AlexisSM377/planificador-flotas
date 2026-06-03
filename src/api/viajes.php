@@ -1895,6 +1895,41 @@ function handle_actualizar_despacho($conn, $ctx)
     }
     assert_cliente_access($ctx, (int) $desp["cliente_id"]);
 
+    $folio_viejo = (string) $desp["folio"];
+    $cliente_id = (int) $desp["cliente_id"];
+    $unidad_id = (int) $desp["unidad_id"];
+
+    // ── Folio nuevo (opcional): identifica al viaje completo, no a un solo tramo ──
+    $folio_nuevo = null;
+    if (array_key_exists("folio", $body)) {
+        $folio_nuevo = trim((string) $body["folio"]);
+        if ($folio_nuevo === "") {
+            throw new Exception("El folio no puede quedar vacío", 400);
+        }
+        if ($folio_nuevo === $folio_viejo) {
+            $folio_nuevo = null; // sin cambios reales
+        }
+    }
+
+    // Validar que el folio nuevo no choque con otro viaje de la misma unidad/cliente
+    if ($folio_nuevo !== null) {
+        $stmt = $conn->prepare(
+            "SELECT id FROM despachos
+              WHERE cliente_id = ? AND unidad_id = ? AND folio = ? AND eliminado_at IS NULL
+              LIMIT 1",
+        );
+        $stmt->bind_param("iis", $cliente_id, $unidad_id, $folio_nuevo);
+        $stmt->execute();
+        $existe = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($existe) {
+            throw new Exception(
+                "El folio '$folio_nuevo' ya existe para esta unidad",
+                409,
+            );
+        }
+    }
+
     $campos = ["ruta", "origen", "lugar_carga", "destino", "instrucciones"];
     $sets = [];
     $types = "";
@@ -1908,65 +1943,122 @@ function handle_actualizar_despacho($conn, $ctx)
         }
     }
 
-    if (!count($sets)) {
+    if (!count($sets) && $folio_nuevo === null) {
         throw new Exception("No hay campos para actualizar", 400);
     }
 
-    $types_d = $types . "i";
-    $params_d = $params;
-    $params_d[] = $despacho_id;
-
-    $stmt = $conn->prepare(
-        "UPDATE despachos SET " . implode(", ", $sets) . " WHERE id = ?",
-    );
-    $stmt->bind_param($types_d, ...$params_d);
-    if (!$stmt->execute()) {
-        throw new Exception(
-            "Error actualizando despacho: " . $stmt->error,
-            500,
-        );
-    }
-    $stmt->close();
-
     $tramos_sincronizados = 0;
-    $stmt = $conn->prepare(
-        "SELECT vt.id
-           FROM viaje_tramos vt
-           JOIN viajes v ON v.id = vt.viaje_id
-          WHERE v.cliente_id = ? AND v.unidad_id = ? AND v.folio = ?
-            AND vt.tramo_numero = ? AND v.estado <> 'cancelado'",
-    );
-    $stmt->bind_param(
-        "iisi",
-        $desp["cliente_id"],
-        $desp["unidad_id"],
-        $desp["folio"],
-        $desp["tramo_numero"],
-    );
-    $stmt->execute();
-    $res_t = $stmt->get_result();
-    $tramo_ids = [];
-    while ($r = $res_t->fetch_assoc()) {
-        $tramo_ids[] = (int) $r["id"];
-    }
-    $stmt->close();
+    $folio_actualizado = false;
 
-    if (count($tramo_ids)) {
-        $types_t = $types . "i";
-        foreach ($tramo_ids as $tid) {
-            $params_t = $params;
-            $params_t[] = $tid;
+    $conn->begin_transaction();
+    try {
+        // 1. Actualizar los campos de ruta/origen/etc. de ESTE despacho
+        if (count($sets)) {
+            $types_d = $types . "i";
+            $params_d = $params;
+            $params_d[] = $despacho_id;
             $stmt = $conn->prepare(
-                "UPDATE viaje_tramos SET " .
+                "UPDATE despachos SET " .
                     implode(", ", $sets) .
                     " WHERE id = ?",
             );
-            $stmt->bind_param($types_t, ...$params_t);
-            if ($stmt->execute()) {
-                $tramos_sincronizados++;
+            $stmt->bind_param($types_d, ...$params_d);
+            if (!$stmt->execute()) {
+                throw new Exception(
+                    "Error actualizando despacho: " . $stmt->error,
+                    500,
+                );
             }
             $stmt->close();
         }
+
+        // 2. Sincronizar campos con el viaje_tramo correspondiente (folio VIEJO aún)
+        $stmt = $conn->prepare(
+            "SELECT vt.id
+               FROM viaje_tramos vt
+               JOIN viajes v ON v.id = vt.viaje_id
+              WHERE v.cliente_id = ? AND v.unidad_id = ? AND v.folio = ?
+                AND vt.tramo_numero = ? AND v.estado <> 'cancelado'",
+        );
+        $stmt->bind_param(
+            "iisi",
+            $cliente_id,
+            $unidad_id,
+            $folio_viejo,
+            $desp["tramo_numero"],
+        );
+        $stmt->execute();
+        $res_t = $stmt->get_result();
+        $tramo_ids = [];
+        while ($r = $res_t->fetch_assoc()) {
+            $tramo_ids[] = (int) $r["id"];
+        }
+        $stmt->close();
+
+        if (count($sets) && count($tramo_ids)) {
+            $types_t = $types . "i";
+            foreach ($tramo_ids as $tid) {
+                $params_t = $params;
+                $params_t[] = $tid;
+                $stmt = $conn->prepare(
+                    "UPDATE viaje_tramos SET " .
+                        implode(", ", $sets) .
+                        " WHERE id = ?",
+                );
+                $stmt->bind_param($types_t, ...$params_t);
+                if ($stmt->execute()) {
+                    $tramos_sincronizados++;
+                }
+                $stmt->close();
+            }
+        }
+
+        // 3. Cambiar el folio del VIAJE COMPLETO (todos sus despachos + el viaje)
+        if ($folio_nuevo !== null) {
+            $stmt = $conn->prepare(
+                "UPDATE despachos SET folio = ?
+                  WHERE cliente_id = ? AND unidad_id = ? AND folio = ? AND eliminado_at IS NULL",
+            );
+            $stmt->bind_param(
+                "siis",
+                $folio_nuevo,
+                $cliente_id,
+                $unidad_id,
+                $folio_viejo,
+            );
+            if (!$stmt->execute()) {
+                throw new Exception(
+                    "Error actualizando folio en despachos: " . $stmt->error,
+                    500,
+                );
+            }
+            $stmt->close();
+
+            $stmt = $conn->prepare(
+                "UPDATE viajes SET folio = ?
+                  WHERE cliente_id = ? AND unidad_id = ? AND folio = ? AND estado <> 'cancelado'",
+            );
+            $stmt->bind_param(
+                "siis",
+                $folio_nuevo,
+                $cliente_id,
+                $unidad_id,
+                $folio_viejo,
+            );
+            if (!$stmt->execute()) {
+                throw new Exception(
+                    "Error actualizando folio en viajes: " . $stmt->error,
+                    500,
+                );
+            }
+            $stmt->close();
+            $folio_actualizado = true;
+        }
+
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
     }
 
     $stmt = $conn->prepare(
@@ -1990,6 +2082,7 @@ function handle_actualizar_despacho($conn, $ctx)
             "instrucciones" => $d["instrucciones"],
         ],
         "tramos_sincronizados" => $tramos_sincronizados,
+        "folio_actualizado" => $folio_actualizado,
     ]);
 }
 
