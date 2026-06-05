@@ -326,6 +326,7 @@
                 padding: 7px 14px;
                 border-radius: 12px;
                 font-size: 12px;
+                background: #ff3434;
                 font-weight: 800;
                 border: none;
                 cursor: pointer;
@@ -550,19 +551,27 @@
             .unit-card {
                 background: white;
                 border-radius: 16px;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                box-shadow:
+                    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
                 border: 1px solid var(--border);
                 overflow: hidden;
                 transition: all 0.3s ease;
             }
 
             .unit-card:hover {
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                box-shadow:
+                    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                    0 10px 10px -5px rgba(0, 0, 0, 0.04);
                 transform: translateY(-2px);
             }
 
             .unit-card-header {
-                background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+                background: linear-gradient(
+                    135deg,
+                    var(--primary) 0%,
+                    var(--accent) 100%
+                );
                 padding: 20px;
                 color: white;
             }
@@ -671,6 +680,138 @@
                     grid-template-columns: 1fr;
                 }
             }
+
+            /* Botón "Ver mapa" y contenedor de mapa en plantillas */
+            .btn-ver-mapa {
+                white-space: nowrap;
+                padding: 0 10px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #42a548;
+                color: #fff;
+                cursor: pointer;
+            }
+            .btn-ver-mapa:hover {
+                opacity: 0.9;
+            }
+            .mapa-plantilla {
+                margin-top: 8px;
+                border-radius: 8px;
+                overflow: hidden;
+                display: none;
+            }
+            .mapa-plantilla.activo {
+                display: block;
+            }
+            .mapa-plantilla iframe {
+                width: 100%;
+                height: 220px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                display: block;
+            }
+
+            /* Grilla de cards de plantillas guardadas */
+            .plantillas-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+            }
+            @media (max-width: 1024px) {
+                .plantillas-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+            @media (max-width: 640px) {
+                .plantillas-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .plantilla-card {
+                display: flex;
+                flex-direction: column;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: #fff;
+                padding: 14px;
+                box-shadow: 0 1px 3px rgba(11, 60, 73, 0.08);
+                transition:
+                    box-shadow 0.15s,
+                    transform 0.15s;
+            }
+            .plantilla-card:hover {
+                box-shadow: 0 6px 18px rgba(11, 60, 73, 0.14);
+                transform: translateY(-2px);
+            }
+            .plantilla-card-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                flex-wrap: wrap;
+                border-bottom: 1px solid var(--border);
+                padding-bottom: 10px;
+                margin-bottom: 10px;
+            }
+            .plantilla-card-etiqueta {
+                color: var(--accent, #028090);
+                font-size: 14px;
+                font-weight: 700;
+                letter-spacing: 0.3px;
+            }
+            .plantilla-card-ruta {
+                font-size: 11px;
+                font-weight: 600;
+                color: #fff;
+                background: var(--primary, #0b3c49);
+                padding: 2px 8px;
+                border-radius: 999px;
+                white-space: nowrap;
+            }
+            .plantilla-card-body {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .plantilla-card-fila {
+                display: flex;
+                align-items: baseline;
+                gap: 5px;
+                font-size: 12.5px;
+                line-height: 1.35;
+            }
+            .plantilla-card-icono {
+                flex-shrink: 0;
+            }
+            .plantilla-card-label {
+                font-weight: 600;
+                color: var(--text-muted, #5b7480);
+            }
+            .plantilla-card-valor {
+                color: var(--text-main, #0f2a33);
+                word-break: break-word;
+            }
+            .plantilla-card-instr {
+                margin-top: 4px;
+                font-size: 12px;
+                color: var(--text-muted, #5b7480);
+                background: #f9fafb;
+                border-radius: 8px;
+                padding: 7px 9px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .plantilla-card-acciones {
+                display: flex;
+                gap: 6px;
+                justify-content: flex-end;
+                margin-top: 12px;
+                padding-top: 10px;
+                border-top: 1px solid var(--border);
+            }
         </style>
     </head>
     <body>
@@ -758,12 +899,19 @@
                         class="tab-btn"
                         onclick="openTab(event, 'plantillasRutaTab')"
                     >
-                        Plantillas de Ruta
+                        Historial de Rutas
+                    </button>
+                    <button
+                        class="tab-btn"
+                        onclick="openTab(event, 'operadoresTab')"
+                    >
+                        Operadores
                     </button>
                 </nav>
 
                 <div id="logisticaTab" class="tab-content active">
                     <form id="masterForm">
+                      <div id="datosGeneralesWrapper">
                         <div class="section-header">
                             <h2>Datos Generales</h2>
                         </div>
@@ -772,20 +920,11 @@
                                 <label>Fecha Inicio</label
                                 ><input type="date" id="fecha_registro" />
                             </div>
-                            <div class="form-group">
-                                <label>
-                                    Fecha Fin
-                                    <span
-                                        style="
-                                            font-size: 10px;
-                                            color: var(--text-muted);
-                                            font-weight: 400;
-                                        "
-                                        >(dejar vacío = mismo día)</span
-                                    >
-                                </label>
-                                <input type="date" id="fecha_fin" />
-                            </div>
+                            <!-- Fecha Fin retirada del formulario: se deriva
+                                 automáticamente del último tramo en el backend.
+                                 Se conserva como hidden para no romper el JS que
+                                 aún referencia el elemento. -->
+                            <input type="hidden" id="fecha_fin" value="" />
                             <div class="form-group">
                                 <label>Folio</label
                                 ><input
@@ -824,12 +963,16 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label>Operador</label
-                                ><input
-                                    type="text"
+                                <label>Operador</label>
+                                <select
                                     id="operador"
-                                    placeholder="Nombre completo"
-                                />
+                                    style="width: 100%"
+                                    onchange="onOperadorChange('operador')"
+                                >
+                                    <option value="">
+                                        -- Selecciona operador --
+                                    </option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label>Cliente</label
@@ -1185,11 +1328,65 @@
                                 style="font-size: 12px; color: #334155"
                             ></div>
                         </div>
+                      </div>
+                      <!-- /datosGeneralesWrapper -->
+
+                      <!-- Banner modo "agregar tramo a viaje existente" -->
+                      <div
+                          id="bannerAgregarTramo"
+                          style="
+                              display: none;
+                              margin-top: 30px;
+                              padding: 14px 18px;
+                              background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+                              border: 1px solid #d8b4fe;
+                              border-left: 4px solid #9333ea;
+                              border-radius: 10px;
+                          "
+                      >
+                          <div
+                              style="
+                                  display: flex;
+                                  justify-content: space-between;
+                                  align-items: center;
+                                  gap: 12px;
+                                  flex-wrap: wrap;
+                              "
+                          >
+                              <span
+                                  style="
+                                      font-size: 14px;
+                                      font-weight: 700;
+                                      color: #6b21a8;
+                                  "
+                                  id="bannerAgregarTramoTexto"
+                              >
+                                  ➕ Agregando tramo
+                              </span>
+                              <button
+                                  type="button"
+                                  onclick="cancelarAgregarTramoExistente()"
+                                  style="
+                                      font-size: 12px;
+                                      background: #fff;
+                                      color: #6b21a8;
+                                      border: 1px solid #d8b4fe;
+                                      border-radius: 6px;
+                                      padding: 6px 14px;
+                                      font-weight: 600;
+                                      cursor: pointer;
+                                  "
+                              >
+                                  ✕ Cancelar y volver a crear viaje
+                              </button>
+                          </div>
+                      </div>
 
                         <div class="section-header" style="margin-top: 50px">
-                            <h2>Planificación de Tramos Logísticos</h2>
+                            <h2 id="tituloPlanificacionTramos">Planificación de Tramos Logísticos</h2>
                             <button
                                 type="button"
+                                id="btnNuevoTramo"
                                 class="btn btn-secondary"
                                 onclick="addDispatch()"
                                 style="padding: 8px 15px; font-size: 10px"
@@ -1635,14 +1832,23 @@
                 <!-- TAB 4: PLANTILLAS DE RUTA -->
                 <div id="plantillasRutaTab" class="tab-content">
                     <div class="section-header">
-                        <h2>Catálogo de Plantillas de Ruta</h2>
+                        <h2>Historial de Rutas</h2>
+                        <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">
+                            Las rutas se guardan solas al completar viajes. Marca tus favoritas ⭐,
+                            renómbralas (ej: "Casa → Trabajo") u oculta las que no uses.
+                        </p>
                     </div>
 
-                    <div
+                    <details
                         class="card"
                         style="margin-bottom: 30px; padding: 12px"
                     >
-                        <h3 id="plantillaFormTitle">Agregar Nueva Plantilla</h3>
+                        <summary style="cursor: pointer; font-weight: 600;">
+                            <span id="plantillaFormTitle">➕ Agregar ruta manual</span>
+                            <span style="font-weight: normal; color: var(--text-muted); font-size: 12px;">
+                                (opcional — normalmente no hace falta)
+                            </span>
+                        </summary>
                         <form
                             id="plantillaForm"
                             onsubmit="
@@ -1693,59 +1899,141 @@
                                     <label for="plantillaOrigen"
                                         >Punto de Origen</label
                                     >
-                                    <input
-                                        type="text"
-                                        id="plantillaOrigen"
-                                        placeholder="ej: Ciudad de México"
-                                        maxlength="255"
-                                    />
+                                    <div style="display: flex; gap: 6px">
+                                        <input
+                                            type="text"
+                                            id="plantillaOrigen"
+                                            placeholder="ej: Ciudad de México"
+                                            maxlength="255"
+                                            style="flex: 1"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="btn-ver-mapa"
+                                            onclick="
+                                                verMapaPlantilla(
+                                                    'plantillaOrigen',
+                                                    'mapaPlantillaOrigen',
+                                                )
+                                            "
+                                        >
+                                            <svg
+                                                class="w-6 h-6 text-gray-800 dark:text-white"
+                                                aria-hidden="true"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="24"
+                                                height="24"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke="currentColor"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 0v6M9.5 9A2.5 2.5 0 0 1 12 6.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div
+                                        id="mapaPlantillaOrigen"
+                                        class="mapa-plantilla"
+                                    ></div>
                                 </div>
 
                                 <div>
                                     <label for="plantillaLugarCarga"
                                         >Lugar de Carga</label
                                     >
-                                    <input
-                                        type="text"
-                                        id="plantillaLugarCarga"
-                                        placeholder="ej: Bodega Norte CDMX"
-                                        maxlength="255"
-                                    />
+                                    <div style="display: flex; gap: 6px">
+                                        <input
+                                            type="text"
+                                            id="plantillaLugarCarga"
+                                            placeholder="ej: Bodega Norte CDMX"
+                                            maxlength="255"
+                                            style="flex: 1"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="btn-ver-mapa"
+                                            onclick="
+                                                verMapaPlantilla(
+                                                    'plantillaLugarCarga',
+                                                    'mapaPlantillaCarga',
+                                                )
+                                            "
+                                        >
+                                            <svg
+                                                class="w-6 h-6 text-gray-800 dark:text-white"
+                                                aria-hidden="true"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="24"
+                                                height="24"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke="currentColor"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 0v6M9.5 9A2.5 2.5 0 0 1 12 6.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div
+                                        id="mapaPlantillaCarga"
+                                        class="mapa-plantilla"
+                                    ></div>
                                 </div>
 
                                 <div>
                                     <label for="plantillaDestino"
                                         >Punto de Destino</label
                                     >
-                                    <input
-                                        type="text"
-                                        id="plantillaDestino"
-                                        placeholder="ej: Puebla Centro"
-                                        maxlength="255"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label for="plantillaDuracion">
-                                        Duración Estimada (horas)
-                                        <span
-                                            style="
-                                                color: var(--text-muted);
-                                                font-size: 12px;
-                                                font-weight: normal;
+                                    <div style="display: flex; gap: 6px">
+                                        <input
+                                            type="text"
+                                            id="plantillaDestino"
+                                            placeholder="ej: Puebla Centro"
+                                            maxlength="255"
+                                            style="flex: 1"
+                                        />
+                                        <button
+                                            type="button"
+                                            class="btn-ver-mapa"
+                                            onclick="
+                                                verMapaPlantilla(
+                                                    'plantillaDestino',
+                                                    'mapaPlantillaDestino',
+                                                )
                                             "
                                         >
-                                            (opcional)
-                                        </span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        id="plantillaDuracion"
-                                        placeholder="ej: 4.5"
-                                        step="0.5"
-                                        min="0"
-                                        max="999"
-                                    />
+                                            <svg
+                                                class="w-6 h-6 text-gray-800 dark:text-white"
+                                                aria-hidden="true"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="24"
+                                                height="24"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke="currentColor"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 0v6M9.5 9A2.5 2.5 0 0 1 12 6.5"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div
+                                        id="mapaPlantillaDestino"
+                                        class="mapa-plantilla"
+                                    ></div>
                                 </div>
                             </div>
 
@@ -1793,7 +2081,7 @@
                                 </button>
                             </div>
                         </form>
-                    </div>
+                    </details>
 
                     <!-- Tabla de plantillas -->
                     <div class="card">
@@ -1807,7 +2095,7 @@
                             "
                         >
                             <h3>
-                                Plantillas Guardadas (<span id="plantillasCount"
+                                Rutas en historial (<span id="plantillasCount"
                                     >0</span
                                 >)
                             </h3>
@@ -1857,6 +2145,87 @@
                                 plantilla arriba.
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: OPERADORES -->
+                <div id="operadoresTab" class="tab-content">
+                    <div class="section-header">
+                        <h2>Catálogo de Operadores</h2>
+                    </div>
+
+                    <div
+                        style="
+                            border: 1px solid var(--border);
+                            border-radius: 12px;
+                            padding: 18px;
+                            margin-bottom: 18px;
+                        "
+                    >
+                        <h3 id="operadorFormTitulo" style="margin-top: 0">
+                            Agregar Operador
+                        </h3>
+                        <input type="hidden" id="operadorEditId" value="" />
+                        <div
+                            style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 14px;
+                            "
+                        >
+                            <div class="form-group">
+                                <label
+                                    >Nombre
+                                    <span style="color: #dc2626">*</span></label
+                                >
+                                <input
+                                    type="text"
+                                    id="operadorNombre"
+                                    placeholder="Nombre completo del operador"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono(s)</label>
+                                <input
+                                    type="text"
+                                    id="operadorTelefonos"
+                                    placeholder="Ej: 555-1234 / 555-5678"
+                                />
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; display: flex; gap: 8px">
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                onclick="guardarOperador()"
+                            >
+                                Guardar Operador
+                            </button>
+                            <button
+                                type="button"
+                                id="operadorCancelBtn"
+                                class="btn btn-secondary"
+                                style="display: none"
+                                onclick="_resetFormOperador()"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        style="
+                            border: 1px solid var(--border);
+                            border-radius: 12px;
+                            padding: 12px;
+                        "
+                    >
+                        <h3>
+                            Operadores Guardados (<span id="operadoresCount"
+                                >0</span
+                            >)
+                        </h3>
+                        <div id="operadoresTableContainer"></div>
                     </div>
                 </div>
             </div>
@@ -1917,7 +2286,9 @@
                         "
                     >
                         Cliente:
-                        <strong id="editUnitClienteLabel" style="color: var(--primary)"
+                        <strong
+                            id="editUnitClienteLabel"
+                            style="color: var(--primary)"
                             >—</strong
                         >
                     </p>
@@ -1978,9 +2349,9 @@
                         "
                         >Operador</label
                     >
-                    <input
+                    <select
                         id="editUnitOperador"
-                        type="text"
+                        onchange="onOperadorChange('editUnitOperador')"
                         style="
                             width: 100%;
                             padding: 9px 11px;
@@ -1989,7 +2360,9 @@
                             margin-bottom: 12px;
                             font-size: 13px;
                         "
-                    />
+                    >
+                        <option value="">-- Selecciona operador --</option>
+                    </select>
 
                     <label
                         style="
@@ -2116,7 +2489,9 @@
                             margin: 0 0 14px;
                         "
                     >
-                        <strong id="editTramoLabel" style="color: var(--primary)"
+                        <strong
+                            id="editTramoLabel"
+                            style="color: var(--primary)"
                             >—</strong
                         >
                     </p>
@@ -2150,7 +2525,8 @@
                             margin: 0 0 12px;
                         "
                     >
-                        ⚠️ Cambiar el folio afecta a todos los tramos de este viaje.
+                        ⚠️ Cambiar el folio afecta a todos los tramos de este
+                        viaje.
                     </p>
 
                     <label
@@ -2322,6 +2698,11 @@
             const PLANIFICADOR_API = "api/planificador.php";
             const VIAJES_API = "api/viajes.php";
             let plantillasRutaCache = [];
+            let plantillasRutaSecciones = {
+                favoritos: [],
+                frecuentes: [],
+                recientes: [],
+            };
             let viajesUnidadesCache = {};
 
             function getAuthQuery() {
@@ -2409,6 +2790,7 @@
                     currentCliente = clienteInput.value;
                     loadLectoresByCliente(currentCliente);
                     cargarPlantillasRuta(); // Cargar plantillas del cliente
+                    cargarOperadores(); // Cargar operadores del cliente
                 } else {
                     clienteInput.readOnly = false;
                     document.getElementById("c_cliente").readOnly = false;
@@ -2607,9 +2989,7 @@
                 document.getElementById("cliente").value = isAdminUser()
                     ? ""
                     : getSelectedCliente();
-                document.getElementById("fecha_registro").value = new Date()
-                    .toISOString()
-                    .split("T")[0];
+                document.getElementById("fecha_registro").value = todayLocal();
                 document.getElementById("viajesActivosPanel").style.display =
                     "none";
 
@@ -2728,7 +3108,7 @@
                 }
 
                 let filteredData = data;
-                const today = new Date().toISOString().split("T")[0];
+                const today = todayLocal();
                 const tomorrow = getTomorrowDate();
                 const weekEnd = getWeekEndDate();
 
@@ -2859,7 +3239,7 @@
                         <button
                           onclick="deleteTramo(${row[20]})"
                           class="btn"
-                          style="padding: 4px 10px; font-size: 10px; background: #ef4444; color: #fff; border: none; display: flex; align-items: center; gap: 4px;"
+                          style="padding: 4px 10px; font-size: 10px; background: #ed1515; color: #fff; border: none; display: flex; align-items: center; gap: 4px;"
                           title="Eliminar este tramo">
                           🗑️
                         </button>
@@ -2868,43 +3248,71 @@
                     }
                   </div>
                   <div class="tramo-details">
-                    ${row[7] ? `
+                    ${
+                        row[7]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">Ruta</div>
                       <div class="tramo-detail-value">${row[7]}</div>
-                    </div>` : ''}
-                    ${row[8] || row[9] || row[10] ? `
+                    </div>`
+                            : ""
+                    }
+                    ${
+                        row[8] || row[9] || row[10]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">Recorrido</div>
                       <div class="tramo-detail-value">
                         ${row[8] || "-"} ${row[9] ? `→ 📦 ${row[9]}` : ""} → ${row[10] || "-"}
                       </div>
-                    </div>` : ''}
-                    ${row[11] ? `
+                    </div>`
+                            : ""
+                    }
+                    ${
+                        row[11]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">🚪 Sal. Patio</div>
                       <div class="tramo-detail-value">${formatDateTime(row[11])}</div>
-                    </div>` : ''}
-                    ${row[12] ? `
+                    </div>`
+                            : ""
+                    }
+                    ${
+                        row[12]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">📦 Cita Carga</div>
                       <div class="tramo-detail-value">${formatDateTime(row[12])}</div>
-                    </div>` : ''}
-                    ${row[13] ? `
+                    </div>`
+                            : ""
+                    }
+                    ${
+                        row[13]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">🚚 Sal. Carga</div>
                       <div class="tramo-detail-value">${formatDateTime(row[13])}</div>
-                    </div>` : ''}
-                    ${row[14] ? `
+                    </div>`
+                            : ""
+                    }
+                    ${
+                        row[14]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">🎯 Descarga</div>
                       <div class="tramo-detail-value">${formatDateTime(row[14])}</div>
-                    </div>` : ''}
-                    ${row[15] ? `
+                    </div>`
+                            : ""
+                    }
+                    ${
+                        row[15]
+                            ? `
                     <div class="tramo-detail-row">
                       <div class="tramo-detail-label">📝 Instrucciones</div>
                       <div class="tramo-detail-value">${row[15]}</div>
-                    </div>` : ''}
+                    </div>`
+                            : ""
+                    }
                   </div>
                 </div>
             `;
@@ -2949,7 +3357,7 @@
                   </div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button
-                      onclick="editUnit(${(firstRow[18] || 0)})"
+                      onclick="editUnit(${firstRow[18] || 0})"
                       class="btn btn-secondary"
                       style="padding: 8px 12px; font-size: 11px; display: flex; align-items: center; gap: 5px;"
                       title="Editar datos de la unidad">
@@ -2963,7 +3371,7 @@
           `;
                 });
 
-                html += '</div>';
+                html += "</div>";
                 container.innerHTML = html;
             }
 
@@ -3134,13 +3542,22 @@
                 }
 
                 document.getElementById("editUnitId").value = unidadId;
-                document.getElementById("editUnitEconomico").value = fila[2] || "";
+                document.getElementById("editUnitEconomico").value =
+                    fila[2] || "";
                 document.getElementById("editUnitPlacas").value = fila[3] || "";
-                document.getElementById("editUnitOperador").value = fila[5] || "";
-                document.getElementById("editUnitTelefonos").value = fila[6] || "";
-                document.getElementById("editUnitEquipos").value = fila[4] || "";
+                document.getElementById("editUnitTelefonos").value =
+                    fila[6] || "";
+                document.getElementById("editUnitEquipos").value =
+                    fila[4] || "";
                 document.getElementById("editUnitClienteLabel").textContent =
                     fila[16] || "—";
+
+                // Asegurar opciones del select y seleccionar por nombre del operador actual
+                actualizarSelectoresOperador();
+                _seleccionarOperadorPorNombre(
+                    "editUnitOperador",
+                    fila[5] || "",
+                );
 
                 document.getElementById("editUnitModal").style.display = "flex";
             }
@@ -3167,13 +3584,20 @@
                     return;
                 }
 
+                const opSel = document.getElementById("editUnitOperador");
+                const opId = parseInt(opSel.value, 10) || 0;
+                const opNombre = opId
+                    ? opSel.selectedOptions[0].textContent.trim()
+                    : "";
+
                 const payload = {
                     unidad_id: unidadId,
                     economico_nuevo: economicoNuevo,
-                    placas: document.getElementById("editUnitPlacas").value.trim(),
-                    operador: document
-                        .getElementById("editUnitOperador")
+                    placas: document
+                        .getElementById("editUnitPlacas")
                         .value.trim(),
+                    operador: opNombre,
+                    operador_id: opId,
                     telefonos: document
                         .getElementById("editUnitTelefonos")
                         .value.trim(),
@@ -3207,7 +3631,9 @@
                         throw new Error("El servidor no devolvió JSON válido");
                     }
                     if (!res.ok || !json.ok) {
-                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                        throw new Error(
+                            json.error || `Error HTTP ${res.status}`,
+                        );
                     }
 
                     showToast("✓ Unidad actualizada correctamente");
@@ -3241,20 +3667,24 @@
                 document.getElementById("editTramoId").value = despachoId;
                 document.getElementById("editTramoFolio").value = fila[1] || "";
                 document.getElementById("editTramoRuta").value = fila[7] || "";
-                document.getElementById("editTramoOrigen").value = fila[8] || "";
+                document.getElementById("editTramoOrigen").value =
+                    fila[8] || "";
                 document.getElementById("editTramoLugarCarga").value =
                     fila[9] || "";
-                document.getElementById("editTramoDestino").value = fila[10] || "";
+                document.getElementById("editTramoDestino").value =
+                    fila[10] || "";
                 document.getElementById("editTramoInstrucciones").value =
                     fila[15] || "";
                 document.getElementById("editTramoLabel").textContent =
                     `${fila[2] || "Unidad"} · Folio ${fila[1] || "—"} · Tramo ${fila[21] || ""}`;
 
-                document.getElementById("editTramoModal").style.display = "flex";
+                document.getElementById("editTramoModal").style.display =
+                    "flex";
             }
 
             function closeEditTramoModal() {
-                document.getElementById("editTramoModal").style.display = "none";
+                document.getElementById("editTramoModal").style.display =
+                    "none";
             }
 
             async function saveTramoEdit() {
@@ -3318,11 +3748,15 @@
                         throw new Error("El servidor no devolvió JSON válido");
                     }
                     if (!res.ok || !json.ok) {
-                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                        throw new Error(
+                            json.error || `Error HTTP ${res.status}`,
+                        );
                     }
 
                     const sync = json.tramos_sincronizados || 0;
-                    const folioMsg = json.folio_actualizado ? " · folio cambiado" : "";
+                    const folioMsg = json.folio_actualizado
+                        ? " · folio cambiado"
+                        : "";
                     showToast(
                         sync > 0
                             ? `✓ Tramo actualizado (viaje sincronizado)${folioMsg}`
@@ -3382,7 +3816,9 @@
                         throw new Error("El servidor no devolvió JSON válido");
                     }
                     if (!res.ok || !json.ok) {
-                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                        throw new Error(
+                            json.error || `Error HTTP ${res.status}`,
+                        );
                     }
 
                     showToast("✓ Tramo eliminado");
@@ -3400,7 +3836,9 @@
                 folio = String(folio || "").trim();
 
                 if (!clienteId || !unidadId || !folio) {
-                    showToast("⚠️ Datos insuficientes para eliminar el registro");
+                    showToast(
+                        "⚠️ Datos insuficientes para eliminar el registro",
+                    );
                     return;
                 }
 
@@ -3436,7 +3874,9 @@
                         throw new Error("El servidor no devolvió JSON válido");
                     }
                     if (!res.ok || !json.ok) {
-                        throw new Error(json.error || `Error HTTP ${res.status}`);
+                        throw new Error(
+                            json.error || `Error HTTP ${res.status}`,
+                        );
                     }
 
                     showToast(`✓ Viaje ${folio} eliminado`);
@@ -3449,12 +3889,18 @@
 
             // Función legacy conservada (sin uso activo)
             async function deleteUnit(economico) {
-                if (!confirm(`¿Estás seguro de que deseas eliminar la unidad ${economico} y todos sus tramos?`)) {
+                if (
+                    !confirm(
+                        `¿Estás seguro de que deseas eliminar la unidad ${economico} y todos sus tramos?`,
+                    )
+                ) {
                     return;
                 }
 
                 try {
-                    showToast("⚠️ Use los botones de eliminar por tramo o por viaje");
+                    showToast(
+                        "⚠️ Use los botones de eliminar por tramo o por viaje",
+                    );
                     console.log("Eliminar unidad (legacy):", economico);
 
                     // Lógica antigua deshabilitada:
@@ -3507,18 +3953,27 @@
 
             // ─── NUEVA función principal: guardar viaje completo ────────────────
             async function guardarViaje() {
+                // Si el formulario está en modo "agregar tramo a viaje existente",
+                // se delega al handler de agregar_tramo en vez de crear un viaje.
+                if (modoAgregarTramo) {
+                    return guardarTramoEnViajeExistente();
+                }
+
                 const economico = document
                     .getElementById("id_vehiculo")
                     .value.trim();
                 const cliente = getSelectedCliente();
-                const operador = document
-                    .getElementById("operador")
-                    .value.trim();
+                const operadorSel = document.getElementById("operador");
+                const operadorId = parseInt(operadorSel.value, 10) || 0;
+                const operador = operadorId
+                    ? operadorSel.selectedOptions[0].textContent.trim()
+                    : "";
                 const folio = document.getElementById("folio").value.trim();
                 const fechaInicio =
                     document.getElementById("fecha_registro").value;
-                const fechaFin =
-                    document.getElementById("fecha_fin").value || null;
+                // fecha_fin ya no se captura: se deriva de los tramos (abajo)
+                // para la verificación de conflictos. El backend la recalcula.
+                let fechaFin = null;
                 const lectorResp =
                     document.getElementById("lectorResponsable").value;
 
@@ -3535,6 +3990,13 @@
                 }
                 if (!fechaInicio) {
                     showToast("⚠️ La Fecha Inicio es obligatoria");
+                    return;
+                }
+                const hoyStr = todayLocal();
+                if (fechaInicio < hoyStr) {
+                    showToast(
+                        "⚠️ No se puede registrar un viaje con fecha en el pasado",
+                    );
                     return;
                 }
                 if (!cliente) {
@@ -3601,6 +4063,37 @@
                         card.querySelector(".d-descarga")?.value || "",
                 }));
 
+                // Validar que ningún tiempo programado del tramo esté en el pasado
+                const ahoraDt = nowDateTimeLocal();
+                const camposTiempo = [
+                    ["salida_patio", "Salida de Patio"],
+                    ["cita_carga", "Cita de Carga"],
+                    ["salida_carga", "Salida de Carga"],
+                    ["descarga_programada", "Hora de Descarga"],
+                ];
+                for (let i = 0; i < tramos.length; i++) {
+                    for (const [campo, etiqueta] of camposTiempo) {
+                        const val = tramos[i][campo];
+                        if (val && val < ahoraDt) {
+                            showToast(
+                                `⚠️ Tramo ${i + 1}: "${etiqueta}" no puede ser una fecha/hora pasada`,
+                            );
+                            return;
+                        }
+                    }
+                }
+
+                // Derivar fecha_fin del tramo más lejano (para la verificación de
+                // conflictos y el aviso multi-día). El backend la recalcula igual.
+                let _maxDt = "";
+                for (const t of tramos) {
+                    for (const [campo] of camposTiempo) {
+                        const val = t[campo];
+                        if (val && val > _maxDt) _maxDt = val;
+                    }
+                }
+                if (_maxDt) fechaFin = _maxDt.slice(0, 10);
+
                 // Recoger datos de la unidad del formulario (para upsert si es unidad nueva)
                 const telefonosVal = Array.from(
                     document.querySelectorAll(".u-telefono"),
@@ -3621,6 +4114,7 @@
                     economico: economico,
                     placas: document.getElementById("placas").value.trim(),
                     operador: operador,
+                    operador_id: operadorId,
                     telefonos: telefonosVal,
                     equipos: equiposVal,
                     folio: folio,
@@ -3722,9 +4216,7 @@
                 document.getElementById("folio").value = "";
                 document.getElementById("operador").value = "";
                 document.getElementById("placas").value = "";
-                document.getElementById("fecha_registro").value = new Date()
-                    .toISOString()
-                    .split("T")[0];
+                document.getElementById("fecha_registro").value = todayLocal();
                 document.getElementById("fecha_fin").value = "";
                 document.getElementById("cliente").value = isAdminUser()
                     ? ""
@@ -3813,8 +4305,9 @@
                     .value.trim();
                 const fechaInicio =
                     document.getElementById("fecha_registro").value;
-                const fechaFin =
-                    document.getElementById("fecha_fin").value || null;
+                // Chequeo temprano: aún no hay tramos, se valida el día de inicio.
+                // La verificación definitiva al guardar deriva fecha_fin de tramos.
+                const fechaFin = null;
                 if (!economico || !fechaInicio) return;
 
                 const clienteObj = planificadorUser?.clientes?.[0];
@@ -3875,17 +4368,31 @@
                 });
             }
 
+            // Id de la unidad cuyos viajes se muestran actualmente en el panel
+            // "Viajes registrados para esta unidad" (para poder refrescarlo tras
+            // agregar un tramo a un viaje existente).
+            let viajesActivosUnidadId = null;
+
+            // Estado del formulario grande de tramos:
+            //   null  → modo normal (crear viaje completo)
+            //   {viaje_id, folio, numTramo} → modo agregar tramo a viaje existente
+            let modoAgregarTramo = null;
+
             // Mostrar viajes recientes de una unidad al seleccionarla
             async function cargarViajesUnidad(unidadId) {
                 if (!unidadId || !planificadorUser) return;
+                viajesActivosUnidadId = unidadId;
                 const panel = document.getElementById("viajesActivosPanel");
                 const lista = document.getElementById("viajesActivosList");
                 panel.style.display = "none";
                 try {
-                    const hoy = new Date().toISOString().split("T")[0];
-                    const hace30 = new Date(Date.now() - 30 * 86400000)
-                        .toISOString()
-                        .split("T")[0];
+                    const hoy = todayLocal();
+                    const hace30msDate = new Date(Date.now() - 30 * 86400000);
+                    hace30msDate.setMinutes(
+                        hace30msDate.getMinutes() -
+                            hace30msDate.getTimezoneOffset(),
+                    );
+                    const hace30 = hace30msDate.toISOString().slice(0, 10);
                     const res = await fetch(
                         `${VIAJES_API}?action=listar&unidad_id=${unidadId}&fecha_desde=${hace30}&fecha_hasta=${hoy}&limit=5`,
                         {
@@ -3911,23 +4418,323 @@
                                 ? `${v.fecha_inicio} → ${v.fecha_fin}`
                                 : v.fecha_inicio;
                             const color = estadoColor[v.estado] || "#334155";
-                            return `<div style="display:flex;justify-content:space-between;align-items:center;
-                                    padding:6px 0;border-bottom:1px solid #e0f2fe;gap:8px;">
-                            <div>
-                                <span style="font-weight:700;">${escapeHtml(v.folio)}</span>
-                                <span style="color:#64748b;margin-left:8px;">${fechas}</span>
-                                ${multiDia ? '<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:4px;">Multi-día</span>' : ""}
+                            // El planificador (acceso total) puede agregar tramos a
+                            // cualquier viaje activo (no cancelado ni completado).
+                            const puedeAgregar =
+                                v.estado !== "cancelado" &&
+                                v.estado !== "completado";
+                            const vid = v.viaje_id ?? v.id;
+                            const numSiguiente = (v.total_tramos || 0) + 1;
+                            return `<div style="padding:8px 0;border-bottom:1px solid #e0f2fe;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                                <div>
+                                    <span style="font-weight:700;">${escapeHtml(v.folio)}</span>
+                                    <span style="color:#64748b;margin-left:8px;">${fechas}</span>
+                                    ${multiDia ? '<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:4px;">Multi-día</span>' : ""}
+                                </div>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <button type="button" onclick="toggleTramosViaje(${vid})"
+                                            id="btn-ver-tramos-${vid}"
+                                            style="color:#0369a1;background:none;border:none;cursor:pointer;font-size:12px;font-weight:600;text-decoration:underline;">
+                                        ${v.total_tramos} tramo${v.total_tramos !== 1 ? "s" : ""} ▾
+                                    </button>
+                                    <span style="color:${color};font-weight:600;text-transform:capitalize;">${v.estado}</span>
+                                </div>
                             </div>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <span style="color:#64748b;">${v.total_tramos} tramo${v.total_tramos !== 1 ? "s" : ""}</span>
-                                <span style="color:${color};font-weight:600;text-transform:capitalize;">${v.estado}</span>
-                            </div>
+                            <div id="tramos-list-${vid}" style="display:none;margin-top:8px;"></div>
+                            ${
+                                puedeAgregar
+                                    ? `<div style="margin-top:6px;">
+                                <button type="button"
+                                        onclick="iniciarAgregarTramoExistente(${vid}, '${String(v.folio || "").replace(/'/g, "\\'").replace(/"/g, "&quot;")}', ${numSiguiente})"
+                                        style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:#7e22ce;border:1px dashed #d8b4fe;background:#faf5ff;border-radius:8px;padding:6px;font-weight:600;cursor:pointer;">
+                                    ＋ Agregar tramo
+                                </button>
+                            </div>`
+                                    : ""
+                            }
                         </div>`;
                         })
                         .join("");
                     panel.style.display = "block";
                 } catch (e) {
                     console.error("Error cargando viajes de unidad:", e);
+                }
+            }
+
+            // ── Ver/expandir los tramos de un viaje en el panel ───────────────
+            // El endpoint ?action=listar solo trae el resumen (total_tramos), así
+            // que los tramos se cargan bajo demanda con ?action=obtener.
+            async function toggleTramosViaje(viajeId, forzarAbrir = false) {
+                const cont = document.getElementById(`tramos-list-${viajeId}`);
+                const btn = document.getElementById(`btn-ver-tramos-${viajeId}`);
+                if (!cont) return;
+
+                const estaVisible = cont.style.display !== "none";
+                if (estaVisible && !forzarAbrir) {
+                    cont.style.display = "none";
+                    if (btn)
+                        btn.innerHTML = btn.innerHTML.replace("▴", "▾");
+                    return;
+                }
+
+                cont.style.display = "block";
+                if (btn) btn.innerHTML = btn.innerHTML.replace("▾", "▴");
+                cont.innerHTML =
+                    '<p style="font-size:11px;color:#94a3b8;padding:4px;">Cargando tramos…</p>';
+
+                try {
+                    const res = await fetch(
+                        `${VIAJES_API}?action=obtener&viaje_id=${viajeId}`,
+                        {
+                            headers: getAuthHeaders({
+                                Accept: "application/json",
+                            }),
+                        },
+                    );
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json.ok) {
+                        cont.innerHTML =
+                            '<p style="font-size:11px;color:#dc2626;padding:4px;">No se pudieron cargar los tramos.</p>';
+                        return;
+                    }
+                    renderTramosViaje(viajeId, json.viaje?.tramos || []);
+                } catch (e) {
+                    console.error("toggleTramosViaje:", e);
+                    cont.innerHTML =
+                        '<p style="font-size:11px;color:#dc2626;padding:4px;">Error de red al cargar tramos.</p>';
+                }
+            }
+
+            function renderTramosViaje(viajeId, tramos) {
+                const cont = document.getElementById(`tramos-list-${viajeId}`);
+                if (!cont) return;
+                if (!tramos.length) {
+                    cont.innerHTML =
+                        '<p style="font-size:11px;color:#94a3b8;padding:4px;">Sin tramos.</p>';
+                    return;
+                }
+                const estadoColor = {
+                    pendiente: "#64748b",
+                    en_curso: "#d97706",
+                    completado: "#047857",
+                    cancelado: "#9ca3af",
+                };
+                const linea = (etiqueta, valor) =>
+                    valor
+                        ? `<span style="color:#64748b;margin-right:10px;"><b>${etiqueta}:</b> ${escapeHtml(formatDateTime(valor))}</span>`
+                        : "";
+                cont.innerHTML = tramos
+                    .map((t) => {
+                        const col = estadoColor[t.estado] || "#334155";
+                        const ruta =
+                            [t.origen, t.destino].filter(Boolean).join(" → ") ||
+                            t.ruta ||
+                            "(sin ruta)";
+                        return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
+                                <span style="font-weight:700;font-size:12px;color:#0f172a;">Tramo ${t.tramo_numero} — ${escapeHtml(ruta)}</span>
+                                <span style="color:${col};font-weight:600;font-size:11px;text-transform:capitalize;">${String(t.estado || "").replace("_", " ")}</span>
+                            </div>
+                            <div style="font-size:10px;line-height:1.6;">
+                                ${linea("Salida patio", t.salida_patio)}
+                                ${linea("Cita carga", t.cita_carga)}
+                                ${linea("Salida carga", t.salida_carga)}
+                                ${linea("Descarga", t.descarga_programada)}
+                            </div>
+                        </div>`;
+                    })
+                    .join("");
+            }
+
+            // ── Agregar tramo a un viaje EXISTENTE reusando el formulario grande ──
+            // "Planificación de Tramos Logísticos". El form opera en dos modos:
+            //   - modoAgregarTramo === null  → crear viaje nuevo (flujo normal)
+            //   - modoAgregarTramo === {...} → agregar un tramo al viaje indicado
+            // El estado vive en la variable global `modoAgregarTramo`.
+            function iniciarAgregarTramoExistente(viajeId, folio, numTramo) {
+                modoAgregarTramo = {
+                    viaje_id: viajeId,
+                    folio: folio,
+                    numTramo: numTramo,
+                };
+
+                // Ocultar "Datos Generales" (no aplican al agregar un tramo suelto)
+                const dg = document.getElementById("datosGeneralesWrapper");
+                if (dg) dg.style.display = "none";
+
+                // Mostrar banner y ajustar títulos/botones
+                const banner = document.getElementById("bannerAgregarTramo");
+                if (banner) banner.style.display = "block";
+                const bannerTxt = document.getElementById(
+                    "bannerAgregarTramoTexto",
+                );
+                if (bannerTxt)
+                    bannerTxt.textContent = `➕ Agregando Tramo ${numTramo} al folio ${folio}`;
+
+                const titulo = document.getElementById(
+                    "tituloPlanificacionTramos",
+                );
+                if (titulo)
+                    titulo.textContent = `Nuevo Tramo ${numTramo} — Folio ${folio}`;
+
+                // Un solo tramo a la vez: ocultar "+ Nuevo Tramo"
+                const btnNuevo = document.getElementById("btnNuevoTramo");
+                if (btnNuevo) btnNuevo.style.display = "none";
+
+                // Dejar una única tarjeta de tramo limpia
+                const cont = document.getElementById("dispatchContainer");
+                if (cont) cont.innerHTML = "";
+                dispatchCount = 0;
+                addDispatch();
+
+                // El botón de guardar cambia a "Guardar Tramo"
+                const btnGuardar =
+                    document.getElementById("syncLogisticaBtn");
+                if (btnGuardar) btnGuardar.textContent = "Guardar Tramo";
+
+                // Ocultar acciones que no aplican (exportar/limpiar viaje completo)
+                const btnExport = document.getElementById("exportBtn");
+                if (btnExport) btnExport.style.display = "none";
+                const btnClear = document.getElementById("clearFormBtn");
+                if (btnClear) btnClear.style.display = "none";
+
+                // Llevar la vista al formulario
+                document
+                    .getElementById("tituloPlanificacionTramos")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+
+            // Vuelve el formulario al modo normal (crear viaje completo)
+            function cancelarAgregarTramoExistente() {
+                modoAgregarTramo = null;
+
+                const dg = document.getElementById("datosGeneralesWrapper");
+                if (dg) dg.style.display = "";
+                const banner = document.getElementById("bannerAgregarTramo");
+                if (banner) banner.style.display = "none";
+
+                const titulo = document.getElementById(
+                    "tituloPlanificacionTramos",
+                );
+                if (titulo)
+                    titulo.textContent = "Planificación de Tramos Logísticos";
+                const btnNuevo = document.getElementById("btnNuevoTramo");
+                if (btnNuevo) btnNuevo.style.display = "";
+                const btnGuardar =
+                    document.getElementById("syncLogisticaBtn");
+                if (btnGuardar) btnGuardar.textContent = "Guardar Viaje";
+                const btnExport = document.getElementById("exportBtn");
+                if (btnExport) btnExport.style.display = "";
+                const btnClear = document.getElementById("clearFormBtn");
+                if (btnClear) btnClear.style.display = "";
+
+                // Restaurar el formulario de creación de viaje
+                if (typeof clearLogisticaForm === "function")
+                    clearLogisticaForm();
+            }
+
+            // Guarda el tramo del formulario grande contra ?action=agregar_tramo.
+            // Lee la PRIMERA tarjeta de tramo del dispatchContainer.
+            async function guardarTramoEnViajeExistente() {
+                const card = document.querySelector(".dispatch-card");
+                if (!card) {
+                    showToast("⚠️ No hay tramo para guardar");
+                    return;
+                }
+                const v = (sel) => card.querySelector(sel)?.value?.trim() || "";
+                const destino = v(".d-destino");
+                const salidaPatio =
+                    card.querySelector(".d-salida-patio")?.value || "";
+                const citaCarga =
+                    card.querySelector(".d-cita-carga")?.value || "";
+                const salidaCarga =
+                    card.querySelector(".d-salida-carga")?.value || "";
+                const descarga = card.querySelector(".d-descarga")?.value || "";
+
+                if (!destino) {
+                    showToast("⚠️ El Punto de Destino es obligatorio");
+                    card.querySelector(".d-destino")?.focus();
+                    return;
+                }
+
+                // Ningún tiempo programado puede estar en el pasado
+                const ahoraDt = nowDateTimeLocal();
+                const tiempos = [
+                    [salidaPatio, "Salida de Patio"],
+                    [citaCarga, "Cita de Carga"],
+                    [salidaCarga, "Salida de Carga"],
+                    [descarga, "Hora de Descarga"],
+                ];
+                for (const [val, etiqueta] of tiempos) {
+                    if (val && val < ahoraDt) {
+                        showToast(
+                            `⚠️ "${etiqueta}" no puede ser una fecha/hora pasada`,
+                        );
+                        return;
+                    }
+                }
+
+                const btn = document.getElementById("syncLogisticaBtn");
+                const textoOrig = btn ? btn.textContent : "";
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = "Guardando...";
+                }
+
+                try {
+                    const res = await fetch(`${VIAJES_API}?action=agregar_tramo`, {
+                        method: "POST",
+                        headers: getAuthHeaders({
+                            "Content-Type": "application/json",
+                        }),
+                        body: JSON.stringify({
+                            viaje_id: modoAgregarTramo.viaje_id,
+                            tramo: {
+                                origen: v(".d-origen"),
+                                lugar_carga: v(".d-lugar-carga"),
+                                destino,
+                                ruta: v(".d-ruta"),
+                                instrucciones: v(".d-instrucciones"),
+                                salida_patio: salidaPatio || null,
+                                cita_carga: citaCarga || null,
+                                salida_carga: salidaCarga || null,
+                                descarga_programada: descarga || null,
+                            },
+                        }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || !json.ok) {
+                        showToast(
+                            "❌ No se pudo agregar el tramo: " +
+                                (json.error || `Error ${res.status}`),
+                        );
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = textoOrig;
+                        }
+                        return;
+                    }
+
+                    const folioGuardado = modoAgregarTramo.folio;
+                    const unidadId = viajesActivosUnidadId;
+                    showToast(`✓ Tramo agregado al folio ${folioGuardado}`);
+
+                    if (btn) btn.disabled = false;
+                    // Volver al modo normal (también limpia el formulario)
+                    cancelarAgregarTramoExistente();
+
+                    // Refrescar panel de viajes + tabla legacy "Unidades en Sesión"
+                    if (unidadId) await cargarViajesUnidad(unidadId);
+                    if (typeof loadUnitsFromSheets === "function")
+                        loadUnitsFromSheets();
+                } catch (e) {
+                    console.error("guardarTramoEnViajeExistente:", e);
+                    showToast("❌ Error de red al agregar el tramo");
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = textoOrig;
+                    }
                 }
             }
 
@@ -4110,10 +4917,14 @@
                     // Recargar plantillas para asegurar que los dropdowns estén actualizados
                     if (currentCliente) {
                         cargarPlantillasRuta();
+                        cargarOperadores();
                     }
                 }
                 if (tabName === "plantillasRutaTab") {
                     cargarPlantillasRuta();
+                }
+                if (tabName === "operadoresTab") {
+                    cargarOperadores();
                 }
             }
 
@@ -4195,20 +5006,33 @@
                 showToast("✓ Fechas de tramos actualizadas");
             }
 
+            // Devuelve la fecha/hora actual local en formato datetime-local (YYYY-MM-DDTHH:mm)
+            function nowDateTimeLocal() {
+                const ahora = new Date();
+                ahora.setMinutes(
+                    ahora.getMinutes() - ahora.getTimezoneOffset(),
+                );
+                return ahora.toISOString().slice(0, 16);
+            }
+
+            // Devuelve la fecha de HOY en zona horaria local (YYYY-MM-DD).
+            // NO usar new Date().toISOString() para esto: convierte a UTC y
+            // por la tarde/noche en zonas UTC- ya marca el día siguiente.
+            function todayLocal() {
+                return nowDateTimeLocal().slice(0, 10);
+            }
+
             function addDispatch() {
                 dispatchCount++;
                 const container = document.getElementById("dispatchContainer");
                 const div = document.createElement("div");
                 div.className = "dispatch-card";
 
-                // Generar opciones del selector de plantillas
-                let plantillasOptions =
-                    '<option value="">-- Llenar manualmente --</option>';
-                if (plantillasRutaCache && plantillasRutaCache.length > 0) {
-                    plantillasRutaCache.forEach((p) => {
-                        plantillasOptions += `<option value="${p.id}">${p.etiqueta}</option>`;
-                    });
-                }
+                // No permitir tiempos pasados en los campos de programación del tramo
+                const minDateTime = nowDateTimeLocal();
+
+                // Generar opciones del selector de rutas (agrupadas por sección)
+                let plantillasOptions = construirOpcionesRutas();
 
                 div.innerHTML = `
             <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
@@ -4217,12 +5041,12 @@
             <div style="margin-bottom: 20px; padding: 12px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: 8px; border: 1px solid #7dd3fc;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                     <span style="font-size: 20px;">🔖</span>
-                    <label style="font-weight: 600; color: #0369a1; margin: 0;">Usar plantilla de ruta (opcional)</label>
+                    <label style="font-weight: 600; color: #0369a1; margin: 0;">Usar ruta del historial (opcional)</label>
                 </div>
                 <select class="plantilla-selector" onchange="aplicarPlantillaATramo(this)" style="width: 100%; padding: 8px; border: 1px solid #7dd3fc; border-radius: 4px; background: white;">
                     ${plantillasOptions}
                 </select>
-                <small style="display: block; color: #0c4a6e; margin-top: 8px;">Los campos se llenarán automáticamente con la plantilla seleccionada</small>
+                <small style="display: block; color: #0c4a6e; margin-top: 8px;">Elige una ruta frecuente o favorita y los campos se llenarán solos. El historial se va creando solo al completar viajes.</small>
             </div>
 
             <div class="grid">
@@ -4239,11 +5063,11 @@
             <div class="grid" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
                 <div class="form-group">
                   <label>Salida de Patio</label>
-                  <input type="datetime-local" class="d-salida-patio"/>
+                  <input type="datetime-local" class="d-salida-patio" min="${minDateTime}"/>
                   </div>
-                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga"></div>
-                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga"></div>
-                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga"></div>
+                <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga" min="${minDateTime}"></div>
+                <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga" min="${minDateTime}"></div>
+                <div class="form-group"><label>Hora de Descarga</label><input type="datetime-local" class="d-descarga" min="${minDateTime}"></div>
             </div>
             ${
                 dispatchCount > 1
@@ -4813,9 +5637,12 @@
                     .getElementById("loginForm")
                     ?.addEventListener("submit", handlePlanificadorLogin);
 
-                document.getElementById("fecha_registro").value = new Date()
-                    .toISOString()
-                    .split("T")[0];
+                const hoyStr = todayLocal();
+                const fechaRegEl = document.getElementById("fecha_registro");
+                fechaRegEl.value = hoyStr;
+                // Bloquear selección de fechas pasadas en el calendario.
+                // Fecha Fin ya no se captura: se deriva del último tramo.
+                fechaRegEl.min = hoyStr;
                 addDispatch();
 
                 if (requirePlanificadorSession()) {
@@ -4826,9 +5653,8 @@
                 }
                 // Inicializar fecha_registro con hoy
                 if (!document.getElementById("fecha_registro").value) {
-                    document.getElementById("fecha_registro").value = new Date()
-                        .toISOString()
-                        .split("T")[0];
+                    document.getElementById("fecha_registro").value =
+                        todayLocal();
                 }
 
                 // Debounced event listener para campo Cliente
@@ -4881,12 +5707,6 @@
                     });
 
                 document
-                    .getElementById("fecha_fin")
-                    .addEventListener("change", async () => {
-                        await _checkConflictosActual();
-                    });
-
-                document
                     .getElementById("id_vehiculo")
                     .addEventListener("change", async (e) => {
                         const economico = e.target.value.trim();
@@ -4935,8 +5755,308 @@
             });
 
             // ============================================================================
+            // FUNCIONES PARA CATÁLOGO DE OPERADORES (multitenant)
+            // ============================================================================
+
+            let operadoresCache = [];
+
+            async function cargarOperadores() {
+                if (!currentCliente) return;
+                const clienteId = obtenerClienteId();
+                if (!clienteId) return;
+                try {
+                    const response = await fetch(
+                        `${VIAJES_API}?action=listar_operadores&cliente_id=${clienteId}`,
+                        { headers: getAuthHeaders() },
+                    );
+                    const json = await response.json();
+                    if (json.ok) {
+                        operadoresCache = json.operadores || [];
+                        actualizarSelectoresOperador();
+                        renderOperadoresTable();
+                        const cnt = document.getElementById("operadoresCount");
+                        if (cnt) cnt.textContent = operadoresCache.length;
+                    }
+                } catch (e) {
+                    console.error("Error cargando operadores:", e);
+                }
+            }
+
+            // Rellena los <select> de operador (crear + editar) desde el cache
+            function actualizarSelectoresOperador() {
+                const ids = ["operador", "editUnitOperador"];
+                ids.forEach((selId) => {
+                    const sel = document.getElementById(selId);
+                    if (!sel) return;
+                    const actual = sel.value;
+                    sel.innerHTML =
+                        '<option value="">-- Selecciona operador --</option>';
+                    operadoresCache.forEach((op) => {
+                        const o = document.createElement("option");
+                        o.value = op.id;
+                        o.textContent = op.nombre;
+                        o.dataset.telefonos = op.telefonos || "";
+                        sel.appendChild(o);
+                    });
+                    if (actual) sel.value = actual;
+                });
+            }
+
+            // Al seleccionar un operador, autocompletar el/los teléfono(s) de la unidad
+            function onOperadorChange(selId) {
+                const sel = document.getElementById(selId);
+                if (!sel) return;
+                const tel =
+                    sel.value && sel.selectedOptions[0]
+                        ? sel.selectedOptions[0].dataset.telefonos || ""
+                        : "";
+
+                if (selId === "editUnitOperador") {
+                    // Modal editar: input único
+                    const input = document.getElementById("editUnitTelefonos");
+                    if (input) input.value = tel;
+                } else {
+                    // Formulario crear: lista dinámica de teléfonos (.u-telefono)
+                    const primero = document.querySelector(
+                        "#phoneRows .u-telefono",
+                    );
+                    if (primero) primero.value = tel;
+                }
+            }
+
+            // Selecciona en un <select> la opción cuyo texto coincide con un nombre
+            function _seleccionarOperadorPorNombre(selId, nombre) {
+                const sel = document.getElementById(selId);
+                if (!sel) return;
+                const n = String(nombre || "").trim();
+                let encontrado = false;
+                for (const opt of sel.options) {
+                    if (opt.textContent.trim() === n && n !== "") {
+                        sel.value = opt.value;
+                        encontrado = true;
+                        break;
+                    }
+                }
+                if (!encontrado) sel.value = "";
+            }
+
+            // ── Pestaña "Operadores" (CRUD) ──────────────────────────────────────
+            function renderOperadoresTable() {
+                const cont = document.getElementById(
+                    "operadoresTableContainer",
+                );
+                if (!cont) return;
+                if (!operadoresCache.length) {
+                    cont.innerHTML =
+                        '<p style="color:var(--text-muted);font-size:13px;padding:12px">Aún no hay operadores registrados para este cliente.</p>';
+                    return;
+                }
+                const filas = operadoresCache
+                    .map(
+                        (op) => `
+                    <tr>
+                        <td style="padding:8px;border-bottom:1px solid var(--border)">${escapeHtmlOp(op.nombre)}</td>
+                        <td style="padding:8px;border-bottom:1px solid var(--border)">${escapeHtmlOp(op.telefonos || "—")}</td>
+                        <td style="padding:8px;border-bottom:1px solid var(--border);white-space:nowrap">
+                            <button type="button" onclick="editarOperador(${op.id})" title="Editar" style="background:none;border:none;cursor:pointer;font-size:15px">✏️</button>
+                            <button type="button" onclick="eliminarOperador(${op.id})" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:15px">🗑️</button>
+                        </td>
+                    </tr>`,
+                    )
+                    .join("");
+                cont.innerHTML = `
+                    <table style="width:100%;border-collapse:collapse;font-size:13px">
+                        <thead>
+                            <tr style="text-align:left;color:var(--text-muted)">
+                                <th style="padding:8px;border-bottom:2px solid var(--border)">Nombre</th>
+                                <th style="padding:8px;border-bottom:2px solid var(--border)">Teléfonos</th>
+                                <th style="padding:8px;border-bottom:2px solid var(--border)">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filas}</tbody>
+                    </table>`;
+            }
+
+            function escapeHtmlOp(s) {
+                return String(s).replace(
+                    /[&<>"']/g,
+                    (c) =>
+                        ({
+                            "&": "&amp;",
+                            "<": "&lt;",
+                            ">": "&gt;",
+                            '"': "&quot;",
+                            "'": "&#39;",
+                        })[c],
+                );
+            }
+
+            async function guardarOperador() {
+                const id =
+                    parseInt(
+                        document.getElementById("operadorEditId").value,
+                        10,
+                    ) || 0;
+                const nombre = document
+                    .getElementById("operadorNombre")
+                    .value.trim();
+                if (!nombre) {
+                    showToast("⚠️ El nombre es obligatorio");
+                    return;
+                }
+                const clienteId = obtenerClienteId();
+                if (!clienteId) {
+                    showToast("⚠️ Selecciona un cliente primero");
+                    return;
+                }
+                const telefonos = document
+                    .getElementById("operadorTelefonos")
+                    .value.trim();
+                const esEdicion = id > 0;
+                const url = esEdicion
+                    ? `${VIAJES_API}?action=actualizar_operador`
+                    : `${VIAJES_API}?action=crear_operador`;
+                const payload = esEdicion
+                    ? { operador_id: id, nombre, telefonos }
+                    : { cliente_id: clienteId, nombre, telefonos };
+                try {
+                    const res = await fetch(withAuthUrl(url), {
+                        method: esEdicion ? "PUT" : "POST",
+                        headers: getAuthHeaders({
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                        }),
+                        body: JSON.stringify(payload),
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json.ok) {
+                        throw new Error(
+                            json.error || `Error HTTP ${res.status}`,
+                        );
+                    }
+                    showToast(
+                        esEdicion
+                            ? "✓ Operador actualizado"
+                            : "✓ Operador creado",
+                    );
+                    _resetFormOperador();
+                    cargarOperadores();
+                } catch (error) {
+                    showToast("❌ " + error.message);
+                }
+            }
+
+            function editarOperador(id) {
+                const op = operadoresCache.find((o) => o.id === id);
+                if (!op) return;
+                document.getElementById("operadorEditId").value = op.id;
+                document.getElementById("operadorNombre").value = op.nombre;
+                document.getElementById("operadorTelefonos").value =
+                    op.telefonos || "";
+                document.getElementById("operadorFormTitulo").textContent =
+                    "Editar Operador";
+                document.getElementById("operadorCancelBtn").style.display =
+                    "inline-block";
+            }
+
+            function _resetFormOperador() {
+                document.getElementById("operadorEditId").value = "";
+                document.getElementById("operadorNombre").value = "";
+                document.getElementById("operadorTelefonos").value = "";
+                document.getElementById("operadorFormTitulo").textContent =
+                    "Agregar Operador";
+                document.getElementById("operadorCancelBtn").style.display =
+                    "none";
+            }
+
+            async function eliminarOperador(id) {
+                const op = operadoresCache.find((o) => o.id === id);
+                if (!op) return;
+                if (
+                    !confirm(
+                        `¿Eliminar al operador "${op.nombre}"? Dejará de aparecer en la lista.`,
+                    )
+                )
+                    return;
+                try {
+                    const res = await fetch(
+                        withAuthUrl(`${VIAJES_API}?action=eliminar_operador`),
+                        {
+                            method: "DELETE",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                                Accept: "application/json",
+                            }),
+                            body: JSON.stringify({ operador_id: id }),
+                        },
+                    );
+                    const json = await res.json();
+                    if (!res.ok || !json.ok) {
+                        throw new Error(
+                            json.error || `Error HTTP ${res.status}`,
+                        );
+                    }
+                    showToast("✓ Operador eliminado");
+                    cargarOperadores();
+                } catch (error) {
+                    showToast("❌ " + error.message);
+                }
+            }
+
+            // ============================================================================
             // FUNCIONES PARA CATÁLOGO DE PLANTILLAS DE RUTA
             // ============================================================================
+
+            // Muestra/oculta un mapa embebido de Google Maps para una ubicación de texto.
+            // inputId = id del input con el texto; mapaId = id del contenedor del mapa.
+            function verMapaPlantilla(inputId, mapaId) {
+                const input = document.getElementById(inputId);
+                const cont = document.getElementById(mapaId);
+                if (!input || !cont) return;
+                const lugar = input.value.trim();
+                if (!lugar) {
+                    showToast("⚠️ Escribe una ubicación primero");
+                    return;
+                }
+                // Si ya está mostrando el mismo lugar, ocultar (toggle)
+                if (
+                    cont.classList.contains("activo") &&
+                    cont.dataset.lugar === lugar
+                ) {
+                    cont.classList.remove("activo");
+                    cont.innerHTML = "";
+                    cont.dataset.lugar = "";
+                    return;
+                }
+                const src =
+                    "https://maps.google.com/maps?q=" +
+                    encodeURIComponent(lugar) +
+                    "&output=embed";
+                cont.innerHTML =
+                    '<iframe loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' +
+                    src +
+                    '" title="Mapa de ' +
+                    escapeHtmlOp(lugar) +
+                    '"></iframe>';
+                cont.dataset.lugar = lugar;
+                cont.classList.add("activo");
+            }
+
+            // Oculta y limpia los 3 mapas del formulario de plantilla (al resetear)
+            function _limpiarMapasPlantilla() {
+                [
+                    "mapaPlantillaOrigen",
+                    "mapaPlantillaCarga",
+                    "mapaPlantillaDestino",
+                ].forEach((id) => {
+                    const c = document.getElementById(id);
+                    if (c) {
+                        c.classList.remove("activo");
+                        c.innerHTML = "";
+                        c.dataset.lugar = "";
+                    }
+                });
+            }
 
             /**
              * Carga las plantillas de ruta del cliente actual desde la API
@@ -4958,7 +6078,7 @@
                     }
 
                     const response = await fetch(
-                        `${VIAJES_API}?action=listar_catalogo&cliente_id=${clienteId}`,
+                        `${VIAJES_API}?action=listar_rutas&cliente_id=${clienteId}`,
                         {
                             headers: getAuthHeaders(),
                         },
@@ -4967,7 +6087,23 @@
                     const json = await response.json();
 
                     if (json.ok) {
-                        plantillasRutaCache = json.plantillas || [];
+                        // El endpoint devuelve 3 secciones. Las guardamos por separado
+                        // (para el render seccionado) y también aplanadas en
+                        // plantillasRutaCache (para que el resto del JS —aplicar a
+                        // tramo, selectores— siga funcionando con un array plano).
+                        const favoritos = json.favoritos || [];
+                        const frecuentes = json.frecuentes || [];
+                        const recientes = json.recientes || [];
+                        plantillasRutaSecciones = {
+                            favoritos,
+                            frecuentes,
+                            recientes,
+                        };
+                        plantillasRutaCache = [
+                            ...favoritos,
+                            ...frecuentes,
+                            ...recientes,
+                        ];
                         renderPlantillasRutaTable();
                         document.getElementById("plantillasCount").textContent =
                             plantillasRutaCache.length;
@@ -4975,7 +6111,7 @@
                         actualizarSelectoresPlantillas();
                     } else {
                         throw new Error(
-                            json.error || "Error al cargar plantillas",
+                            json.error || "Error al cargar rutas",
                         );
                     }
                 } catch (error) {
@@ -4998,79 +6134,134 @@
                 if (plantillasRutaCache.length === 0) {
                     container.innerHTML = `
                         <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                            No hay plantillas creadas. Crea tu primera plantilla arriba.
+                            Aún no hay rutas en el historial. Se crearán solas conforme completes viajes,
+                            o puedes agregar una manualmente arriba.
                         </p>
                     `;
                     return;
                 }
 
-                let html = `
-                    <table class="contact-table" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th>Etiqueta</th>
-                                <th>Ruta</th>
-                                <th>Origen</th>
-                                <th>Lugar Carga</th>
-                                <th>Destino</th>
-                                <th>Duración (hrs)</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+                // Fecha relativa simple para "última vez"
+                const tiempoRelativo = (fecha) => {
+                    if (!fecha) return "";
+                    const d = new Date(fecha.replace(" ", "T"));
+                    if (isNaN(d)) return "";
+                    const dias = Math.floor(
+                        (Date.now() - d.getTime()) / 86400000,
+                    );
+                    if (dias <= 0) return "hoy";
+                    if (dias === 1) return "ayer";
+                    if (dias < 30) return `hace ${dias} días`;
+                    if (dias < 365)
+                        return `hace ${Math.floor(dias / 30)} meses`;
+                    return `hace ${Math.floor(dias / 365)} años`;
+                };
 
-                plantillasRutaCache.forEach((plantilla) => {
-                    const duracion = plantilla.duracion_estimada_horas
-                        ? plantilla.duracion_estimada_horas.toFixed(1)
-                        : "-";
+                const card = (plantilla) => {
+                    const ruta = plantilla.ruta
+                        ? `<span class="plantilla-card-ruta">${escapeHtml(plantilla.ruta)}</span>`
+                        : "";
+                    const fila = (icono, label, valor) =>
+                        valor
+                            ? `<div class="plantilla-card-fila">
+                                   <span class="plantilla-card-icono">${icono}</span>
+                                   <span class="plantilla-card-label">${label}:</span>
+                                   <span class="plantilla-card-valor">${escapeHtml(valor)}</span>
+                               </div>`
+                            : "";
+                    const instr = plantilla.instrucciones
+                        ? `<div class="plantilla-card-instr" title="${escapeHtml(plantilla.instrucciones)}">
+                               📋 ${escapeHtml(plantilla.instrucciones)}
+                           </div>`
+                        : "";
+                    // Métricas de uso (solo si vienen del historial / tienen usos)
+                    const usos = plantilla.veces_usada > 0
+                        ? `<span title="Veces usada">🔁 ${plantilla.veces_usada}</span>`
+                        : "";
+                    const ultima = plantilla.ultima_vez_usada
+                        ? `<span title="Última vez">🕑 ${tiempoRelativo(plantilla.ultima_vez_usada)}</span>`
+                        : "";
+                    const metricas =
+                        usos || ultima
+                            ? `<div class="plantilla-card-metricas" style="display:flex; gap:12px; font-size:12px; color:var(--text-muted); margin-top:6px;">${usos}${ultima}</div>`
+                            : "";
+                    const estrella = plantilla.es_favorito ? "⭐" : "☆";
+                    const tituloFav = plantilla.es_favorito
+                        ? "Quitar de favoritos"
+                        : "Marcar como favorito";
 
-                    html += `
-                        <tr>
-                            <td>
-                                <strong style="color: var(--accent);">${escapeHtml(plantilla.etiqueta)}</strong>
-                            </td>
-                            <td>${escapeHtml(plantilla.ruta || "-")}</td>
-                            <td>${escapeHtml(plantilla.origen || "-")}</td>
-                            <td>${escapeHtml(plantilla.lugar_carga || "-")}</td>
-                            <td>${escapeHtml(plantilla.destino || "-")}</td>
-                            <td>${duracion}</td>
-                            <td>
-                                <button
-                                    class="btn btn-sm btn-secondary"
-                                    onclick="editarPlantillaRuta(${plantilla.id})"
-                                    title="Editar plantilla"
-                                >
-                                    ✏️
-                                </button>
-                                <button
-                                    class="btn btn-sm btn-danger"
-                                    onclick="eliminarPlantillaRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta)}')"
-                                    title="Eliminar plantilla"
-                                >
-                                    🗑️
-                                </button>
-                            </td>
-                        </tr>
-                    `;
+                    return `
+                    <div class="plantilla-card">
+                        <div class="plantilla-card-head">
+                            <button
+                                class="btn-fav"
+                                onclick="toggleFavoritoRuta(${plantilla.id}, ${plantilla.es_favorito ? "false" : "true"})"
+                                title="${tituloFav}"
+                                style="background:none; border:none; cursor:pointer; font-size:18px; padding:0; margin-right:6px;"
+                            >${estrella}</button>
+                            <strong class="plantilla-card-etiqueta">${escapeHtml(plantilla.etiqueta)}</strong>
+                            ${ruta}
+                        </div>
+                        <div class="plantilla-card-body">
+                            ${fila("📍", "Origen", plantilla.origen)}
+                            ${fila("🏭", "Carga", plantilla.lugar_carga)}
+                            ${fila("🏁", "Destino", plantilla.destino)}
+                            ${instr}
+                            ${metricas}
+                        </div>
+                        <div class="plantilla-card-acciones">
+                            <button
+                                class="btn btn-sm btn-secondary"
+                                onclick="renombrarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}', ${plantilla.es_favorito ? "true" : "false"})"
+                                title="Renombrar etiqueta"
+                            >
+                                ✏️ Renombrar
+                            </button>
+                            <button
+                                class="btn btn-sm btn-secondary"
+                                onclick="editarPlantillaRuta(${plantilla.id})"
+                                title="Editar todos los campos"
+                            >
+                                ⚙️ Editar
+                            </button>
+                            <button
+                                class="btn btn-sm btn-danger"
+                                onclick="ocultarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}')"
+                                title="Ocultar del historial"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    </div>`;
+                };
 
-                    if (plantilla.instrucciones) {
-                        html += `
-                            <tr style="background: #f9fafb;">
-                                <td colspan="7" style="padding-left: 30px; font-size: 13px; color: var(--text-muted);">
-                                    📋 Instrucciones: ${escapeHtml(plantilla.instrucciones)}
-                                </td>
-                            </tr>
-                        `;
-                    }
-                });
+                const seccion = (titulo, subtitulo, items) => {
+                    if (!items || items.length === 0) return "";
+                    const cards = items.map(card).join("");
+                    return `
+                        <div class="historial-seccion" style="margin-bottom: 28px;">
+                            <h3 style="margin: 0 0 4px;">${titulo} <span style="color:var(--text-muted); font-weight:normal;">(${items.length})</span></h3>
+                            <p style="margin: 0 0 12px; font-size: 12px; color: var(--text-muted);">${subtitulo}</p>
+                            <div class="plantillas-grid">${cards}</div>
+                        </div>`;
+                };
 
-                html += `
-                        </tbody>
-                    </table>
-                `;
-
-                container.innerHTML = html;
+                container.innerHTML =
+                    seccion(
+                        "⭐ Favoritos",
+                        "Rutas fijadas que siempre aparecen primero.",
+                        plantillasRutaSecciones.favoritos,
+                    ) +
+                    seccion(
+                        "🔁 Frecuentes",
+                        "Rutas que ya has completado, ordenadas por uso.",
+                        plantillasRutaSecciones.frecuentes,
+                    ) +
+                    seccion(
+                        "🕑 Recientes / Sin usar",
+                        "Rutas agregadas manualmente que aún no se han despachado.",
+                        plantillasRutaSecciones.recientes,
+                    );
             }
 
             /**
@@ -5098,8 +6289,6 @@
                 const instrucciones = document
                     .getElementById("plantillaInstrucciones")
                     .value.trim();
-                const duracion =
-                    document.getElementById("plantillaDuracion").value;
 
                 if (!etiqueta) {
                     showToast("⚠️ La etiqueta es obligatoria", "warning");
@@ -5128,9 +6317,6 @@
                     lugar_carga: lugarCarga || null,
                     destino: destino || null,
                     instrucciones: instrucciones || null,
-                    duracion_estimada_horas: duracion
-                        ? parseFloat(duracion)
-                        : null,
                 };
 
                 try {
@@ -5200,8 +6386,7 @@
                     plantilla.destino || "";
                 document.getElementById("plantillaInstrucciones").value =
                     plantilla.instrucciones || "";
-                document.getElementById("plantillaDuracion").value =
-                    plantilla.duracion_estimada_horas || "";
+                _limpiarMapasPlantilla();
 
                 // Cambiar UI a modo edición
                 document.getElementById("plantillaFormTitle").textContent =
@@ -5261,6 +6446,118 @@
             }
 
             /**
+             * Marca/desmarca una ruta como favorita (estrella).
+             */
+            async function toggleFavoritoRuta(plantillaId, esFavorito) {
+                try {
+                    const response = await fetch(
+                        `${VIAJES_API}?action=marcar_favorito`,
+                        {
+                            method: "PUT",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                            }),
+                            body: JSON.stringify({
+                                plantilla_id: plantillaId,
+                                es_favorito: esFavorito,
+                            }),
+                        },
+                    );
+                    const json = await response.json();
+                    if (json.ok) {
+                        showToast(
+                            esFavorito
+                                ? "⭐ Añadida a favoritos"
+                                : "☆ Quitada de favoritos",
+                            "success",
+                        );
+                        await cargarPlantillasRuta();
+                    } else {
+                        throw new Error(json.error || "Error");
+                    }
+                } catch (error) {
+                    showToast("❌ Error: " + error.message, "error");
+                }
+            }
+
+            /**
+             * Renombra la etiqueta de una ruta (ej: "CDMX → MTY" → "Casa → Trabajo").
+             * Conserva el estado de favorito.
+             */
+            async function renombrarRuta(plantillaId, etiquetaActual, esFavorito) {
+                const nueva = prompt(
+                    "Nuevo nombre para esta ruta:",
+                    etiquetaActual,
+                );
+                if (nueva === null) return; // cancelado
+                const limpia = nueva.trim();
+                if (!limpia) {
+                    showToast("⚠️ El nombre no puede estar vacío", "warning");
+                    return;
+                }
+                if (limpia === etiquetaActual) return;
+                try {
+                    const response = await fetch(
+                        `${VIAJES_API}?action=marcar_favorito`,
+                        {
+                            method: "PUT",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                            }),
+                            body: JSON.stringify({
+                                plantilla_id: plantillaId,
+                                es_favorito: esFavorito,
+                                etiqueta: limpia,
+                            }),
+                        },
+                    );
+                    const json = await response.json();
+                    if (json.ok) {
+                        showToast(`✅ Ruta renombrada a "${limpia}"`, "success");
+                        await cargarPlantillasRuta();
+                    } else {
+                        throw new Error(json.error || "Error");
+                    }
+                } catch (error) {
+                    showToast("❌ Error: " + error.message, "error");
+                }
+            }
+
+            /**
+             * Oculta una ruta del historial (soft delete vía ocultar_ruta).
+             */
+            async function ocultarRuta(plantillaId, etiqueta) {
+                if (
+                    !confirm(
+                        `¿Ocultar la ruta "${etiqueta}" del historial?\n\nNo se borra: si se vuelve a despachar reaparecerá.`,
+                    )
+                ) {
+                    return;
+                }
+                try {
+                    const response = await fetch(
+                        `${VIAJES_API}?action=ocultar_ruta`,
+                        {
+                            method: "DELETE",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                            }),
+                            body: JSON.stringify({ plantilla_id: plantillaId }),
+                        },
+                    );
+                    const json = await response.json();
+                    if (json.ok) {
+                        showToast(`✅ Ruta "${etiqueta}" ocultada`, "success");
+                        await cargarPlantillasRuta();
+                    } else {
+                        throw new Error(json.error || "Error");
+                    }
+                } catch (error) {
+                    showToast("❌ Error: " + error.message, "error");
+                }
+            }
+
+            /**
              * Cancela la edición de una plantilla y limpia el formulario
              */
             function cancelarEdicionPlantilla() {
@@ -5272,6 +6569,7 @@
              */
             function limpiarFormularioPlantilla() {
                 document.getElementById("plantillaForm").reset();
+                _limpiarMapasPlantilla();
                 document.getElementById("plantillaEditId").value = "";
                 document.getElementById("plantillaFormTitle").textContent =
                     "Agregar Nueva Plantilla";
@@ -5291,6 +6589,48 @@
                     (c) => c.nombre === currentCliente,
                 );
                 return clienteActual ? clienteActual.id : null;
+            }
+
+            /**
+             * Construye el HTML de <option> para los selectores de ruta de los
+             * tramos, agrupadas por sección (⭐ Favoritos / 🔁 Frecuentes / 🕑
+             * Recientes) usando <optgroup>. La etiqueta de frecuentes/recientes
+             * muestra el contador de usos para dar señal tipo Uber.
+             */
+            function construirOpcionesRutas() {
+                let html =
+                    '<option value="">-- Llenar manualmente --</option>';
+
+                const grupo = (titulo, items, mostrarUsos) => {
+                    if (!items || items.length === 0) return "";
+                    const opts = items
+                        .map((p) => {
+                            const usos =
+                                mostrarUsos && p.veces_usada > 0
+                                    ? ` (${p.veces_usada})`
+                                    : "";
+                            return `<option value="${p.id}">${escapeHtml(p.etiqueta)}${usos}</option>`;
+                        })
+                        .join("");
+                    return `<optgroup label="${titulo}">${opts}</optgroup>`;
+                };
+
+                html += grupo(
+                    "⭐ Favoritos",
+                    plantillasRutaSecciones.favoritos,
+                    false,
+                );
+                html += grupo(
+                    "🔁 Frecuentes",
+                    plantillasRutaSecciones.frecuentes,
+                    true,
+                );
+                html += grupo(
+                    "🕑 Recientes",
+                    plantillasRutaSecciones.recientes,
+                    false,
+                );
+                return html;
             }
 
             /**
@@ -5341,17 +6681,9 @@
                 const selectores = document.querySelectorAll(
                     ".plantilla-selector",
                 );
+                const opciones = construirOpcionesRutas();
                 selectores.forEach((select) => {
                     const valorActual = select.value;
-                    let opciones =
-                        '<option value="">-- Llenar manualmente --</option>';
-
-                    if (plantillasRutaCache && plantillasRutaCache.length > 0) {
-                        plantillasRutaCache.forEach((p) => {
-                            opciones += `<option value="${p.id}">${p.etiqueta}</option>`;
-                        });
-                    }
-
                     select.innerHTML = opciones;
                     // Restaurar selección si existía
                     if (valorActual) select.value = valorActual;
@@ -5363,8 +6695,12 @@
             window.guardarPlantillaRuta = guardarPlantillaRuta;
             window.editarPlantillaRuta = editarPlantillaRuta;
             window.eliminarPlantillaRuta = eliminarPlantillaRuta;
+            window.toggleFavoritoRuta = toggleFavoritoRuta;
+            window.renombrarRuta = renombrarRuta;
+            window.ocultarRuta = ocultarRuta;
             window.cancelarEdicionPlantilla = cancelarEdicionPlantilla;
             window.aplicarPlantillaATramo = aplicarPlantillaATramo;
+            window.construirOpcionesRutas = construirOpcionesRutas;
             window.actualizarSelectoresPlantillas =
                 actualizarSelectoresPlantillas;
 
@@ -5389,6 +6725,9 @@
             window.addLector = addLector;
             window.removeLector = removeLector;
             window.logoutPlanificador = logoutPlanificador;
+            window.iniciarAgregarTramoExistente = iniciarAgregarTramoExistente;
+            window.cancelarAgregarTramoExistente = cancelarAgregarTramoExistente;
+            window.toggleTramosViaje = toggleTramosViaje;
         </script>
     </body>
 </html>

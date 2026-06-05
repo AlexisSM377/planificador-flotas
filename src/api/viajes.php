@@ -27,6 +27,8 @@ ob_start();
 require_once __DIR__ . "/../db.php";
 require_once __DIR__ . "/../config.php";
 
+date_default_timezone_set("America/Mexico_City");
+
 header_remove();
 header("Content-Type: application/json; charset=utf-8");
 
@@ -310,6 +312,26 @@ function to_datetime($v)
     }
 }
 
+function fecha_fin_desde_tramos($tramos)
+{
+    $max = null;
+    $campos = [
+        "salida_patio",
+        "cita_carga",
+        "salida_carga",
+        "descarga_programada",
+    ];
+    foreach ($tramos as $t) {
+        foreach ($campos as $c) {
+            $dt = to_datetime($t[$c] ?? "");
+            if ($dt && ($max === null || $dt > $max)) {
+                $max = $dt;
+            }
+        }
+    }
+    return $max ? substr($max, 0, 10) : null;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers de tramos
 // ---------------------------------------------------------------------------
@@ -516,25 +538,31 @@ function upsert_unidad(
     $operador,
     $telefonos,
     $equipos,
+    $operador_id = null,
 ) {
+    $operador_id = $operador_id !== null && (int) $operador_id > 0
+        ? (int) $operador_id
+        : null;
     $stmt = $conn->prepare(
-        'INSERT INTO unidades (cliente_id, economico, placas, operador, telefonos, equipos, activo)
-         VALUES (?, ?, ?, ?, ?, ?, 1)
+        'INSERT INTO unidades (cliente_id, economico, placas, operador, telefonos, equipos, operador_id, activo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)
          ON DUPLICATE KEY UPDATE
-           placas    = IF(VALUES(placas)    != \'\', VALUES(placas),    placas),
-           operador  = IF(VALUES(operador)  != \'\', VALUES(operador),  operador),
-           telefonos = IF(VALUES(telefonos) != \'\', VALUES(telefonos), telefonos),
-           equipos   = IF(VALUES(equipos)   != \'\', VALUES(equipos),   equipos),
-           activo    = 1',
+           placas      = IF(VALUES(placas)    != \'\', VALUES(placas),    placas),
+           operador    = IF(VALUES(operador)  != \'\', VALUES(operador),  operador),
+           telefonos   = IF(VALUES(telefonos) != \'\', VALUES(telefonos), telefonos),
+           equipos     = IF(VALUES(equipos)   != \'\', VALUES(equipos),   equipos),
+           operador_id = IF(VALUES(operador_id) IS NOT NULL, VALUES(operador_id), operador_id),
+           activo      = 1',
     );
     $stmt->bind_param(
-        "isssss",
+        "isssssi",
         $cliente_id,
         $economico,
         $placas,
         $operador,
         $telefonos,
         $equipos,
+        $operador_id,
     );
     if (!$stmt->execute()) {
         $err = $stmt->error;
@@ -600,7 +628,10 @@ function handle_crear($conn, $ctx)
     $cliente_id = (int) ($body["cliente_id"] ?? 0);
     $folio = str_val($body["folio"] ?? "");
     $fecha_inicio = to_date($body["fecha_inicio"] ?? "");
-    $fecha_fin = to_date($body["fecha_fin"] ?? "");
+    // fecha_fin ya no se captura en el formulario: se deriva del último tramo
+    // más abajo (tras validar los tramos). Se mantiene la columna en BD para
+    // que la detección de conflictos de unidad siga siendo precisa.
+    $fecha_fin = null;
     $notas = null_if_empty($body["notas"] ?? "");
     $tramos = $body["tramos"] ?? [];
 
@@ -610,6 +641,7 @@ function handle_crear($conn, $ctx)
     $operador = str_val($body["operador"] ?? "");
     $telefonos = str_val($body["telefonos"] ?? "");
     $equipos = str_val($body["equipos"] ?? "");
+    $operador_id = (int) ($body["operador_id"] ?? 0);
 
     if ($cliente_id <= 0) {
         throw new Exception("cliente_id requerido", 400);
@@ -620,8 +652,45 @@ function handle_crear($conn, $ctx)
     if (!$fecha_inicio) {
         throw new Exception("fecha_inicio requerida (YYYY-MM-DD)", 400);
     }
+    // No se permiten viajes con fecha de inicio anterior a hoy
+    $hoy = (new DateTime("today"))->format("Y-m-d");
+    if ($fecha_inicio < $hoy) {
+        throw new Exception(
+            "No se puede registrar un viaje con fecha de inicio en el pasado",
+            400,
+        );
+    }
     if (!is_array($tramos) || count($tramos) === 0) {
         throw new Exception("Se requiere al menos un tramo", 400);
+    }
+
+    // Ningún tiempo programado de los tramos puede estar en el pasado
+    $ahora = (new DateTime("now"))->format("Y-m-d H:i:s");
+    $campos_tiempo = [
+        "salida_patio" => "Salida de Patio",
+        "cita_carga" => "Cita de Carga",
+        "salida_carga" => "Salida de Carga",
+        "descarga_programada" => "Hora de Descarga",
+    ];
+    foreach ($tramos as $i => $t) {
+        foreach ($campos_tiempo as $campo => $etiqueta) {
+            $dt = to_datetime($t[$campo] ?? "");
+            if ($dt && $dt < $ahora) {
+                throw new Exception(
+                    "Tramo " .
+                        ($i + 1) .
+                        ": \"$etiqueta\" no puede ser una fecha/hora pasada",
+                    400,
+                );
+            }
+        }
+    }
+
+    // Derivar fecha_fin del tramo más lejano (para conflictos de unidad).
+    // Si ningún tramo tiene tiempos, el viaje dura solo su día de inicio.
+    $fecha_fin = fecha_fin_desde_tramos($tramos);
+    if ($fecha_fin && $fecha_fin < $fecha_inicio) {
+        $fecha_fin = $fecha_inicio;
     }
 
     assert_cliente_access($ctx, $cliente_id);
@@ -662,6 +731,7 @@ function handle_crear($conn, $ctx)
             $operador,
             $telefonos,
             $equipos,
+            $operador_id,
         );
     }
 
@@ -1089,7 +1159,11 @@ function handle_agregar_tramo($conn, $ctx)
     }
 
     $stmt = $conn->prepare(
-        "SELECT cliente_id FROM viajes WHERE id = ? LIMIT 1",
+        'SELECT v.cliente_id, v.unidad_id, v.folio, v.fecha_inicio, v.fecha_fin,
+                c.nombre AS cliente_nombre
+           FROM viajes v
+           JOIN clientes c ON c.id = v.cliente_id
+          WHERE v.id = ? LIMIT 1',
     );
     $stmt->bind_param("i", $viaje_id);
     $stmt->execute();
@@ -1114,7 +1188,56 @@ function handle_agregar_tramo($conn, $ctx)
         throw new Exception("tramo debe ser un objeto", 400);
     }
 
+    // Ningún tiempo programado del tramo puede estar en el pasado
+    // (consistente con handle_crear y la zona horaria America/Mexico_City).
+    $ahora = (new DateTime("now"))->format("Y-m-d H:i:s");
+    $campos_tiempo = [
+        "salida_patio" => "Salida de Patio",
+        "cita_carga" => "Cita de Carga",
+        "salida_carga" => "Salida de Carga",
+        "descarga_programada" => "Hora de Descarga",
+    ];
+    foreach ($campos_tiempo as $campo => $etiqueta) {
+        $dt = to_datetime($tramo_data[$campo] ?? "");
+        if ($dt && $dt < $ahora) {
+            throw new Exception(
+                "\"$etiqueta\" no puede ser una fecha/hora pasada",
+                400,
+            );
+        }
+    }
+
     $tramo_id = insertar_tramo($conn, $viaje_id, $siguiente, $tramo_data);
+
+    // Extender fecha_fin del viaje si este tramo va más lejos (para que la
+    // detección de conflictos de unidad cubra toda la duración real).
+    $fin_tramo = fecha_fin_desde_tramos([$tramo_data]);
+    if ($fin_tramo) {
+        $fin_actual = $v["fecha_fin"] ?: $v["fecha_inicio"];
+        if ($fin_tramo > $fin_actual) {
+            $stmt = $conn->prepare(
+                "UPDATE viajes SET fecha_fin = ? WHERE id = ?",
+            );
+            $stmt->bind_param("si", $fin_tramo, $viaje_id);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
+
+    // Sincronizar el nuevo tramo a la tabla `despachos` (tabla legacy que
+    // alimenta el panel "Unidades en Sesión" del planificador). Sin esto el
+    // tramo aparece en la bitácora (lee viaje_tramos) pero NO en ese panel.
+    $tramo_data["tramo_numero"] = $siguiente;
+    sincronizar_despachos(
+        $conn,
+        $viaje_id,
+        (int) $v["cliente_id"],
+        (int) $v["unidad_id"],
+        $v["folio"],
+        $v["fecha_inicio"],
+        [$tramo_data],
+        $v["cliente_nombre"],
+    );
 
     // Devolver el tramo creado
     $stmt = $conn->prepare("SELECT * FROM viaje_tramos WHERE id = ? LIMIT 1");
@@ -1146,9 +1269,12 @@ function handle_completar_tramo($conn, $ctx)
         throw new Exception("tramo_id requerido", 400);
     }
 
-    // Obtener tramo actual + acceso via viaje
+    // Obtener tramo actual + acceso via viaje.
+    // Traemos también los campos de ruta para alimentar el historial al completar.
     $stmt = $conn->prepare(
-        'SELECT vt.id, vt.viaje_id, vt.tramo_numero, vt.estado, v.cliente_id
+        'SELECT vt.id, vt.viaje_id, vt.tramo_numero, vt.estado,
+                vt.origen, vt.lugar_carga, vt.destino, vt.ruta, vt.instrucciones,
+                v.cliente_id
            FROM viaje_tramos vt
            JOIN viajes v ON v.id = vt.viaje_id
           WHERE vt.id = ? LIMIT 1',
@@ -1795,6 +1921,14 @@ function handle_actualizar_unidad($conn, $ctx)
             $types .= "s";
             $params[] = null_if_empty($body[$campo]);
         }
+    }
+
+    // operador_id (entero, vínculo al catálogo de operadores; null = sin asignar)
+    if (array_key_exists("operador_id", $body)) {
+        $sets[] = "operador_id = ?";
+        $types .= "i";
+        $oid = (int) $body["operador_id"];
+        $params[] = $oid > 0 ? $oid : null;
     }
 
     if (array_key_exists("economico_nuevo", $body)) {
@@ -2594,6 +2728,96 @@ function handle_verificar_conflictos($conn, $ctx)
 }
 
 // ---------------------------------------------------------------------------
+// HISTORIAL INTELIGENTE DE RUTAS (modelo Uber)
+// ---------------------------------------------------------------------------
+
+/**
+ * Calcula la firma normalizada de una ruta a partir de origen/lugar_carga/destino.
+ * DEBE coincidir EXACTAMENTE con la normalización usada en la migración SQL
+ * (migracion_historial_rutas.sql): lower + trim de cada parte, unidas por '|'.
+ * Devuelve null si las tres partes están vacías (firma "||").
+ *
+ * @return string|null
+ */
+function firma_ruta_normalizada($origen, $lugar_carga, $destino)
+{
+    $norm = fn($v) => mb_strtolower(trim((string) ($v ?? "")), "UTF-8");
+    $firma = $norm($origen) . "|" . $norm($lugar_carga) . "|" . $norm($destino);
+    return $firma === "||" ? null : $firma;
+}
+
+/**
+ * Registra/actualiza una ruta en el historial al completar un tramo.
+ * Idempotente vía UNIQUE(cliente_id, firma_ruta) + ON DUPLICATE KEY:
+ *   - Si la firma ya existe (manual o de historial): incrementa veces_usada
+ *     y refresca ultima_vez_usada (y refresca instrucciones si llegan nuevas).
+ *   - Si no existe: crea una entrada origen_tipo='historial' con etiqueta
+ *     auto "Origen → Destino".
+ *
+ * Se llama DENTRO de la transacción del completar. No lanza si la ruta no tiene
+ * firma (tramo sin origen/destino) — simplemente no registra nada.
+ *
+ * @param mysqli $conn   conexión activa (en transacción)
+ * @param int    $cliente_id
+ * @param array  $tramo  fila con keys origen, lugar_carga, destino, ruta, instrucciones
+ */
+function upsert_historial_ruta($conn, $cliente_id, $tramo)
+{
+    $origen = null_if_empty($tramo["origen"] ?? "");
+    $lugar_carga = null_if_empty($tramo["lugar_carga"] ?? "");
+    $destino = null_if_empty($tramo["destino"] ?? "");
+    $ruta = null_if_empty($tramo["ruta"] ?? "");
+    $instrucciones = null_if_empty($tramo["instrucciones"] ?? "");
+
+    $firma = firma_ruta_normalizada($origen, $lugar_carga, $destino);
+    if ($firma === null) {
+        return; // tramo sin datos de ruta utilizables
+    }
+
+    // Etiqueta auto legible (máx 100 chars como en la columna).
+    $etiqueta = mb_substr(
+        ($origen ?? "Origen") . " → " . ($destino ?? "Destino"),
+        0,
+        100,
+        "UTF-8",
+    );
+
+    $stmt = $conn->prepare(
+        "INSERT INTO tramos_catalogo
+            (cliente_id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
+             origen_tipo, firma_ruta, veces_usada, ultima_vez_usada, es_favorito, activo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'historial', ?, 1, NOW(), 0, 1)
+         ON DUPLICATE KEY UPDATE
+            veces_usada      = veces_usada + 1,
+            ultima_vez_usada = NOW(),
+            -- refresca instrucciones/ruta solo si llegan no vacías
+            instrucciones    = COALESCE(VALUES(instrucciones), instrucciones),
+            ruta             = COALESCE(VALUES(ruta), ruta),
+            -- si estaba oculta (soft-deleted) y se vuelve a usar, reactivar
+            activo           = 1",
+    );
+    $stmt->bind_param(
+        "isssssss",
+        $cliente_id,
+        $etiqueta,
+        $ruta,
+        $origen,
+        $lugar_carga,
+        $destino,
+        $instrucciones,
+        $firma,
+    );
+    if (!$stmt->execute()) {
+        // No abortamos el completado del tramo por un fallo del historial,
+        // pero sí lo propagamos para que la transacción haga rollback coherente.
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception("Error registrando historial de ruta: " . $err, 500);
+    }
+    $stmt->close();
+}
+
+// ---------------------------------------------------------------------------
 // CATÁLOGO DE PLANTILLAS DE RUTA
 // ---------------------------------------------------------------------------
 
@@ -2952,6 +3176,258 @@ function handle_obtener_plantilla($conn, $ctx)
     ]);
 }
 
+// ===========================================================================
+// OPERADORES (catálogo multitenant)
+// ===========================================================================
+
+/**
+ * GET ?action=listar_operadores&cliente_id=X
+ */
+function handle_listar_operadores($conn, $ctx)
+{
+    $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
+    if ($cliente_id <= 0) {
+        throw new Exception("cliente_id requerido", 400);
+    }
+    assert_cliente_access($ctx, $cliente_id);
+
+    $stmt = $conn->prepare(
+        'SELECT id, nombre, telefonos, created_at, updated_at
+           FROM operadores
+          WHERE cliente_id = ? AND activo = 1
+          ORDER BY nombre ASC',
+    );
+    $stmt->bind_param("i", $cliente_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $operadores = [];
+    while ($r = $res->fetch_assoc()) {
+        $operadores[] = [
+            "id" => (int) $r["id"],
+            "nombre" => $r["nombre"],
+            "telefonos" => $r["telefonos"],
+            "created_at" => $r["created_at"],
+            "updated_at" => $r["updated_at"],
+        ];
+    }
+    $stmt->close();
+
+    json_ok(["operadores" => $operadores, "total" => count($operadores)]);
+}
+
+/**
+ * POST ?action=crear_operador
+ * Body JSON: { cliente_id, nombre, telefonos? }
+ */
+function handle_crear_operador($conn, $ctx)
+{
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents("php://input"), true);
+    if (!is_array($body)) {
+        throw new Exception("JSON invalido", 400);
+    }
+
+    $cliente_id = (int) ($body["cliente_id"] ?? 0);
+    $nombre = trim((string) ($body["nombre"] ?? ""));
+    $telefonos = null_if_empty($body["telefonos"] ?? "");
+
+    if ($cliente_id <= 0) {
+        throw new Exception("cliente_id requerido", 400);
+    }
+    if ($nombre === "") {
+        throw new Exception("El nombre del operador es requerido", 400);
+    }
+
+    assert_cliente_access($ctx, $cliente_id);
+
+    // Rechazar duplicado por (cliente, nombre)
+    $stmt = $conn->prepare(
+        "SELECT id FROM operadores WHERE cliente_id = ? AND nombre = ? AND activo = 1 LIMIT 1",
+    );
+    $stmt->bind_param("is", $cliente_id, $nombre);
+    $stmt->execute();
+    $existe = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($existe) {
+        throw new Exception(
+            "Ya existe un operador llamado '$nombre' para este cliente",
+            409,
+        );
+    }
+
+    $stmt = $conn->prepare(
+        "INSERT INTO operadores (cliente_id, nombre, telefonos) VALUES (?, ?, ?)",
+    );
+    $stmt->bind_param("iss", $cliente_id, $nombre, $telefonos);
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception("Error creando operador: " . $err, 500);
+    }
+    $operador_id = (int) $stmt->insert_id;
+    $stmt->close();
+
+    json_ok(
+        [
+            "operador" => [
+                "id" => $operador_id,
+                "nombre" => $nombre,
+                "telefonos" => $telefonos,
+            ],
+        ],
+        201,
+    );
+}
+
+/**
+ * PUT ?action=actualizar_operador
+ * Body JSON: { operador_id, nombre?, telefonos? }
+ */
+function handle_actualizar_operador($conn, $ctx)
+{
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents("php://input"), true);
+    if (!is_array($body)) {
+        throw new Exception("JSON invalido", 400);
+    }
+
+    $operador_id = (int) ($body["operador_id"] ?? 0);
+    if ($operador_id <= 0) {
+        throw new Exception("operador_id requerido", 400);
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT id, cliente_id FROM operadores WHERE id = ? AND activo = 1 LIMIT 1",
+    );
+    $stmt->bind_param("i", $operador_id);
+    $stmt->execute();
+    $op = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$op) {
+        throw new Exception("Operador no encontrado", 404);
+    }
+    assert_cliente_access($ctx, (int) $op["cliente_id"]);
+
+    $sets = [];
+    $types = "";
+    $params = [];
+
+    if (array_key_exists("nombre", $body)) {
+        $nombre = trim((string) $body["nombre"]);
+        if ($nombre === "") {
+            throw new Exception("El nombre no puede quedar vacío", 400);
+        }
+        // Rechazar duplicado con otro operador del mismo cliente
+        $stmt = $conn->prepare(
+            "SELECT id FROM operadores WHERE cliente_id = ? AND nombre = ? AND activo = 1 AND id <> ? LIMIT 1",
+        );
+        $stmt->bind_param("isi", $op["cliente_id"], $nombre, $operador_id);
+        $stmt->execute();
+        $dup = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($dup) {
+            throw new Exception(
+                "Ya existe otro operador llamado '$nombre' para este cliente",
+                409,
+            );
+        }
+        $sets[] = "nombre = ?";
+        $types .= "s";
+        $params[] = $nombre;
+    }
+
+    if (array_key_exists("telefonos", $body)) {
+        $sets[] = "telefonos = ?";
+        $types .= "s";
+        $params[] = null_if_empty($body["telefonos"]);
+    }
+
+    if (!count($sets)) {
+        throw new Exception("No hay campos para actualizar", 400);
+    }
+
+    $types .= "i";
+    $params[] = $operador_id;
+    $stmt = $conn->prepare(
+        "UPDATE operadores SET " . implode(", ", $sets) . " WHERE id = ?",
+    );
+    $stmt->bind_param($types, ...$params);
+    if (!$stmt->execute()) {
+        throw new Exception(
+            "Error actualizando operador: " . $stmt->error,
+            500,
+        );
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare(
+        "SELECT id, nombre, telefonos FROM operadores WHERE id = ? LIMIT 1",
+    );
+    $stmt->bind_param("i", $operador_id);
+    $stmt->execute();
+    $o = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    json_ok([
+        "operador" => [
+            "id" => (int) $o["id"],
+            "nombre" => $o["nombre"],
+            "telefonos" => $o["telefonos"],
+        ],
+    ]);
+}
+
+/**
+ * DELETE ?action=eliminar_operador
+ * Body JSON: { operador_id }  (soft-delete activo=0)
+ */
+function handle_eliminar_operador($conn, $ctx)
+{
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents("php://input"), true);
+    if (!is_array($body)) {
+        throw new Exception("JSON invalido", 400);
+    }
+
+    $operador_id = (int) ($body["operador_id"] ?? 0);
+    if ($operador_id <= 0) {
+        throw new Exception("operador_id requerido", 400);
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT cliente_id, activo FROM operadores WHERE id = ? LIMIT 1",
+    );
+    $stmt->bind_param("i", $operador_id);
+    $stmt->execute();
+    $op = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$op) {
+        throw new Exception("Operador no encontrado", 404);
+    }
+    assert_cliente_access($ctx, (int) $op["cliente_id"]);
+
+    if ((int) $op["activo"] === 0) {
+        json_ok([
+            "operador_id" => $operador_id,
+            "activo" => 0,
+            "msg" => "Ya estaba eliminado",
+        ]);
+    }
+
+    $stmt = $conn->prepare("UPDATE operadores SET activo = 0 WHERE id = ?");
+    $stmt->bind_param("i", $operador_id);
+    if (!$stmt->execute()) {
+        throw new Exception("Error eliminando operador: " . $stmt->error, 500);
+    }
+    $stmt->close();
+
+    json_ok(["operador_id" => $operador_id, "activo" => 0]);
+}
+
 // ---------------------------------------------------------------------------
 // Router principal
 // ---------------------------------------------------------------------------
@@ -3022,6 +3498,14 @@ try {
             => handle_actualizar_plantilla($conn, $ctx),
         $method === "DELETE" && $action === "eliminar_plantilla"
             => handle_eliminar_plantilla($conn, $ctx),
+        $method === "GET" && $action === "listar_operadores"
+            => handle_listar_operadores($conn, $ctx),
+        $method === "POST" && $action === "crear_operador"
+            => handle_crear_operador($conn, $ctx),
+        $method === "PUT" && $action === "actualizar_operador"
+            => handle_actualizar_operador($conn, $ctx),
+        $method === "DELETE" && $action === "eliminar_operador"
+            => handle_eliminar_operador($conn, $ctx),
         default => json_err(
             "Accion '$action' no reconocida o metodo '$method' incorrecto",
             404,
