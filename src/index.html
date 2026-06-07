@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
@@ -911,381 +911,447 @@
 
                 <div id="logisticaTab" class="tab-content active">
                     <form id="masterForm">
-                      <div id="datosGeneralesWrapper">
-                        <div class="section-header">
-                            <h2>Datos Generales</h2>
-                        </div>
-                        <div class="grid">
-                            <div class="form-group">
-                                <label>Fecha Inicio</label
-                                ><input type="date" id="fecha_registro" />
+                        <div id="datosGeneralesWrapper">
+                            <div class="section-header">
+                                <h2>Datos Generales</h2>
                             </div>
-                            <!-- Fecha Fin retirada del formulario: se deriva
+                            <div class="grid">
+                                <div class="form-group">
+                                    <label>Fecha Inicio</label
+                                    ><input type="date" id="fecha_registro" />
+                                </div>
+                                <!-- Fecha Fin retirada del formulario: se deriva
                                  automáticamente del último tramo en el backend.
                                  Se conserva como hidden para no romper el JS que
                                  aún referencia el elemento. -->
-                            <input type="hidden" id="fecha_fin" value="" />
-                            <div class="form-group">
-                                <label>Folio</label
-                                ><input
-                                    type="text"
-                                    id="folio"
-                                    placeholder="Ej: FOL-0001"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label
-                                    >Económico
-                                    <span
-                                        style="
-                                            font-size: 9px;
-                                            color: var(--accent);
-                                            cursor: pointer;
-                                        "
-                                        onclick="loadUnitsHistory()"
-                                        title="Recargar historial"
-                                        >🔄</span
-                                    ></label
-                                ><input
-                                    type="text"
-                                    id="id_vehiculo"
-                                    list="economicosList"
-                                    placeholder="ECO-000"
-                                />
-                                <datalist id="economicosList"></datalist>
-                            </div>
-                            <div class="form-group">
-                                <label>Placas</label
-                                ><input
-                                    type="text"
-                                    id="placas"
-                                    placeholder="ABC-1234"
-                                />
-                            </div>
-                            <div class="form-group">
-                                <label>Operador</label>
-                                <select
-                                    id="operador"
-                                    style="width: 100%"
-                                    onchange="onOperadorChange('operador')"
-                                >
-                                    <option value="">
-                                        -- Selecciona operador --
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Cliente</label
-                                ><input
-                                    type="text"
-                                    id="cliente"
-                                    placeholder="Nombre completo del cliente"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- SECCIÓN DE LECTORES -->
-                        <div class="lector-container">
-                            <div
-                                style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    align-items: center;
-                                    margin-bottom: 20px;
-                                "
-                            >
-                                <div>
-                                    <h3
-                                        style="
-                                            margin: 0;
-                                            color: var(--primary);
-                                            font-size: 16px;
-                                            font-weight: 800;
-                                        "
-                                    >
-                                        ASIGNAR LECTORES
-                                    </h3>
-                                    <p
-                                        style="
-                                            margin: 5px 0 0 0;
-                                            color: var(--text-muted);
-                                            font-size: 11px;
-                                        "
-                                    >
-                                        Agrega lectores con acceso de solo
-                                        lectura a las unidades de este cliente
-                                    </p>
-                                    <div
-                                        id="lectoresStatus"
-                                        style="
-                                            font-size: 11px;
-                                            color: var(--accent);
-                                            margin-top: 5px;
-                                        "
-                                    >
-                                        <span id="lectoresCount"
-                                            >0 lectores</span
-                                        >
-                                    </div>
+                                <input type="hidden" id="fecha_fin" value="" />
+                                <div class="form-group">
+                                    <label>Folio</label
+                                    ><input
+                                        type="text"
+                                        id="folio"
+                                        placeholder="Ej: FOL-0001"
+                                    />
                                 </div>
-                                <button
-                                    type="button"
-                                    class="btn btn-accent"
-                                    onclick="toggleLectorForm()"
-                                    style="padding: 10px 18px; font-size: 11px"
-                                >
-                                    + Agregar Lector
-                                </button>
-                            </div>
-
-                            <!-- Selector de lector responsable -->
-                            <div
-                                id="lectorResponsableContainer"
-                                style="
-                                    display: none;
-                                    background: linear-gradient(
-                                        135deg,
-                                        #667eea 0%,
-                                        #764ba2 100%
-                                    );
-                                    padding: 15px;
-                                    border-radius: 10px;
-                                    margin-bottom: 20px;
-                                "
-                            >
-                                <label
-                                    style="
-                                        display: block;
-                                        color: white;
-                                        font-weight: 700;
-                                        font-size: 12px;
-                                        margin-bottom: 8px;
-                                    "
-                                >
-                                    👤 Lector Responsable de esta Unidad
-                                </label>
-                                <select
-                                    id="lectorResponsable"
-                                    style="
-                                        width: 100%;
-                                        padding: 10px;
-                                        border-radius: 6px;
-                                        border: 2px solid
-                                            rgba(255, 255, 255, 0.3);
-                                        font-size: 13px;
-                                        background: white;
-                                    "
-                                >
-                                    <option value="">
-                                        Selecciona un lector...
-                                    </option>
-                                </select>
-                                <p
-                                    style="
-                                        margin: 8px 0 0 0;
-                                        font-size: 10px;
-                                        color: rgba(255, 255, 255, 0.9);
-                                    "
-                                >
-                                    Solo el lector seleccionado podrá ver esta
-                                    unidad
-                                </p>
-                            </div>
-
-                            <!-- Formulario para agregar lector -->
-                            <div
-                                id="lectorFormContainer"
-                                style="
-                                    display: none;
-                                    background: white;
-                                    padding: 20px;
-                                    border-radius: 12px;
-                                    margin-bottom: 20px;
-                                    border: 2px solid var(--accent);
-                                "
-                            >
-                                <div class="grid" style="gap: 15px">
-                                    <div class="form-group">
-                                        <label>Email del Lector</label>
-                                        <input
-                                            type="email"
-                                            id="lector_email"
-                                            placeholder="usuario@ejemplo.com"
-                                        />
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Contraseña</label>
-                                        <input
-                                            type="text"
-                                            id="lector_password"
-                                            placeholder="Contraseña para acceso"
-                                        />
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Nombre del Lector</label>
-                                        <input
-                                            type="text"
-                                            id="lector_nombre"
-                                            placeholder="Nombre del lector"
-                                        />
-                                    </div>
+                                <div class="form-group">
+                                    <label
+                                        >Económico
+                                        <span
+                                            style="
+                                                font-size: 9px;
+                                                color: var(--accent);
+                                                cursor: pointer;
+                                            "
+                                            onclick="loadUnitsHistory()"
+                                            title="Recargar historial"
+                                            >🔄</span
+                                        ></label
+                                    ><input
+                                        type="text"
+                                        id="id_vehiculo"
+                                        list="economicosList"
+                                        placeholder="ECO-000"
+                                    />
+                                    <datalist id="economicosList"></datalist>
                                 </div>
+                                <div class="form-group">
+                                    <label>Placas</label
+                                    ><input
+                                        type="text"
+                                        id="placas"
+                                        placeholder="ABC-1234"
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label>Operador</label>
+                                    <select
+                                        id="operador"
+                                        style="width: 100%"
+                                        onchange="onOperadorChange('operador')"
+                                    >
+                                        <option value="">
+                                            -- Selecciona operador --
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Cliente</label
+                                    ><input
+                                        type="text"
+                                        id="cliente"
+                                        placeholder="Nombre completo del cliente"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- SECCIÓN DE LECTORES -->
+                            <div class="lector-container">
                                 <div
                                     style="
                                         display: flex;
-                                        gap: 10px;
-                                        justify-content: flex-end;
-                                        margin-top: 15px;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                        margin-bottom: 20px;
                                     "
                                 >
+                                    <div>
+                                        <h3
+                                            style="
+                                                margin: 0;
+                                                color: var(--primary);
+                                                font-size: 16px;
+                                                font-weight: 800;
+                                            "
+                                        >
+                                            ASIGNAR LECTORES
+                                        </h3>
+                                        <p
+                                            style="
+                                                margin: 5px 0 0 0;
+                                                color: var(--text-muted);
+                                                font-size: 11px;
+                                            "
+                                        >
+                                            Agrega lectores con acceso de solo
+                                            lectura a las unidades de este
+                                            cliente
+                                        </p>
+                                        <div
+                                            id="lectoresStatus"
+                                            style="
+                                                font-size: 11px;
+                                                color: var(--accent);
+                                                margin-top: 5px;
+                                            "
+                                        >
+                                            <span id="lectoresCount"
+                                                >0 lectores</span
+                                            >
+                                        </div>
+                                    </div>
                                     <button
                                         type="button"
-                                        class="btn btn-secondary"
+                                        class="btn btn-accent"
                                         onclick="toggleLectorForm()"
                                         style="
                                             padding: 10px 18px;
                                             font-size: 11px;
                                         "
                                     >
-                                        Cancelar
+                                        + Agregar Lector
                                     </button>
-                                    <button
-                                        type="button"
-                                        class="btn btn-accent"
-                                        onclick="addLector()"
+                                </div>
+
+                                <!-- Selector de lector responsable -->
+                                <div
+                                    id="lectorResponsableContainer"
+                                    style="
+                                        display: none;
+                                        background: linear-gradient(
+                                            135deg,
+                                            #667eea 0%,
+                                            #764ba2 100%
+                                        );
+                                        padding: 15px;
+                                        border-radius: 10px;
+                                        margin-bottom: 20px;
+                                    "
+                                >
+                                    <label
                                         style="
-                                            padding: 10px 18px;
-                                            font-size: 11px;
+                                            display: block;
+                                            color: white;
+                                            font-weight: 700;
+                                            font-size: 12px;
+                                            margin-bottom: 8px;
                                         "
                                     >
-                                        Agregar
+                                        👤 Lector Responsable de esta Unidad
+                                    </label>
+                                    <select
+                                        id="lectorResponsable"
+                                        style="
+                                            width: 100%;
+                                            padding: 10px;
+                                            border-radius: 6px;
+                                            border: 2px solid
+                                                rgba(255, 255, 255, 0.3);
+                                            font-size: 13px;
+                                            background: white;
+                                        "
+                                    >
+                                        <option value="">
+                                            Selecciona un lector...
+                                        </option>
+                                    </select>
+                                    <p
+                                        style="
+                                            margin: 8px 0 0 0;
+                                            font-size: 10px;
+                                            color: rgba(255, 255, 255, 0.9);
+                                        "
+                                    >
+                                        Solo el lector seleccionado podrá ver
+                                        esta unidad
+                                    </p>
+                                </div>
+
+                                <!-- Formulario para agregar lector -->
+                                <div
+                                    id="lectorFormContainer"
+                                    style="
+                                        display: none;
+                                        background: white;
+                                        padding: 20px;
+                                        border-radius: 12px;
+                                        margin-bottom: 20px;
+                                        border: 2px solid var(--accent);
+                                    "
+                                >
+                                    <div class="grid" style="gap: 15px">
+                                        <div class="form-group">
+                                            <label>Email del Lector</label>
+                                            <input
+                                                type="email"
+                                                id="lector_email"
+                                                placeholder="usuario@ejemplo.com"
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Contraseña</label>
+                                            <input
+                                                type="text"
+                                                id="lector_password"
+                                                placeholder="Contraseña para acceso"
+                                            />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Nombre del Lector</label>
+                                            <input
+                                                type="text"
+                                                id="lector_nombre"
+                                                placeholder="Nombre del lector"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div
+                                        style="
+                                            display: flex;
+                                            gap: 10px;
+                                            justify-content: flex-end;
+                                            margin-top: 15px;
+                                        "
+                                    >
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary"
+                                            onclick="toggleLectorForm()"
+                                            style="
+                                                padding: 10px 18px;
+                                                font-size: 11px;
+                                            "
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn btn-accent"
+                                            onclick="addLector()"
+                                            style="
+                                                padding: 10px 18px;
+                                                font-size: 11px;
+                                            "
+                                        >
+                                            Agregar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Lista de lectores asignados -->
+                                <div id="lectoresList" style="min-height: 50px">
+                                    <p
+                                        style="
+                                            text-align: center;
+                                            color: var(--text-muted);
+                                            font-size: 12px;
+                                            padding: 20px;
+                                        "
+                                    >
+                                        Ingresa el nombre del Cliente para
+                                        cargar sus lectores
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid" style="margin-top: 20px">
+                                <div class="dynamic-list-box">
+                                    <label
+                                        >Teléfonos de Contacto Operador</label
+                                    >
+                                    <div id="phoneRows">
+                                        <div class="dynamic-row">
+                                            <input
+                                                type="tel"
+                                                class="u-telefono"
+                                                placeholder="10 dígitos"
+                                            />
+                                            <button
+                                                type="button"
+                                                class="add-row-btn"
+                                                onclick="addPhoneField()"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dynamic-list-box">
+                                    <label>IDs Equipos Aliados</label>
+                                    <div id="equipmentRows">
+                                        <div class="dynamic-row">
+                                            <input
+                                                type="text"
+                                                class="id_equipo"
+                                                placeholder="ID Equipo / Marca"
+                                            />
+                                            <button
+                                                type="button"
+                                                class="add-row-btn"
+                                                onclick="addEquipmentField()"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Panel: alerta de conflictos -->
+                            <div
+                                id="conflictos-panel"
+                                style="
+                                    display: none;
+                                    margin-top: 16px;
+                                    padding: 14px 18px;
+                                    background: #fef2f2;
+                                    border: 1px solid #fca5a5;
+                                    border-radius: 12px;
+                                "
+                            >
+                                <div
+                                    style="
+                                        display: flex;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                        margin-bottom: 8px;
+                                    "
+                                >
+                                    <span
+                                        style="
+                                            font-size: 13px;
+                                            font-weight: 700;
+                                            color: #b91c1c;
+                                        "
+                                    >
+                                        ⚠️ Conflicto de fechas detectado
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onclick="ocultarAlertaConflicto()"
+                                        style="
+                                            background: none;
+                                            border: none;
+                                            cursor: pointer;
+                                            font-size: 16px;
+                                            color: #64748b;
+                                        "
+                                    >
+                                        ×
                                     </button>
                                 </div>
-                            </div>
-
-                            <!-- Lista de lectores asignados -->
-                            <div id="lectoresList" style="min-height: 50px">
                                 <p
                                     style="
-                                        text-align: center;
-                                        color: var(--text-muted);
-                                        font-size: 12px;
-                                        padding: 20px;
+                                        font-size: 11px;
+                                        color: #991b1b;
+                                        margin: 0 0 8px;
                                     "
                                 >
-                                    Ingresa el nombre del Cliente para cargar
-                                    sus lectores
+                                    Esta unidad ya tiene viajes activos en el
+                                    rango seleccionado:
                                 </p>
+                                <div id="conflictos-lista"></div>
                             </div>
-                        </div>
 
-                        <div class="grid" style="margin-top: 20px">
-                            <div class="dynamic-list-box">
-                                <label>Teléfonos de Contacto Operador</label>
-                                <div id="phoneRows">
-                                    <div class="dynamic-row">
-                                        <input
-                                            type="tel"
-                                            class="u-telefono"
-                                            placeholder="10 dígitos"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="add-row-btn"
-                                            onclick="addPhoneField()"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="dynamic-list-box">
-                                <label>IDs Equipos Aliados</label>
-                                <div id="equipmentRows">
-                                    <div class="dynamic-row">
-                                        <input
-                                            type="text"
-                                            class="id_equipo"
-                                            placeholder="ID Equipo / Marca"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="add-row-btn"
-                                            onclick="addEquipmentField()"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Panel: alerta de conflictos -->
-                        <div
-                            id="conflictos-panel"
-                            style="
-                                display: none;
-                                margin-top: 16px;
-                                padding: 14px 18px;
-                                background: #fef2f2;
-                                border: 1px solid #fca5a5;
-                                border-radius: 12px;
-                            "
-                        >
+                            <!-- Panel: viajes activos de la unidad seleccionada -->
                             <div
+                                id="viajesActivosPanel"
                                 style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    align-items: center;
-                                    margin-bottom: 8px;
+                                    display: none;
+                                    margin-top: 30px;
+                                    padding: 16px 20px;
+                                    background: #f0f9ff;
+                                    border: 1px solid #bae6fd;
+                                    border-radius: 12px;
                                 "
                             >
-                                <span
+                                <div
                                     style="
-                                        font-size: 13px;
-                                        font-weight: 700;
-                                        color: #b91c1c;
+                                        display: flex;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                        margin-bottom: 10px;
                                     "
                                 >
-                                    ⚠️ Conflicto de fechas detectado
-                                </span>
-                                <button
-                                    type="button"
-                                    onclick="ocultarAlertaConflicto()"
-                                    style="
-                                        background: none;
-                                        border: none;
-                                        cursor: pointer;
-                                        font-size: 16px;
-                                        color: #64748b;
-                                    "
-                                >
-                                    ×
-                                </button>
+                                    <span
+                                        style="
+                                            font-size: 13px;
+                                            font-weight: 700;
+                                            color: #0369a1;
+                                        "
+                                    >
+                                        🚛 Viajes registrados para esta unidad
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onclick="
+                                            document.getElementById(
+                                                'viajesActivosPanel',
+                                            ).style.display = 'none'
+                                        "
+                                        style="
+                                            background: none;
+                                            border: none;
+                                            cursor: pointer;
+                                            font-size: 16px;
+                                            color: #64748b;
+                                        "
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                <div
+                                    id="viajesActivosList"
+                                    style="font-size: 12px; color: #334155"
+                                ></div>
                             </div>
-                            <p
-                                style="
-                                    font-size: 11px;
-                                    color: #991b1b;
-                                    margin: 0 0 8px;
-                                "
-                            >
-                                Esta unidad ya tiene viajes activos en el rango
-                                seleccionado:
-                            </p>
-                            <div id="conflictos-lista"></div>
                         </div>
+                        <!-- /datosGeneralesWrapper -->
 
-                        <!-- Panel: viajes activos de la unidad seleccionada -->
+                        <!-- Banner modo "agregar tramo a viaje existente" -->
                         <div
-                            id="viajesActivosPanel"
+                            id="bannerAgregarTramo"
                             style="
                                 display: none;
                                 margin-top: 30px;
-                                padding: 16px 20px;
-                                background: #f0f9ff;
-                                border: 1px solid #bae6fd;
-                                border-radius: 12px;
+                                padding: 14px 18px;
+                                background: linear-gradient(
+                                    135deg,
+                                    #faf5ff 0%,
+                                    #f3e8ff 100%
+                                );
+                                border: 1px solid #d8b4fe;
+                                border-left: 4px solid #9333ea;
+                                border-radius: 10px;
                             "
                         >
                             <div
@@ -1293,97 +1359,43 @@
                                     display: flex;
                                     justify-content: space-between;
                                     align-items: center;
-                                    margin-bottom: 10px;
+                                    gap: 12px;
+                                    flex-wrap: wrap;
                                 "
                             >
                                 <span
                                     style="
-                                        font-size: 13px;
+                                        font-size: 14px;
                                         font-weight: 700;
-                                        color: #0369a1;
+                                        color: #6b21a8;
                                     "
+                                    id="bannerAgregarTramoTexto"
                                 >
-                                    🚛 Viajes registrados para esta unidad
+                                    ➕ Agregando tramo
                                 </span>
                                 <button
                                     type="button"
-                                    onclick="
-                                        document.getElementById(
-                                            'viajesActivosPanel',
-                                        ).style.display = 'none'
-                                    "
+                                    onclick="cancelarAgregarTramoExistente()"
                                     style="
-                                        background: none;
-                                        border: none;
+                                        font-size: 12px;
+                                        background: #fff;
+                                        color: #6b21a8;
+                                        border: 1px solid #d8b4fe;
+                                        border-radius: 6px;
+                                        padding: 6px 14px;
+                                        font-weight: 600;
                                         cursor: pointer;
-                                        font-size: 16px;
-                                        color: #64748b;
                                     "
                                 >
-                                    ×
+                                    ✕ Cancelar y volver a crear viaje
                                 </button>
                             </div>
-                            <div
-                                id="viajesActivosList"
-                                style="font-size: 12px; color: #334155"
-                            ></div>
                         </div>
-                      </div>
-                      <!-- /datosGeneralesWrapper -->
-
-                      <!-- Banner modo "agregar tramo a viaje existente" -->
-                      <div
-                          id="bannerAgregarTramo"
-                          style="
-                              display: none;
-                              margin-top: 30px;
-                              padding: 14px 18px;
-                              background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-                              border: 1px solid #d8b4fe;
-                              border-left: 4px solid #9333ea;
-                              border-radius: 10px;
-                          "
-                      >
-                          <div
-                              style="
-                                  display: flex;
-                                  justify-content: space-between;
-                                  align-items: center;
-                                  gap: 12px;
-                                  flex-wrap: wrap;
-                              "
-                          >
-                              <span
-                                  style="
-                                      font-size: 14px;
-                                      font-weight: 700;
-                                      color: #6b21a8;
-                                  "
-                                  id="bannerAgregarTramoTexto"
-                              >
-                                  ➕ Agregando tramo
-                              </span>
-                              <button
-                                  type="button"
-                                  onclick="cancelarAgregarTramoExistente()"
-                                  style="
-                                      font-size: 12px;
-                                      background: #fff;
-                                      color: #6b21a8;
-                                      border: 1px solid #d8b4fe;
-                                      border-radius: 6px;
-                                      padding: 6px 14px;
-                                      font-weight: 600;
-                                      cursor: pointer;
-                                  "
-                              >
-                                  ✕ Cancelar y volver a crear viaje
-                              </button>
-                          </div>
-                      </div>
 
                         <div class="section-header" style="margin-top: 50px">
-                            <h2 id="tituloPlanificacionTramos">Planificación de Tramos Logísticos</h2>
+                            <h2 id="tituloPlanificacionTramos">
+                                Planificación de Tramos Logísticos
+                            </h2>
                             <button
                                 type="button"
                                 id="btnNuevoTramo"
@@ -1833,255 +1845,7 @@
                 <div id="plantillasRutaTab" class="tab-content">
                     <div class="section-header">
                         <h2>Historial de Rutas</h2>
-                        <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">
-                            Las rutas se guardan solas al completar viajes. Marca tus favoritas ⭐,
-                            renómbralas (ej: "Casa → Trabajo") u oculta las que no uses.
-                        </p>
                     </div>
-
-                    <details
-                        class="card"
-                        style="margin-bottom: 30px; padding: 12px"
-                    >
-                        <summary style="cursor: pointer; font-weight: 600;">
-                            <span id="plantillaFormTitle">➕ Agregar ruta manual</span>
-                            <span style="font-weight: normal; color: var(--text-muted); font-size: 12px;">
-                                (opcional — normalmente no hace falta)
-                            </span>
-                        </summary>
-                        <form
-                            id="plantillaForm"
-                            onsubmit="
-                                event.preventDefault();
-                                guardarPlantillaRuta();
-                            "
-                        >
-                            <input
-                                type="hidden"
-                                id="plantillaEditId"
-                                value=""
-                            />
-
-                            <div
-                                class="grid"
-                                style="
-                                    grid-template-columns: repeat(2, 1fr);
-                                    gap: 20px;
-                                "
-                            >
-                                <div>
-                                    <label for="plantillaEtiqueta">
-                                        Etiqueta/Nombre
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="plantillaEtiqueta"
-                                        placeholder="Identificador único de la plantilla"
-                                        required
-                                        maxlength="100"
-                                        style="text-transform: uppercase"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label for="plantillaRuta">
-                                        Ruta/Identificador
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="plantillaRuta"
-                                        placeholder="Código de ruta"
-                                        maxlength="100"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label for="plantillaOrigen"
-                                        >Punto de Origen</label
-                                    >
-                                    <div style="display: flex; gap: 6px">
-                                        <input
-                                            type="text"
-                                            id="plantillaOrigen"
-                                            placeholder="ej: Ciudad de México"
-                                            maxlength="255"
-                                            style="flex: 1"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="btn-ver-mapa"
-                                            onclick="
-                                                verMapaPlantilla(
-                                                    'plantillaOrigen',
-                                                    'mapaPlantillaOrigen',
-                                                )
-                                            "
-                                        >
-                                            <svg
-                                                class="w-6 h-6 text-gray-800 dark:text-white"
-                                                aria-hidden="true"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="24"
-                                                height="24"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke="currentColor"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 0v6M9.5 9A2.5 2.5 0 0 1 12 6.5"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="mapaPlantillaOrigen"
-                                        class="mapa-plantilla"
-                                    ></div>
-                                </div>
-
-                                <div>
-                                    <label for="plantillaLugarCarga"
-                                        >Lugar de Carga</label
-                                    >
-                                    <div style="display: flex; gap: 6px">
-                                        <input
-                                            type="text"
-                                            id="plantillaLugarCarga"
-                                            placeholder="ej: Bodega Norte CDMX"
-                                            maxlength="255"
-                                            style="flex: 1"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="btn-ver-mapa"
-                                            onclick="
-                                                verMapaPlantilla(
-                                                    'plantillaLugarCarga',
-                                                    'mapaPlantillaCarga',
-                                                )
-                                            "
-                                        >
-                                            <svg
-                                                class="w-6 h-6 text-gray-800 dark:text-white"
-                                                aria-hidden="true"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="24"
-                                                height="24"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke="currentColor"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 0v6M9.5 9A2.5 2.5 0 0 1 12 6.5"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="mapaPlantillaCarga"
-                                        class="mapa-plantilla"
-                                    ></div>
-                                </div>
-
-                                <div>
-                                    <label for="plantillaDestino"
-                                        >Punto de Destino</label
-                                    >
-                                    <div style="display: flex; gap: 6px">
-                                        <input
-                                            type="text"
-                                            id="plantillaDestino"
-                                            placeholder="ej: Puebla Centro"
-                                            maxlength="255"
-                                            style="flex: 1"
-                                        />
-                                        <button
-                                            type="button"
-                                            class="btn-ver-mapa"
-                                            onclick="
-                                                verMapaPlantilla(
-                                                    'plantillaDestino',
-                                                    'mapaPlantillaDestino',
-                                                )
-                                            "
-                                        >
-                                            <svg
-                                                class="w-6 h-6 text-gray-800 dark:text-white"
-                                                aria-hidden="true"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="24"
-                                                height="24"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke="currentColor"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 0v6M9.5 9A2.5 2.5 0 0 1 12 6.5"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div
-                                        id="mapaPlantillaDestino"
-                                        class="mapa-plantilla"
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px">
-                                <label for="plantillaInstrucciones">
-                                    Instrucciones Predeterminadas
-                                    <span
-                                        style="
-                                            color: var(--text-muted);
-                                            font-size: 12px;
-                                            font-weight: normal;
-                                        "
-                                    >
-                                        (opcional)
-                                    </span>
-                                </label>
-                                <textarea
-                                    id="plantillaInstrucciones"
-                                    rows="3"
-                                    placeholder="ej: Llamar 30 min antes de llegar. Entrada por portón B."
-                                    maxlength="1000"
-                                ></textarea>
-                            </div>
-
-                            <div
-                                style="
-                                    display: flex;
-                                    gap: 10px;
-                                    margin-top: 20px;
-                                "
-                            >
-                                <button type="submit" class="btn btn-primary">
-                                    <span id="plantillaFormBtnText"
-                                        >Guardar Plantilla</span
-                                    >
-                                </button>
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    onclick="cancelarEdicionPlantilla()"
-                                    id="plantillaCancelBtn"
-                                    style="display: none"
-                                >
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
-                    </details>
 
                     <!-- Tabla de plantillas -->
                     <div class="card">
@@ -2141,8 +1905,9 @@
                                     padding: 40px;
                                 "
                             >
-                                No hay plantillas creadas. Crea tu primera
-                                plantilla arriba.
+                                No hay rutas en historial todavía. Completa
+                                viajes para alimentar el historial
+                                automáticamente.
                             </p>
                         </div>
                     </div>
@@ -2698,6 +2463,7 @@
             const PLANIFICADOR_API = "api/planificador.php";
             const VIAJES_API = "api/viajes.php";
             let plantillasRutaCache = [];
+            let rutasHistorialSearchTimer = null;
             let plantillasRutaSecciones = {
                 favoritos: [],
                 frecuentes: [],
@@ -4446,7 +4212,14 @@
                                 puedeAgregar
                                     ? `<div style="margin-top:6px;">
                                 <button type="button"
-                                        onclick="iniciarAgregarTramoExistente(${vid}, '${String(v.folio || "").replace(/'/g, "\\'").replace(/"/g, "&quot;")}', ${numSiguiente})"
+                                        onclick="iniciarAgregarTramoExistente(${vid}, '${String(
+                                            v.folio || "",
+                                        )
+                                            .replace(/'/g, "\\'")
+                                            .replace(
+                                                /"/g,
+                                                "&quot;",
+                                            )}', ${numSiguiente})"
                                         style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:#7e22ce;border:1px dashed #d8b4fe;background:#faf5ff;border-radius:8px;padding:6px;font-weight:600;cursor:pointer;">
                                     ＋ Agregar tramo
                                 </button>
@@ -4467,14 +4240,15 @@
             // que los tramos se cargan bajo demanda con ?action=obtener.
             async function toggleTramosViaje(viajeId, forzarAbrir = false) {
                 const cont = document.getElementById(`tramos-list-${viajeId}`);
-                const btn = document.getElementById(`btn-ver-tramos-${viajeId}`);
+                const btn = document.getElementById(
+                    `btn-ver-tramos-${viajeId}`,
+                );
                 if (!cont) return;
 
                 const estaVisible = cont.style.display !== "none";
                 if (estaVisible && !forzarAbrir) {
                     cont.style.display = "none";
-                    if (btn)
-                        btn.innerHTML = btn.innerHTML.replace("▴", "▾");
+                    if (btn) btn.innerHTML = btn.innerHTML.replace("▴", "▾");
                     return;
                 }
 
@@ -4589,8 +4363,7 @@
                 addDispatch();
 
                 // El botón de guardar cambia a "Guardar Tramo"
-                const btnGuardar =
-                    document.getElementById("syncLogisticaBtn");
+                const btnGuardar = document.getElementById("syncLogisticaBtn");
                 if (btnGuardar) btnGuardar.textContent = "Guardar Tramo";
 
                 // Ocultar acciones que no aplican (exportar/limpiar viaje completo)
@@ -4621,8 +4394,7 @@
                     titulo.textContent = "Planificación de Tramos Logísticos";
                 const btnNuevo = document.getElementById("btnNuevoTramo");
                 if (btnNuevo) btnNuevo.style.display = "";
-                const btnGuardar =
-                    document.getElementById("syncLogisticaBtn");
+                const btnGuardar = document.getElementById("syncLogisticaBtn");
                 if (btnGuardar) btnGuardar.textContent = "Guardar Viaje";
                 const btnExport = document.getElementById("exportBtn");
                 if (btnExport) btnExport.style.display = "";
@@ -4683,26 +4455,29 @@
                 }
 
                 try {
-                    const res = await fetch(`${VIAJES_API}?action=agregar_tramo`, {
-                        method: "POST",
-                        headers: getAuthHeaders({
-                            "Content-Type": "application/json",
-                        }),
-                        body: JSON.stringify({
-                            viaje_id: modoAgregarTramo.viaje_id,
-                            tramo: {
-                                origen: v(".d-origen"),
-                                lugar_carga: v(".d-lugar-carga"),
-                                destino,
-                                ruta: v(".d-ruta"),
-                                instrucciones: v(".d-instrucciones"),
-                                salida_patio: salidaPatio || null,
-                                cita_carga: citaCarga || null,
-                                salida_carga: salidaCarga || null,
-                                descarga_programada: descarga || null,
-                            },
-                        }),
-                    });
+                    const res = await fetch(
+                        `${VIAJES_API}?action=agregar_tramo`,
+                        {
+                            method: "POST",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                            }),
+                            body: JSON.stringify({
+                                viaje_id: modoAgregarTramo.viaje_id,
+                                tramo: {
+                                    origen: v(".d-origen"),
+                                    lugar_carga: v(".d-lugar-carga"),
+                                    destino,
+                                    ruta: v(".d-ruta"),
+                                    instrucciones: v(".d-instrucciones"),
+                                    salida_patio: salidaPatio || null,
+                                    cita_carga: citaCarga || null,
+                                    salida_carga: salidaCarga || null,
+                                    descarga_programada: descarga || null,
+                                },
+                            }),
+                        },
+                    );
                     const json = await res.json().catch(() => ({}));
                     if (!res.ok || !json.ok) {
                         showToast(
@@ -5031,22 +4806,18 @@
                 // No permitir tiempos pasados en los campos de programación del tramo
                 const minDateTime = nowDateTimeLocal();
 
-                // Generar opciones del selector de rutas (agrupadas por sección)
-                let plantillasOptions = construirOpcionesRutas();
-
                 div.innerHTML = `
             <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
 
-            <!-- Selector de plantilla de ruta -->
-            <div style="margin-bottom: 20px; padding: 12px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%); border-radius: 8px; border: 1px solid #7dd3fc;">
+            <!-- Buscador de historial de rutas -->
+            <div style="margin-bottom: 20px; padding: 12px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                    <span style="font-size: 20px;">🔖</span>
-                    <label style="font-weight: 600; color: #0369a1; margin: 0;">Usar ruta del historial (opcional)</label>
+                    <span style="font-size: 18px;">🔎</span>
+                    <label style="font-weight: 600; color: #0369a1; margin: 0;">Buscar ruta del historial</label>
                 </div>
-                <select class="plantilla-selector" onchange="aplicarPlantillaATramo(this)" style="width: 100%; padding: 8px; border: 1px solid #7dd3fc; border-radius: 4px; background: white;">
-                    ${plantillasOptions}
-                </select>
-                <small style="display: block; color: #0c4a6e; margin-top: 8px;">Elige una ruta frecuente o favorita y los campos se llenarán solos. El historial se va creando solo al completar viajes.</small>
+                <input type="search" class="ruta-historial-search" placeholder="Busca por ruta, origen, carga o destino" oninput="buscarRutasHistorial(this)" autocomplete="off" style="width: 100%; padding: 8px; border: 1px solid #7dd3fc; border-radius: 4px; background: white;">
+                <div class="ruta-historial-results" style="display: none; margin-top: 8px;"></div>
+                <small style="display: block; color: #0c4a6e; margin-top: 8px;">Selecciona una ruta para llenar Ruta / Identificador, Origen, Lugar de Carga y Destino. Puedes editar cualquier campo después.</small>
             </div>
 
             <div class="grid">
@@ -6110,9 +5881,7 @@
                         // Actualizar todos los dropdowns de plantillas en los tramos existentes
                         actualizarSelectoresPlantillas();
                     } else {
-                        throw new Error(
-                            json.error || "Error al cargar rutas",
-                        );
+                        throw new Error(json.error || "Error al cargar rutas");
                     }
                 } catch (error) {
                     console.error("Error cargando plantillas:", error);
@@ -6175,9 +5944,10 @@
                            </div>`
                         : "";
                     // Métricas de uso (solo si vienen del historial / tienen usos)
-                    const usos = plantilla.veces_usada > 0
-                        ? `<span title="Veces usada">🔁 ${plantilla.veces_usada}</span>`
-                        : "";
+                    const usos =
+                        plantilla.veces_usada > 0
+                            ? `<span title="Veces usada">🔁 ${plantilla.veces_usada}</span>`
+                            : "";
                     const ultima = plantilla.ultima_vez_usada
                         ? `<span title="Última vez">🕑 ${tiempoRelativo(plantilla.ultima_vez_usada)}</span>`
                         : "";
@@ -6217,13 +5987,7 @@
                             >
                                 ✏️ Renombrar
                             </button>
-                            <button
-                                class="btn btn-sm btn-secondary"
-                                onclick="editarPlantillaRuta(${plantilla.id})"
-                                title="Editar todos los campos"
-                            >
-                                ⚙️ Editar
-                            </button>
+
                             <button
                                 class="btn btn-sm btn-danger"
                                 onclick="ocultarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}')"
@@ -6258,8 +6022,8 @@
                         plantillasRutaSecciones.frecuentes,
                     ) +
                     seccion(
-                        "🕑 Recientes / Sin usar",
-                        "Rutas agregadas manualmente que aún no se han despachado.",
+                        "🕑 Recientes",
+                        "Rutas recientes detectadas en el historial.",
                         plantillasRutaSecciones.recientes,
                     );
             }
@@ -6484,7 +6248,11 @@
              * Renombra la etiqueta de una ruta (ej: "CDMX → MTY" → "Casa → Trabajo").
              * Conserva el estado de favorito.
              */
-            async function renombrarRuta(plantillaId, etiquetaActual, esFavorito) {
+            async function renombrarRuta(
+                plantillaId,
+                etiquetaActual,
+                esFavorito,
+            ) {
                 const nueva = prompt(
                     "Nuevo nombre para esta ruta:",
                     etiquetaActual,
@@ -6513,7 +6281,10 @@
                     );
                     const json = await response.json();
                     if (json.ok) {
-                        showToast(`✅ Ruta renombrada a "${limpia}"`, "success");
+                        showToast(
+                            `✅ Ruta renombrada a "${limpia}"`,
+                            "success",
+                        );
                         await cargarPlantillasRuta();
                     } else {
                         throw new Error(json.error || "Error");
@@ -6598,8 +6369,7 @@
              * muestra el contador de usos para dar señal tipo Uber.
              */
             function construirOpcionesRutas() {
-                let html =
-                    '<option value="">-- Llenar manualmente --</option>';
+                let html = '<option value="">-- Llenar manualmente --</option>';
 
                 const grupo = (titulo, items, mostrarUsos) => {
                     if (!items || items.length === 0) return "";
@@ -6633,6 +6403,152 @@
                 return html;
             }
 
+            function formatoFechaRutaHistorial(value) {
+                if (!value) return "Sin fecha";
+                try {
+                    const parsed = dayjs(value);
+                    return parsed.isValid()
+                        ? parsed.format("DD/MM/YYYY")
+                        : String(value).slice(0, 10);
+                } catch (e) {
+                    return String(value).slice(0, 10);
+                }
+            }
+
+            function renderRutasHistorial(card, rutas) {
+                const panel = card.querySelector(".ruta-historial-results");
+                if (!panel) return;
+                card._rutasHistorial = rutas || [];
+                if (!card._rutasHistorial.length) {
+                    panel.style.display = "block";
+                    panel.innerHTML = `<div style="padding: 8px; border: 1px dashed #cbd5e1; border-radius: 6px; background: white; color: #64748b; font-size: 12px;">Sin coincidencias. Captura la ruta manualmente y quedará disponible cuando se guarde.</div>`;
+                    return;
+                }
+                panel.style.display = "block";
+                panel.innerHTML = card._rutasHistorial
+                    .map((ruta, index) => {
+                        const usoTxt =
+                            ruta.veces_usada === 1
+                                ? "Usada 1 vez"
+                                : `Usada ${ruta.veces_usada || 0} veces`;
+                        const ultima = formatoFechaRutaHistorial(
+                            ruta.ultima_vez_usada,
+                        );
+                        const recorrido = `${ruta.origen || "Origen"} -> ${ruta.destino || "Destino"}`;
+                        return `
+                            <button type="button" onclick="aplicarRutaHistorial(this)" data-ruta-index="${index}"
+                                    style="width: 100%; text-align: left; padding: 9px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; margin-top: ${index ? "6px" : "0"}; cursor: pointer;">
+                                <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
+                                    <div style="min-width: 0;">
+                                        <div style="font-weight: 700; color: #0f172a; font-size: 13px;">${escapeHtml(ruta.ruta || ruta.etiqueta || recorrido)}</div>
+                                        <div style="color: #475569; font-size: 12px; margin-top: 2px;">${escapeHtml(recorrido)}</div>
+                                        ${ruta.lugar_carga ? `<div style="color: #64748b; font-size: 11px; margin-top: 2px;">Carga: ${escapeHtml(ruta.lugar_carga)}</div>` : ""}
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0;">
+                                        <span style="font-size: 11px; color: #075985; background: #e0f2fe; border-radius: 999px; padding: 2px 7px;">${escapeHtml(usoTxt)}</span>
+                                        <span style="font-size: 11px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 2px 7px;">Última: ${escapeHtml(ultima)}</span>
+                                    </div>
+                                </div>
+                            </button>`;
+                    })
+                    .join("");
+            }
+
+            async function buscarRutasHistorial(inputEl) {
+                const card = inputEl.closest(".dispatch-card");
+                if (!card) return;
+                const panel = card.querySelector(".ruta-historial-results");
+                const query = inputEl.value.trim();
+                clearTimeout(rutasHistorialSearchTimer);
+                if (query.length < 2) {
+                    if (panel) {
+                        panel.style.display = "none";
+                        panel.innerHTML = "";
+                    }
+                    return;
+                }
+                rutasHistorialSearchTimer = setTimeout(async () => {
+                    const clienteId = obtenerClienteId();
+                    if (!clienteId) {
+                        if (panel) {
+                            panel.style.display = "block";
+                            panel.innerHTML = `<div style="padding: 8px; border: 1px dashed #facc15; border-radius: 6px; background: #fffbeb; color: #92400e; font-size: 12px;">Selecciona un cliente antes de buscar rutas.</div>`;
+                        }
+                        return;
+                    }
+                    if (panel) {
+                        panel.style.display = "block";
+                        panel.innerHTML = `<div style="padding: 8px; color: #64748b; font-size: 12px;">Buscando rutas...</div>`;
+                    }
+                    try {
+                        const response = await fetch(
+                            `${VIAJES_API}?action=buscar_rutas&cliente_id=${clienteId}&q=${encodeURIComponent(query)}&limit=10`,
+                            { headers: getAuthHeaders() },
+                        );
+                        const json = await response.json();
+                        if (response.status === 401) {
+                            sessionStorage.removeItem("planificadorSession");
+                            sessionStorage.removeItem("planificadorUser");
+                            planificadorToken = "";
+                            planificadorTokenExpiresAt = 0;
+                            if (panel) {
+                                panel.style.display = "block";
+                                panel.innerHTML = `<div style="padding: 8px; border: 1px solid #facc15; border-radius: 6px; background: #fffbeb; color: #92400e; font-size: 12px;">Tu sesión expiró. Inicia sesión de nuevo para buscar rutas.</div>`;
+                            }
+                            document
+                                .getElementById("loginOverlay")
+                                ?.classList.remove("hidden");
+                            document
+                                .getElementById("sessionBar")
+                                ?.classList.add("hidden");
+                            throw new Error(json.error || "Sesión expirada");
+                        }
+                        if (!response.ok || !json.ok) {
+                            throw new Error(
+                                json.error || `Error ${response.status}`,
+                            );
+                        }
+                        renderRutasHistorial(card, json.rutas || []);
+                    } catch (error) {
+                        console.error(
+                            "Error buscando rutas del historial:",
+                            error,
+                        );
+                        if (panel && panel.innerHTML.trim() === "") {
+                            panel.style.display = "block";
+                            panel.innerHTML = `<div style="padding: 8px; border: 1px solid #fecaca; border-radius: 6px; background: #fef2f2; color: #991b1b; font-size: 12px;">No se pudo cargar el historial de rutas.</div>`;
+                        }
+                    }
+                }, 220);
+            }
+
+            function aplicarRutaHistorial(buttonEl) {
+                const card = buttonEl.closest(".dispatch-card");
+                if (!card || !card._rutasHistorial) return;
+                const index = parseInt(buttonEl.dataset.rutaIndex || "-1", 10);
+                const ruta = card._rutasHistorial[index];
+                if (!ruta) return;
+
+                const rutaInput = card.querySelector(".d-ruta");
+                const origenInput = card.querySelector(".d-origen");
+                const lugarCargaInput = card.querySelector(".d-lugar-carga");
+                const destinoInput = card.querySelector(".d-destino");
+                const searchInput = card.querySelector(
+                    ".ruta-historial-search",
+                );
+                const panel = card.querySelector(".ruta-historial-results");
+
+                if (rutaInput) rutaInput.value = ruta.ruta || "";
+                if (origenInput) origenInput.value = ruta.origen || "";
+                if (lugarCargaInput)
+                    lugarCargaInput.value = ruta.lugar_carga || "";
+                if (destinoInput) destinoInput.value = ruta.destino || "";
+                if (searchInput)
+                    searchInput.value = ruta.etiqueta || ruta.ruta || "";
+                if (panel) panel.style.display = "none";
+
+                showToast("✅ Ruta del historial aplicada", "success");
+            }
             /**
              * Aplica una plantilla de ruta a un tramo del formulario
              */
@@ -6700,6 +6616,8 @@
             window.ocultarRuta = ocultarRuta;
             window.cancelarEdicionPlantilla = cancelarEdicionPlantilla;
             window.aplicarPlantillaATramo = aplicarPlantillaATramo;
+            window.buscarRutasHistorial = buscarRutasHistorial;
+            window.aplicarRutaHistorial = aplicarRutaHistorial;
             window.construirOpcionesRutas = construirOpcionesRutas;
             window.actualizarSelectoresPlantillas =
                 actualizarSelectoresPlantillas;
@@ -6726,8 +6644,11 @@
             window.removeLector = removeLector;
             window.logoutPlanificador = logoutPlanificador;
             window.iniciarAgregarTramoExistente = iniciarAgregarTramoExistente;
-            window.cancelarAgregarTramoExistente = cancelarAgregarTramoExistente;
+            window.cancelarAgregarTramoExistente =
+                cancelarAgregarTramoExistente;
             window.toggleTramosViaje = toggleTramosViaje;
         </script>
     </body>
 </html>
+
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /**
  * API: viajes.php
@@ -2822,6 +2822,201 @@ function upsert_historial_ruta($conn, $cliente_id, $tramo)
 // ---------------------------------------------------------------------------
 
 /**
+ * GET ?action=buscar_rutas&cliente_id=X&q=texto
+ * Busca rutas usadas en viajes reales del cliente, sin exigir plantillas manuales.
+ */
+function handle_buscar_rutas_historial($conn, $ctx)
+{
+    $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
+    if ($cliente_id <= 0) {
+        throw new Exception("cliente_id requerido", 400);
+    }
+    assert_cliente_access($ctx, $cliente_id);
+
+    $q = trim((string) ($_GET["q"] ?? ""));
+    $limit = min(max((int) ($_GET["limit"] ?? 10), 1), 10);
+    $like = "%" . mb_strtolower($q, "UTF-8") . "%";
+    $rutas_por_firma = [];
+
+    $agregar_ruta = function ($row, $source_rank) use (&$rutas_por_firma) {
+        $ruta = trim((string) ($row["ruta"] ?? ""));
+        $origen = trim((string) ($row["origen"] ?? ""));
+        $lugar_carga = trim((string) ($row["lugar_carga"] ?? ""));
+        $destino = trim((string) ($row["destino"] ?? ""));
+        $firma = mb_strtolower($ruta . "|" . $origen . "|" . $lugar_carga . "|" . $destino, "UTF-8");
+        if ($firma === "|||") {
+            return;
+        }
+        $recorrido = trim(($origen ?: "Origen") . " -> " . ($destino ?: "Destino"));
+        $item = [
+            "ruta" => $ruta,
+            "origen" => $origen,
+            "lugar_carga" => $lugar_carga,
+            "destino" => $destino,
+            "veces_usada" => (int) ($row["veces_usada"] ?? 0),
+            "ultima_vez_usada" => $row["ultima_vez_usada"] ?? null,
+            "etiqueta" => $ruta !== "" ? $ruta . " · " . $recorrido : $recorrido,
+            "_source_rank" => $source_rank,
+            "_prioridad" => (int) ($row["prioridad"] ?? 9),
+        ];
+
+        if (!isset($rutas_por_firma[$firma])) {
+            $rutas_por_firma[$firma] = $item;
+            return;
+        }
+
+        $actual = $rutas_por_firma[$firma];
+        $mejor = [$item["_prioridad"], $item["_source_rank"], -$item["veces_usada"]];
+        $prev = [$actual["_prioridad"], $actual["_source_rank"], -$actual["veces_usada"]];
+        if ($mejor < $prev) {
+            $rutas_por_firma[$firma] = $item;
+        }
+    };
+
+    $catalogWhere = ["cliente_id = ?", "activo = 1"];
+    $catalogWhereTypes = "i";
+    $catalogWhereParams = [$cliente_id];
+    $catalogPriority = "9";
+    $catalogPriorityTypes = "";
+    $catalogPriorityParams = [];
+    if ($q !== "") {
+        $catalogPriority = "CASE
+            WHEN LOWER(COALESCE(ruta, '')) LIKE ? THEN 0
+            WHEN LOWER(COALESCE(etiqueta, '')) LIKE ? THEN 0
+            WHEN LOWER(COALESCE(origen, '')) LIKE ? THEN 1
+            WHEN LOWER(COALESCE(lugar_carga, '')) LIKE ? THEN 2
+            WHEN LOWER(COALESCE(destino, '')) LIKE ? THEN 3
+            ELSE 4
+        END";
+        $catalogPriorityTypes = "sssss";
+        $catalogPriorityParams = [$like, $like, $like, $like, $like];
+        $catalogWhere[] = "(
+            LOWER(COALESCE(ruta, '')) LIKE ?
+            OR LOWER(COALESCE(etiqueta, '')) LIKE ?
+            OR LOWER(COALESCE(origen, '')) LIKE ?
+            OR LOWER(COALESCE(lugar_carga, '')) LIKE ?
+            OR LOWER(COALESCE(destino, '')) LIKE ?
+        )";
+        $catalogWhereTypes .= "sssss";
+        array_push($catalogWhereParams, $like, $like, $like, $like, $like);
+    }
+    $catalogSql = "
+        SELECT ruta, origen, lugar_carga, destino,
+               COALESCE(veces_usada, 0) AS veces_usada,
+               COALESCE(ultima_vez_usada, updated_at, created_at) AS ultima_vez_usada,
+               $catalogPriority AS prioridad,
+               es_favorito
+          FROM tramos_catalogo
+         WHERE " . implode(" AND ", $catalogWhere) . "
+         ORDER BY prioridad ASC, es_favorito DESC, veces_usada DESC, ultima_vez_usada DESC
+         LIMIT ?";
+    $catalogTypes = $catalogPriorityTypes . $catalogWhereTypes . "i";
+    $catalogParams = array_merge($catalogPriorityParams, $catalogWhereParams, [$limit]);
+
+    $stmt = $conn->prepare($catalogSql);
+    if (!$stmt) {
+        throw new Exception("Error preparando busqueda de catalogo: " . $conn->error, 500);
+    }
+    $refs = [$catalogTypes];
+    foreach ($catalogParams as $k => $v) {
+        $refs[] = &$catalogParams[$k];
+    }
+    call_user_func_array([$stmt, "bind_param"], $refs);
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception("Error buscando catalogo de rutas: " . $err, 500);
+    }
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $agregar_ruta($row, ((int) ($row["es_favorito"] ?? 0)) === 1 ? 0 : 1);
+    }
+    $stmt->close();
+
+    $where = [
+        "v.cliente_id = ?",
+        "(vt.estado IS NULL OR vt.estado <> 'cancelado')",
+        "(NULLIF(TRIM(COALESCE(vt.ruta, '')), '') IS NOT NULL
+          OR NULLIF(TRIM(COALESCE(vt.origen, '')), '') IS NOT NULL
+          OR NULLIF(TRIM(COALESCE(vt.lugar_carga, '')), '') IS NOT NULL
+          OR NULLIF(TRIM(COALESCE(vt.destino, '')), '') IS NOT NULL)",
+    ];
+    $whereTypes = "i";
+    $whereParams = [$cliente_id];
+    $prioritySql = "9";
+    $priorityTypes = "";
+    $priorityParams = [];
+    if ($q !== "") {
+        $prioritySql = "CASE
+            WHEN LOWER(COALESCE(vt.ruta, '')) LIKE ? THEN 0
+            WHEN LOWER(COALESCE(vt.origen, '')) LIKE ? THEN 1
+            WHEN LOWER(COALESCE(vt.lugar_carga, '')) LIKE ? THEN 2
+            WHEN LOWER(COALESCE(vt.destino, '')) LIKE ? THEN 3
+            ELSE 4
+        END";
+        $priorityTypes = "ssss";
+        $priorityParams = [$like, $like, $like, $like];
+        $where[] = "(
+            LOWER(COALESCE(vt.ruta, '')) LIKE ?
+            OR LOWER(COALESCE(vt.origen, '')) LIKE ?
+            OR LOWER(COALESCE(vt.lugar_carga, '')) LIKE ?
+            OR LOWER(COALESCE(vt.destino, '')) LIKE ?
+        )";
+        $whereTypes .= "ssss";
+        array_push($whereParams, $like, $like, $like, $like);
+    }
+
+    $sql = "
+        SELECT COALESCE(vt.ruta, '') AS ruta,
+               COALESCE(vt.origen, '') AS origen,
+               COALESCE(vt.lugar_carga, '') AS lugar_carga,
+               COALESCE(vt.destino, '') AS destino,
+               COUNT(*) AS veces_usada,
+               MAX(COALESCE(vt.updated_at, vt.created_at, v.updated_at, v.created_at)) AS ultima_vez_usada,
+               MIN($prioritySql) AS prioridad
+          FROM viaje_tramos vt
+          INNER JOIN viajes v ON v.id = vt.viaje_id
+         WHERE " . implode(" AND ", $where) . "
+         GROUP BY COALESCE(vt.ruta, ''), COALESCE(vt.origen, ''), COALESCE(vt.lugar_carga, ''), COALESCE(vt.destino, '')
+         ORDER BY prioridad ASC, veces_usada DESC, ultima_vez_usada DESC
+         LIMIT ?";
+    $types = $priorityTypes . $whereTypes . "i";
+    $params = array_merge($priorityParams, $whereParams, [$limit]);
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Error preparando busqueda de rutas: " . $conn->error, 500);
+    }
+    $refs = [$types];
+    foreach ($params as $k => $v) {
+        $refs[] = &$params[$k];
+    }
+    call_user_func_array([$stmt, "bind_param"], $refs);
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception("Error buscando rutas: " . $err, 500);
+    }
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $agregar_ruta($row, 2);
+    }
+    $stmt->close();
+
+    $rutas = array_values($rutas_por_firma);
+    usort($rutas, function ($a, $b) {
+        return [$a["_prioridad"], $a["_source_rank"], -$a["veces_usada"], (string) ($b["ultima_vez_usada"] ?? "")]
+            <=> [$b["_prioridad"], $b["_source_rank"], -$b["veces_usada"], (string) ($a["ultima_vez_usada"] ?? "")];
+    });
+    $rutas = array_slice($rutas, 0, $limit);
+    foreach ($rutas as &$ruta) {
+        unset($ruta["_source_rank"], $ruta["_prioridad"]);
+    }
+    unset($ruta);
+
+    json_ok(["rutas" => $rutas, "total" => count($rutas)]);
+}
+/**
  * GET ?action=listar_catalogo&cliente_id=X
  * Retorna todas las plantillas de ruta activas del cliente.
  */
@@ -2864,6 +3059,76 @@ function handle_listar_catalogo($conn, $ctx)
     $stmt->close();
 
     json_ok(["plantillas" => $plantillas, "total" => count($plantillas)]);
+}
+
+/**
+ * GET ?action=listar_rutas&cliente_id=X
+ * Retorna el historial de rutas agrupado para la UI.
+ */
+function handle_listar_rutas($conn, $ctx)
+{
+    $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
+    if ($cliente_id <= 0) {
+        throw new Exception("cliente_id requerido", 400);
+    }
+    assert_cliente_access($ctx, $cliente_id);
+
+    $stmt = $conn->prepare(
+        'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
+                duracion_estimada_horas, origen_tipo, firma_ruta, veces_usada,
+                ultima_vez_usada, es_favorito, created_at, updated_at
+           FROM tramos_catalogo
+          WHERE cliente_id = ? AND activo = 1
+          ORDER BY es_favorito DESC,
+                   veces_usada DESC,
+                   COALESCE(ultima_vez_usada, updated_at, created_at) DESC,
+                   etiqueta ASC',
+    );
+    $stmt->bind_param("i", $cliente_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $favoritos = [];
+    $frecuentes = [];
+    $recientes = [];
+
+    while ($r = $res->fetch_assoc()) {
+        $plantilla = [
+            "id" => (int) $r["id"],
+            "etiqueta" => $r["etiqueta"],
+            "ruta" => $r["ruta"],
+            "origen" => $r["origen"],
+            "lugar_carga" => $r["lugar_carga"],
+            "destino" => $r["destino"],
+            "instrucciones" => $r["instrucciones"],
+            "duracion_estimada_horas" => $r["duracion_estimada_horas"]
+                ? (float) $r["duracion_estimada_horas"]
+                : null,
+            "origen_tipo" => $r["origen_tipo"],
+            "firma_ruta" => $r["firma_ruta"],
+            "veces_usada" => (int) $r["veces_usada"],
+            "ultima_vez_usada" => $r["ultima_vez_usada"],
+            "es_favorito" => (int) $r["es_favorito"] === 1,
+            "created_at" => $r["created_at"],
+            "updated_at" => $r["updated_at"],
+        ];
+
+        if ($plantilla["es_favorito"]) {
+            $favoritos[] = $plantilla;
+        } elseif ($plantilla["veces_usada"] > 0) {
+            $frecuentes[] = $plantilla;
+        } else {
+            $recientes[] = $plantilla;
+        }
+    }
+    $stmt->close();
+
+    json_ok([
+        "favoritos" => $favoritos,
+        "frecuentes" => $frecuentes,
+        "recientes" => $recientes,
+        "total" => count($favoritos) + count($frecuentes) + count($recientes),
+    ]);
 }
 
 /**
@@ -3132,6 +3397,74 @@ function handle_eliminar_plantilla($conn, $ctx)
     $stmt->close();
 
     json_ok(["plantilla_id" => $plantilla_id, "activo" => 0]);
+}
+
+/**
+ * PUT ?action=marcar_favorito
+ * Body JSON: { plantilla_id, es_favorito, etiqueta? }
+ */
+function handle_marcar_favorito($conn, $ctx)
+{
+    assert_can_write($ctx);
+
+    $body = json_decode(file_get_contents("php://input"), true);
+    if (!is_array($body)) {
+        throw new Exception("JSON invalido", 400);
+    }
+
+    $plantilla_id = (int) ($body["plantilla_id"] ?? 0);
+    if ($plantilla_id <= 0) {
+        throw new Exception("plantilla_id requerido", 400);
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT cliente_id FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1",
+    );
+    $stmt->bind_param("i", $plantilla_id);
+    $stmt->execute();
+    $p = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$p) {
+        throw new Exception("Ruta no encontrada", 404);
+    }
+    assert_cliente_access($ctx, $p["cliente_id"]);
+
+    $es_favorito = !empty($body["es_favorito"]) ? 1 : 0;
+    $etiqueta = array_key_exists("etiqueta", $body)
+        ? trim((string) $body["etiqueta"])
+        : null;
+
+    if ($etiqueta !== null && $etiqueta !== "") {
+        $stmt = $conn->prepare(
+            "UPDATE tramos_catalogo SET es_favorito = ?, etiqueta = ? WHERE id = ?",
+        );
+        $stmt->bind_param("isi", $es_favorito, $etiqueta, $plantilla_id);
+    } else {
+        $stmt = $conn->prepare(
+            "UPDATE tramos_catalogo SET es_favorito = ? WHERE id = ?",
+        );
+        $stmt->bind_param("ii", $es_favorito, $plantilla_id);
+    }
+
+    if (!$stmt->execute()) {
+        throw new Exception("Error actualizando favorito: " . $stmt->error, 500);
+    }
+    $stmt->close();
+
+    json_ok([
+        "plantilla_id" => $plantilla_id,
+        "es_favorito" => $es_favorito === 1,
+        "etiqueta" => $etiqueta,
+    ]);
+}
+
+/**
+ * DELETE ?action=ocultar_ruta
+ * Body JSON: { plantilla_id }
+ */
+function handle_ocultar_ruta($conn, $ctx)
+{
+    handle_eliminar_plantilla($conn, $ctx);
 }
 
 /**
@@ -3488,6 +3821,10 @@ try {
         $method === "DELETE" && $action === "eliminar_viaje"
             => handle_eliminar_viaje($conn, $ctx),
         // Catálogo de Plantillas de Ruta
+        $method === "GET" && $action === "listar_rutas"
+            => handle_listar_rutas($conn, $ctx),
+        $method === "GET" && $action === "buscar_rutas"
+            => handle_buscar_rutas_historial($conn, $ctx),
         $method === "GET" && $action === "listar_catalogo"
             => handle_listar_catalogo($conn, $ctx),
         $method === "GET" && $action === "obtener_plantilla"
@@ -3498,6 +3835,10 @@ try {
             => handle_actualizar_plantilla($conn, $ctx),
         $method === "DELETE" && $action === "eliminar_plantilla"
             => handle_eliminar_plantilla($conn, $ctx),
+        $method === "PUT" && $action === "marcar_favorito"
+            => handle_marcar_favorito($conn, $ctx),
+        $method === "DELETE" && $action === "ocultar_ruta"
+            => handle_ocultar_ruta($conn, $ctx),
         $method === "GET" && $action === "listar_operadores"
             => handle_listar_operadores($conn, $ctx),
         $method === "POST" && $action === "crear_operador"
@@ -3518,3 +3859,7 @@ try {
         in_array($code, [400, 401, 403, 404, 409, 500], true) ? $code : 500,
     );
 }
+
+
+
+
