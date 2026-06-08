@@ -12,6 +12,12 @@ class RequestValidator {
         if (php_sapi_name() === 'cli') {
             return;
         }
+
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+            self::validateCORS();
+            http_response_code(204);
+            exit;
+        }
         
         // In development environment, allow requests without API_KEY
         if (ENVIRONMENT === 'development') {
@@ -20,7 +26,7 @@ class RequestValidator {
         
         // Validate CORS - peticiones deben venir del mismo origen
         self::validateCORS();
-        
+
         // Validar que la petición viene del mismo dominio
         // No requerimos API_KEY en el cliente, solo validamos origen
         $referer = $_SERVER['HTTP_REFERER'] ?? '';
@@ -36,7 +42,7 @@ class RequestValidator {
         
         // Validate request method
         $method = $_SERVER['REQUEST_METHOD'];
-        if (!in_array($method, ['GET', 'POST', 'OPTIONS'])) {
+        if (!in_array($method, ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])) {
             throw new Exception('Method not allowed', 405);
         }
     }
@@ -73,7 +79,7 @@ class RequestValidator {
         
         if ($isAllowed) {
             header("Access-Control-Allow-Origin: $origin");
-            header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+            header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
             header('Access-Control-Allow-Headers: Content-Type, X-API-Key, Authorization');
         }
     }
