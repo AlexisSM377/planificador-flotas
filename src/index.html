@@ -5536,13 +5536,18 @@
                         `${VIAJES_API}?action=listar_operadores&cliente_id=${clienteId}`,
                         { headers: getAuthHeaders() },
                     );
-                    const json = await response.json();
-                    if (json.ok) {
+                    const text = await response.text();
+                    const json = text.trim()
+                        ? JSON.parse(text)
+                        : { ok: true, operadores: [], total: 0 };
+                    if (response.ok && json.ok) {
                         operadoresCache = json.operadores || [];
                         actualizarSelectoresOperador();
                         renderOperadoresTable();
                         const cnt = document.getElementById("operadoresCount");
                         if (cnt) cnt.textContent = operadoresCache.length;
+                    } else {
+                        throw new Error(json.error || `Error HTTP ${response.status}`);
                     }
                 } catch (e) {
                     console.error("Error cargando operadores:", e);
@@ -5851,9 +5856,23 @@
                         },
                     );
 
-                    const json = await response.json();
+                    const text = await response.text();
+                    let json = null;
+                    if (text.trim()) {
+                        json = JSON.parse(text);
+                    } else if (response.ok) {
+                        json = {
+                            ok: true,
+                            favoritos: [],
+                            frecuentes: [],
+                            recientes: [],
+                            total: 0,
+                        };
+                    } else {
+                        throw new Error(`Error HTTP ${response.status}`);
+                    }
 
-                    if (json.ok) {
+                    if (response.ok && json.ok) {
                         // El endpoint devuelve 3 secciones. Las guardamos por separado
                         // (para el render seccionado) y también aplanadas en
                         // plantillasRutaCache (para que el resto del JS —aplicar a

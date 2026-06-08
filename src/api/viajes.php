@@ -70,6 +70,38 @@ function null_if_empty($v)
     return $s === "" ? null : $s;
 }
 
+function db_table_exists($conn, $table)
+{
+    $table = (string) $table;
+    $res = $conn->query("SHOW TABLES LIKE '" . $conn->real_escape_string($table) . "'");
+    return $res && $res->num_rows > 0;
+}
+
+function db_columns_exist($conn, $table, $columns)
+{
+    $table = (string) $table;
+    if (!db_table_exists($conn, $table)) {
+        return false;
+    }
+
+    $res = $conn->query("SHOW COLUMNS FROM `" . str_replace("`", "``", $table) . "`");
+    if (!$res) {
+        return false;
+    }
+
+    $found = [];
+    while ($row = $res->fetch_assoc()) {
+        $found[$row["Field"]] = true;
+    }
+
+    foreach ($columns as $column) {
+        if (empty($found[$column])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // JWT (idéntico a planificador.php)
 // ---------------------------------------------------------------------------
@@ -3073,17 +3105,38 @@ function handle_listar_rutas($conn, $ctx)
     }
     assert_cliente_access($ctx, $cliente_id);
 
-    $stmt = $conn->prepare(
-        'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
-                duracion_estimada_horas, origen_tipo, firma_ruta, veces_usada,
-                ultima_vez_usada, es_favorito, created_at, updated_at
-           FROM tramos_catalogo
-          WHERE cliente_id = ? AND activo = 1
-          ORDER BY es_favorito DESC,
-                   veces_usada DESC,
-                   COALESCE(ultima_vez_usada, updated_at, created_at) DESC,
-                   etiqueta ASC',
-    );
+    if (!db_table_exists($conn, "tramos_catalogo")) {
+        json_ok(["favoritos" => [], "frecuentes" => [], "recientes" => [], "total" => 0]);
+    }
+
+    $has_historial = db_columns_exist($conn, "tramos_catalogo", [
+        "origen_tipo",
+        "firma_ruta",
+        "veces_usada",
+        "ultima_vez_usada",
+        "es_favorito",
+    ]);
+
+    $sql = $has_historial
+        ? 'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
+                  duracion_estimada_horas, origen_tipo, firma_ruta, veces_usada,
+                  ultima_vez_usada, es_favorito, created_at, updated_at
+             FROM tramos_catalogo
+            WHERE cliente_id = ? AND activo = 1
+            ORDER BY es_favorito DESC,
+                     veces_usada DESC,
+                     COALESCE(ultima_vez_usada, updated_at, created_at) DESC,
+                     etiqueta ASC'
+        : 'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
+                  duracion_estimada_horas, created_at, updated_at
+             FROM tramos_catalogo
+            WHERE cliente_id = ? AND activo = 1
+            ORDER BY etiqueta ASC';
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Error preparando listado de rutas: " . $conn->error, 500);
+    }
     $stmt->bind_param("i", $cliente_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -3104,11 +3157,11 @@ function handle_listar_rutas($conn, $ctx)
             "duracion_estimada_horas" => $r["duracion_estimada_horas"]
                 ? (float) $r["duracion_estimada_horas"]
                 : null,
-            "origen_tipo" => $r["origen_tipo"],
-            "firma_ruta" => $r["firma_ruta"],
-            "veces_usada" => (int) $r["veces_usada"],
-            "ultima_vez_usada" => $r["ultima_vez_usada"],
-            "es_favorito" => (int) $r["es_favorito"] === 1,
+            "origen_tipo" => $has_historial ? $r["origen_tipo"] : "manual",
+            "firma_ruta" => $has_historial ? $r["firma_ruta"] : null,
+            "veces_usada" => $has_historial ? (int) $r["veces_usada"] : 0,
+            "ultima_vez_usada" => $has_historial ? $r["ultima_vez_usada"] : null,
+            "es_favorito" => $has_historial ? (int) $r["es_favorito"] === 1 : false,
             "created_at" => $r["created_at"],
             "updated_at" => $r["updated_at"],
         ];
@@ -3524,12 +3577,19 @@ function handle_listar_operadores($conn, $ctx)
     }
     assert_cliente_access($ctx, $cliente_id);
 
+    if (!db_table_exists($conn, "operadores")) {
+        json_ok(["operadores" => [], "total" => 0]);
+    }
+
     $stmt = $conn->prepare(
         'SELECT id, nombre, telefonos, created_at, updated_at
            FROM operadores
           WHERE cliente_id = ? AND activo = 1
           ORDER BY nombre ASC',
     );
+    if (!$stmt) {
+        throw new Exception("Error preparando listado de operadores: " . $conn->error, 500);
+    }
     $stmt->bind_param("i", $cliente_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -3852,7 +3912,7 @@ try {
             404,
         ),
     };
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $code = (int) $e->getCode();
     json_err(
         $e->getMessage(),
