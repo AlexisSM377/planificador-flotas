@@ -2220,6 +2220,12 @@
                 return url;
             }
 
+            function viajesApiUrl(action, methodOverride = "") {
+                const params = new URLSearchParams({ action });
+                if (methodOverride) params.set("_method", methodOverride);
+                return withAuthUrl(`${VIAJES_API}?${params.toString()}`);
+            }
+
             function getAuthHeaders(extra = {}) {
                 if (!planificadorToken) {
                     return extra;
@@ -3115,9 +3121,9 @@
 
                 try {
                     const res = await fetch(
-                        withAuthUrl(`${VIAJES_API}?action=actualizar_unidad`),
+                        viajesApiUrl("actualizar_unidad", "PUT"),
                         {
-                            method: "PUT",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                                 Accept: "application/json",
@@ -3232,9 +3238,9 @@
 
                 try {
                     const res = await fetch(
-                        withAuthUrl(`${VIAJES_API}?action=actualizar_despacho`),
+                        viajesApiUrl("actualizar_despacho", "PUT"),
                         {
-                            method: "PUT",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                                 Accept: "application/json",
@@ -3300,9 +3306,9 @@
 
                 try {
                     const res = await fetch(
-                        withAuthUrl(`${VIAJES_API}?action=eliminar_despacho`),
+                        viajesApiUrl("eliminar_despacho", "DELETE"),
                         {
-                            method: "DELETE",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                                 Accept: "application/json",
@@ -3354,9 +3360,9 @@
 
                 try {
                     const res = await fetch(
-                        withAuthUrl(`${VIAJES_API}?action=eliminar_registro`),
+                        viajesApiUrl("eliminar_registro", "DELETE"),
                         {
-                            method: "DELETE",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                                 Accept: "application/json",
@@ -5114,14 +5120,14 @@
                     .value.trim();
                 const esEdicion = id > 0;
                 const url = esEdicion
-                    ? `${VIAJES_API}?action=actualizar_operador`
-                    : `${VIAJES_API}?action=crear_operador`;
+                    ? viajesApiUrl("actualizar_operador", "PUT")
+                    : withAuthUrl(`${VIAJES_API}?action=crear_operador`);
                 const payload = esEdicion
                     ? { operador_id: id, nombre, telefonos }
                     : { cliente_id: clienteId, nombre, telefonos };
                 try {
-                    const res = await fetch(withAuthUrl(url), {
-                        method: esEdicion ? "PUT" : "POST",
+                    const res = await fetch(url, {
+                        method: "POST",
                         headers: getAuthHeaders({
                             "Content-Type": "application/json",
                             Accept: "application/json",
@@ -5180,9 +5186,9 @@
                     return;
                 try {
                     const res = await fetch(
-                        withAuthUrl(`${VIAJES_API}?action=eliminar_operador`),
+                        viajesApiUrl("eliminar_operador", "DELETE"),
                         {
-                            method: "DELETE",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                                 Accept: "application/json",
@@ -5530,8 +5536,8 @@
                     let url, method;
                     if (plantillaEditId) {
                         // Actualizar plantilla existente
-                        url = `${VIAJES_API}?action=actualizar_plantilla`;
-                        method = "PUT";
+                        url = viajesApiUrl("actualizar_plantilla", "PUT");
+                        method = "POST";
                         payload.plantilla_id = parseInt(plantillaEditId);
                     } else {
                         // Crear nueva plantilla
@@ -5623,9 +5629,9 @@
 
                 try {
                     const response = await fetch(
-                        `${VIAJES_API}?action=eliminar_plantilla`,
+                        viajesApiUrl("eliminar_plantilla", "DELETE"),
                         {
-                            method: "DELETE",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                             }),
@@ -5658,9 +5664,9 @@
             async function toggleFavoritoRuta(plantillaId, esFavorito) {
                 try {
                     const response = await fetch(
-                        `${VIAJES_API}?action=marcar_favorito`,
+                        viajesApiUrl("marcar_favorito", "PUT"),
                         {
-                            method: "PUT",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                             }),
@@ -5709,9 +5715,9 @@
                 if (limpia === etiquetaActual) return;
                 try {
                     const response = await fetch(
-                        `${VIAJES_API}?action=marcar_favorito`,
+                        viajesApiUrl("marcar_favorito", "PUT"),
                         {
-                            method: "PUT",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                             }),
@@ -5750,9 +5756,9 @@
                 }
                 try {
                     const response = await fetch(
-                        `${VIAJES_API}?action=ocultar_ruta`,
+                        viajesApiUrl("ocultar_ruta", "DELETE"),
                         {
-                            method: "DELETE",
+                            method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                             }),

@@ -3836,6 +3836,12 @@ try {
     $conn = getDbConnection();
     $action = str_val($_GET["action"] ?? "");
     $method = strtoupper($_SERVER["REQUEST_METHOD"] ?? "GET");
+    if ($method === "POST") {
+        $method_override = strtoupper(str_val($_GET["_method"] ?? ""));
+        if (in_array($method_override, ["PUT", "DELETE"], true)) {
+            $method = $method_override;
+        }
+    }
 
     // Endpoints que requieren contexto de usuario
     $ctx = get_usuario_context($conn);
