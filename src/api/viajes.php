@@ -396,6 +396,7 @@ function map_tramo_row($r)
         "salida_carga_real" => $r["salida_carga_real"] ?? null,
         "descarga_programada" => $r["descarga_programada"],
         "descarga_real" => $r["descarga_real"] ?? null,
+        "vacio_real" => $r["vacio_real"] ?? null,
         "estado" => $r["estado"],
         "created_at" => $r["created_at"],
         "updated_at" => $r["updated_at"],
@@ -429,9 +430,12 @@ function insertar_tramo($conn, $viaje_id, $num, $t)
     $stmt = $conn->prepare(
         'INSERT INTO viaje_tramos
            (viaje_id, tramo_numero, origen, lugar_carga, destino, ruta,
-            instrucciones, salida_patio, cita_carga, salida_carga, descarga_programada, estado)
+             instrucciones, salida_patio, cita_carga, salida_carga, descarga_programada, estado)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     );
+    if (!$stmt) {
+        throw new Exception("Error preparando tramo: " . $conn->error, 500);
+    }
     $origen = null_if_empty($t["origen"] ?? "");
     $lc = null_if_empty($t["lugar_carga"] ?? "");
     $destino = null_if_empty($t["destino"] ?? "");
@@ -522,6 +526,9 @@ function sincronizar_despachos(
                 descarga_programada     = VALUES(descarga_programada),
                 legacy_key              = VALUES(legacy_key)',
         );
+        if (!$stmt) {
+            throw new Exception("Error preparando sincronizacion despacho: " . $conn->error, 500);
+        }
 
         $ruta = null_if_empty($t["ruta"] ?? "");
         $origen = null_if_empty($t["origen"] ?? "");
@@ -593,6 +600,9 @@ function upsert_unidad(
            operador_id = IF(VALUES(operador_id) IS NOT NULL, VALUES(operador_id), operador_id),
            activo      = 1',
     );
+    if (!$stmt) {
+        throw new Exception("Error preparando unidad: " . $conn->error, 500);
+    }
     $stmt->bind_param(
         "isssssi",
         $cliente_id,
@@ -613,6 +623,9 @@ function upsert_unidad(
     $stmt = $conn->prepare(
         "SELECT id FROM unidades WHERE cliente_id = ? AND economico = ? LIMIT 1",
     );
+    if (!$stmt) {
+        throw new Exception("Error preparando consulta de unidad: " . $conn->error, 500);
+    }
     $stmt->bind_param("is", $cliente_id, $economico);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -709,7 +722,7 @@ function handle_crear($conn, $ctx)
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
         "salida_carga" => "Salida de Carga",
-        "descarga_programada" => "Hora de Descarga",
+        "descarga_programada" => "Cita de Descarga",
     ];
     foreach ($tramos as $i => $t) {
         foreach ($campos_tiempo as $campo => $etiqueta) {
@@ -744,6 +757,9 @@ function handle_crear($conn, $ctx)
         $stmt = $conn->prepare(
             "SELECT id FROM unidades WHERE id = ? AND cliente_id = ? AND activo = 1 LIMIT 1",
         );
+        if (!$stmt) {
+            throw new Exception("Error preparando verificacion de unidad: " . $conn->error, 500);
+        }
         $stmt->bind_param("ii", $unidad_id, $cliente_id);
         $stmt->execute();
         $existe = $stmt->get_result()->fetch_assoc();
@@ -795,8 +811,11 @@ function handle_crear($conn, $ctx)
                (cliente_id, unidad_id, folio, fecha_inicio, fecha_fin, estado, notas, created_by_usuario_id)
              VALUES (?, ?, ?, ?, ?, \'planificado\', ?, ?)',
         );
+        if (!$stmt) {
+            throw new Exception("Error preparando viaje: " . $conn->error, 500);
+        }
         $stmt->bind_param(
-            "iisssis",
+            "iissssi",
             $cliente_id,
             $unidad_id,
             $folio,
@@ -819,6 +838,9 @@ function handle_crear($conn, $ctx)
         $stmt_cn = $conn->prepare(
             "SELECT nombre FROM clientes WHERE id = ? LIMIT 1",
         );
+        if (!$stmt_cn) {
+            throw new Exception("Error preparando cliente: " . $conn->error, 500);
+        }
         $stmt_cn->bind_param("i", $cliente_id);
         $stmt_cn->execute();
         $cliente_nombre = $stmt_cn->get_result()->fetch_assoc()["nombre"] ?? "";
@@ -991,6 +1013,9 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
            JOIN unidades u ON u.id = v.unidad_id
           WHERE v.id = ? LIMIT 1',
     );
+    if (!$stmt) {
+        throw new Exception("Error preparando consulta de viaje: " . $conn->error, 500);
+    }
     $stmt->bind_param("i", $viaje_id);
     $stmt->execute();
     $r = $stmt->get_result()->fetch_assoc();
@@ -1009,6 +1034,9 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
     $stmt = $conn->prepare(
         "SELECT * FROM viaje_tramos WHERE viaje_id = ? ORDER BY tramo_numero ASC",
     );
+    if (!$stmt) {
+        throw new Exception("Error preparando consulta de tramos: " . $conn->error, 500);
+    }
     $stmt->bind_param("i", $viaje_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -1021,30 +1049,35 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
     $viaje["tramos"] = $tramos;
 
     // Incidencias agrupadas por tramo
-    $stmt = $conn->prepare(
-        'SELECT id, tramo_id, tipo, severidad, fecha, direccion, notas, creado_por, created_at
-           FROM viaje_incidencias
-          WHERE viaje_id = ?
-          ORDER BY tramo_id ASC, fecha ASC',
-    );
-    $stmt->bind_param("i", $viaje_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
     $incidencias_map = [];
-    while ($inc = $res->fetch_assoc()) {
-        $tid = (int) $inc["tramo_id"];
-        $incidencias_map[$tid][] = [
-            "id" => (int) $inc["id"],
-            "tramo_id" => $tid,
-            "tipo" => $inc["tipo"],
-            "severidad" => $inc["severidad"],
-            "fecha" => $inc["fecha"],
-            "direccion" => $inc["direccion"],
-            "notas" => $inc["notas"],
-            "created_at" => $inc["created_at"],
-        ];
+    if (db_table_exists($conn, "viaje_incidencias")) {
+        $stmt = $conn->prepare(
+            'SELECT id, tramo_id, tipo, severidad, fecha, direccion, notas, creado_por, created_at
+               FROM viaje_incidencias
+              WHERE viaje_id = ?
+              ORDER BY tramo_id ASC, fecha ASC',
+        );
+        if (!$stmt) {
+            throw new Exception("Error preparando consulta de incidencias: " . $conn->error, 500);
+        }
+        $stmt->bind_param("i", $viaje_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($inc = $res->fetch_assoc()) {
+            $tid = (int) $inc["tramo_id"];
+            $incidencias_map[$tid][] = [
+                "id" => (int) $inc["id"],
+                "tramo_id" => $tid,
+                "tipo" => $inc["tipo"],
+                "severidad" => $inc["severidad"],
+                "fecha" => $inc["fecha"],
+                "direccion" => $inc["direccion"],
+                "notas" => $inc["notas"],
+                "created_at" => $inc["created_at"],
+            ];
+        }
+        $stmt->close();
     }
-    $stmt->close();
 
     // Inyectar incidencias en cada tramo
     foreach ($viaje["tramos"] as &$tramo) {
@@ -1234,7 +1267,7 @@ function handle_agregar_tramo($conn, $ctx)
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
         "salida_carga" => "Salida de Carga",
-        "descarga_programada" => "Hora de Descarga",
+        "descarga_programada" => "Cita de Descarga",
     ];
     foreach ($campos_tiempo as $campo => $etiqueta) {
         $dt = to_datetime($tramo_data[$campo] ?? "");
@@ -1420,7 +1453,7 @@ function handle_completar_tramo($conn, $ctx)
  * PUT ?action=actualizar_tramo
  * Body JSON: { tramo_id, origen?, lugar_carga?, destino?, ruta?, instrucciones?,
  *              salida_patio?, cita_carga?, salida_carga?, descarga_programada?,
- *              salida_patio_real?, cita_carga_real?, salida_carga_real?, descarga_real?,
+ *              cita_carga_real?, salida_carga_real?, descarga_real?, vacio_real?,
  *              estado? }
  */
 function handle_actualizar_tramo($conn, $ctx)
@@ -1435,6 +1468,12 @@ function handle_actualizar_tramo($conn, $ctx)
     $tramo_id = (int) ($body["tramo_id"] ?? 0);
     if ($tramo_id <= 0) {
         throw new Exception("tramo_id requerido", 400);
+    }
+    if (array_key_exists("salida_patio_real", $body)) {
+        throw new Exception(
+            "Salida de patio se toma de la captura del cliente y no se actualiza como campo real",
+            400,
+        );
     }
 
     // Verificar existencia y acceso vía viaje
@@ -1466,11 +1505,28 @@ function handle_actualizar_tramo($conn, $ctx)
         "cita_carga",
         "salida_carga",
         "descarga_programada",
-        "salida_patio_real",
         "cita_carga_real",
         "salida_carga_real",
         "descarga_real",
+        "vacio_real",
     ];
+    $campos_reales = [
+        "cita_carga_real",
+        "salida_carga_real",
+        "descarga_real",
+        "vacio_real",
+    ];
+
+    if ($ctx["role"] !== "admin") {
+        foreach ($campos_reales as $campo_real) {
+            if (array_key_exists($campo_real, $body)) {
+                throw new Exception(
+                    "Solo admin puede actualizar campos reales de seguimiento",
+                    403,
+                );
+            }
+        }
+    }
 
     $sets = [];
     $types = "";
@@ -2674,6 +2730,9 @@ function detectar_conflictos(
     }
 
     $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Error preparando deteccion de conflictos: " . $conn->error, 500);
+    }
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $res = $stmt->get_result();
