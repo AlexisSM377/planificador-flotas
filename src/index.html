@@ -4366,8 +4366,8 @@
                                  <button type="button"
                                          onclick="iniciarAgregarTramoExistente(${vid}, '${String(
                                              v.folio || "",
-                                        )
-                                            .replace(/'/g, "\\'")
+                                         )
+                                             .replace(/'/g, "\\'")
                                              .replace(
                                                  /"/g,
                                                  "&quot;",
@@ -4376,8 +4376,8 @@
                                      ＋ Agregar tramo
                                  </button>
                              </div>`
-                                    : ""
-                            }
+                                     : ""
+                             }
                         </div>`;
                         })
                         .join("");
@@ -4436,8 +4436,7 @@
                 const cont = document.getElementById(`tramos-list-${viajeId}`);
                 if (!cont) return;
                 if (!tramos.length) {
-                    cont.innerHTML =
-                        '<p class="inline-note">Sin tramos.</p>';
+                    cont.innerHTML = '<p class="inline-note">Sin tramos.</p>';
                     return;
                 }
                 const estadoColor = {
@@ -4995,7 +4994,6 @@
                       <label>Salida de Patio</label>
                       <input type="datetime-local" class="d-salida-patio" min="${minDateTime}"/>
                     </div>
-                    <p class="schedule-reference-copy">Referencia inicial del viaje. El monitorista la vera en bitacora, pero no la captura como fecha real.</p>
                 </div>
 
                 <details class="schedule-section" open>
