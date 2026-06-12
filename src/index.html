@@ -12,7 +12,7 @@
         <style>
             :root {
                 --primary: #051937;
-                --accent: #0087d1;
+                --accent: #006aa6;
                 --bg-page: #e2e8f0;
                 --white: #ffffff;
                 --text-main: #051937;
@@ -48,7 +48,10 @@
                 border-radius: 24px;
                 box-shadow: var(--shadow-card);
                 border: 1px solid var(--border);
-                overflow: hidden;
+                overflow: visible;
+            }
+            .card > header {
+                border-radius: 24px 24px 0 0;
             }
             .login-overlay {
                 position: fixed;
@@ -113,7 +116,6 @@
                 font-size: 13px;
                 margin-top: 8px;
                 font-weight: 700;
-                text-transform: uppercase;
                 letter-spacing: 0.05em;
             }
 
@@ -134,7 +136,10 @@
                 color: var(--text-muted);
                 cursor: pointer;
                 border-bottom: 3px solid transparent;
-                transition: all 0.3s;
+                transition:
+                    color 0.2s ease,
+                    background-color 0.2s ease,
+                    border-color 0.2s ease;
             }
             .tab-btn.active {
                 color: var(--accent);
@@ -160,7 +165,6 @@
             }
             h2 {
                 font-size: 20px;
-                text-transform: uppercase;
                 letter-spacing: 0.02em;
                 color: var(--primary);
                 margin: 0;
@@ -177,10 +181,9 @@
                 gap: 6px;
             }
             label {
-                font-size: 10px;
+                font-size: 12px;
                 font-weight: 800;
                 color: var(--text-muted);
-                text-transform: uppercase;
             }
             input,
             select,
@@ -188,9 +191,12 @@
                 padding: 12px 14px;
                 border: 1px solid var(--border);
                 border-radius: 10px;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 500;
-                transition: all 0.3s ease;
+                transition:
+                    border-color 0.2s ease,
+                    background-color 0.2s ease,
+                    box-shadow 0.2s ease;
                 background: #f8fafc;
                 color: var(--primary);
                 width: 100%;
@@ -199,7 +205,15 @@
                 outline: none;
                 border-color: var(--accent);
                 background: #fff;
-                box-shadow: 0 0 0 4px rgba(0, 135, 209, 0.1);
+                box-shadow: 0 0 0 4px rgba(0, 106, 166, 0.14);
+            }
+            button:focus-visible,
+            summary:focus-visible,
+            input:focus-visible,
+            select:focus-visible,
+            textarea:focus-visible {
+                outline: 3px solid rgba(0, 106, 166, 0.38);
+                outline-offset: 2px;
             }
 
             /* Multi-action Chips */
@@ -221,8 +235,11 @@
                 border-radius: 8px;
                 border: 1px solid var(--border);
                 cursor: pointer;
-                transition: all 0.2s;
-                font-size: 11px;
+                transition:
+                    border-color 0.2s ease,
+                    background-color 0.2s ease,
+                    color 0.2s ease;
+                font-size: 12px;
                 font-weight: 600;
             }
             .action-chip input {
@@ -256,10 +273,13 @@
                 padding: 10px;
                 border-radius: 8px;
                 border: 2px solid var(--border);
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 800;
                 cursor: pointer;
-                transition: all 0.2s;
+                transition:
+                    border-color 0.2s ease,
+                    background-color 0.2s ease,
+                    color 0.2s ease;
                 text-transform: uppercase;
             }
             .priority-option input[value="Critica"]:checked + .priority-label {
@@ -323,14 +343,18 @@
                 padding-top: 25px;
             }
             .btn {
-                padding: 7px 14px;
+                min-height: 44px;
+                padding: 10px 16px;
                 border-radius: 12px;
-                font-size: 12px;
-                background: #ff3434;
+                font-size: 13px;
+                background: #dc2626;
                 font-weight: 800;
                 border: none;
                 cursor: pointer;
-                transition: all 0.2s;
+                transition:
+                    background-color 0.2s ease,
+                    color 0.2s ease,
+                    box-shadow 0.2s ease;
                 text-transform: uppercase;
                 letter-spacing: 0.03em;
             }
@@ -347,23 +371,92 @@
                 color: white;
             }
             .btn-success {
-                background: #10b981;
+                background: #047857;
                 color: white;
             }
 
             .remove-btn {
                 color: #e53e3e;
                 background: #fff5f5;
-                border: none;
+                border: 1px solid #fecaca;
                 cursor: pointer;
-                width: 30px;
-                height: 30px;
+                width: 44px;
+                height: 44px;
                 border-radius: 8px;
                 font-weight: 800;
             }
+            .icon-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 44px;
+                height: 44px;
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                background: #fff;
+                color: var(--primary);
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 16px;
+                font-weight: 800;
+                line-height: 1;
+            }
+            .icon-btn:hover,
+            .icon-btn:focus-visible {
+                border-color: var(--accent);
+                background: #f0f9ff;
+                color: var(--accent);
+            }
+            .icon-btn--danger {
+                border-color: #fecaca;
+                background: #fff5f5;
+                color: #dc2626;
+            }
+            .icon-btn--danger:hover,
+            .icon-btn--danger:focus-visible {
+                border-color: #dc2626;
+                background: #fef2f2;
+                color: #b91c1c;
+            }
+            .icon-btn--ghost {
+                border-color: transparent;
+                background: transparent;
+            }
+            .icon-btn--inverse {
+                border-color: rgba(255, 255, 255, 0.35);
+                background: rgba(255, 255, 255, 0.08);
+                color: #fff;
+            }
+            .icon-btn--inverse:hover,
+            .icon-btn--inverse:focus-visible {
+                border-color: rgba(255, 255, 255, 0.7);
+                background: rgba(255, 255, 255, 0.18);
+                color: #fff;
+            }
+            .label-icon-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 32px;
+                min-height: 32px;
+                margin-left: 4px;
+                border: 1px solid transparent;
+                border-radius: 8px;
+                background: transparent;
+                color: var(--accent);
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 13px;
+                line-height: 1;
+            }
+            .label-icon-btn:hover,
+            .label-icon-btn:focus-visible {
+                border-color: #7dd3fc;
+                background: #f0f9ff;
+            }
             .add-row-btn {
-                width: 36px;
-                height: 36px;
+                width: 44px;
+                height: 44px;
                 border-radius: 10px;
                 cursor: pointer;
                 border: none;
@@ -400,7 +493,7 @@
                 color: white;
                 text-align: left;
                 padding: 12px 15px;
-                font-size: 10px;
+                font-size: 12px;
                 text-transform: uppercase;
             }
             .contact-table td {
@@ -429,7 +522,7 @@
             }
             .p-ordinaria {
                 background: #e0f2fe;
-                color: #0369a1;
+                color: #075985;
             }
 
             .badge-group {
@@ -491,15 +584,26 @@
             }
             .route-history-title label {
                 margin: 0;
-                color: #0369a1;
+                color: #075985;
                 font-weight: 800;
             }
             .route-history-panel small {
                 display: block;
                 color: #0c4a6e;
                 margin-top: 8px;
-                font-size: 11px;
+                font-size: 12px;
                 line-height: 1.4;
+            }
+            .route-history-search {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #7dd3fc;
+                border-radius: 8px;
+                background: #fff;
+            }
+            .route-history-results {
+                display: none;
+                margin-top: 8px;
             }
             .schedule-panel {
                 margin-top: 22px;
@@ -520,7 +624,7 @@
             }
             .schedule-reference-copy {
                 color: #475569;
-                font-size: 12px;
+                font-size: 13px;
                 line-height: 1.45;
                 margin: 0 0 6px;
             }
@@ -536,6 +640,9 @@
                 padding: 12px 14px;
                 background: #f8fafc;
                 border-bottom: 1px solid #e2e8f0;
+            }
+            .schedule-section summary:hover {
+                background: #f1f5f9;
             }
             .schedule-section summary::-webkit-details-marker {
                 display: none;
@@ -556,7 +663,7 @@
             }
             .schedule-summary-meta {
                 color: #64748b;
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 700;
             }
             .schedule-grid {
@@ -564,6 +671,217 @@
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
                 gap: 14px;
                 padding: 14px;
+            }
+            .inline-note {
+                padding: 8px;
+                color: #64748b;
+                font-size: 12px;
+                line-height: 1.45;
+            }
+            .inline-note--empty {
+                border: 1px dashed #cbd5e1;
+                border-radius: 6px;
+                background: #fff;
+            }
+            .inline-note--warning {
+                border: 1px solid #facc15;
+                border-radius: 6px;
+                background: #fffbeb;
+                color: #92400e;
+            }
+            .inline-note--danger {
+                border: 1px solid #fecaca;
+                border-radius: 6px;
+                background: #fef2f2;
+                color: #991b1b;
+            }
+            .trip-row {
+                padding: 8px 0;
+                border-bottom: 1px solid #e0f2fe;
+            }
+            .trip-row-header,
+            .trip-row-actions,
+            .route-history-result-main {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .trip-row-header,
+            .route-history-result-main {
+                justify-content: space-between;
+            }
+            .trip-row-title {
+                font-weight: 700;
+            }
+            .trip-row-date,
+            .trip-field {
+                color: #64748b;
+            }
+            .trip-row-date {
+                margin-left: 8px;
+            }
+            .chip {
+                display: inline-flex;
+                align-items: center;
+                border-radius: 999px;
+                padding: 2px 7px;
+                font-size: 12px;
+                font-weight: 700;
+                line-height: 1.35;
+            }
+            .chip--warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+            .chip--info {
+                background: #e0f2fe;
+                color: #075985;
+            }
+            .chip--muted {
+                background: #f1f5f9;
+                color: #475569;
+            }
+            .trip-toggle {
+                color: #075985;
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 700;
+                padding: 4px 0;
+                text-decoration: underline;
+            }
+            .trip-state {
+                color: var(--trip-state-color, #334155);
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: capitalize;
+            }
+            .trip-tramos-list {
+                display: none;
+                margin-top: 8px;
+            }
+            .trip-add-wrap {
+                margin-top: 6px;
+            }
+            .trip-add-btn {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                min-height: 34px;
+                color: #6b21a8;
+                border: 1px dashed #c084fc;
+                background: #faf5ff;
+                border-radius: 8px;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+            }
+            .trip-add-btn:hover,
+            .trip-add-btn:focus-visible {
+                background: #f3e8ff;
+                border-color: #a855f7;
+            }
+            .trip-segment {
+                background: #f8fafc;
+                border-block: 1px solid #e2e8f0;
+                padding: 8px 0;
+            }
+            .trip-segment + .trip-segment {
+                border-top: 0;
+            }
+            .trip-segment-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            .trip-segment-title {
+                color: #0f172a;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .trip-segment-grid {
+                display: grid;
+                gap: 6px;
+                font-size: 12px;
+                line-height: 1.6;
+            }
+            .trip-field {
+                margin-right: 10px;
+            }
+            .programmed-group {
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background: #fff;
+                padding: 6px 8px;
+            }
+            .programmed-group-title {
+                margin-bottom: 2px;
+                color: #475569;
+                font-size: 9px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+            .route-history-result {
+                width: 100%;
+                text-align: left;
+                padding: 9px 10px;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                background: #fff;
+                cursor: pointer;
+                font-family: inherit;
+            }
+            .route-history-result + .route-history-result {
+                margin-top: 6px;
+            }
+            .route-history-result:hover,
+            .route-history-result:focus-visible {
+                border-color: #7dd3fc;
+                background: #f8fafc;
+            }
+            .route-history-result-copy {
+                min-width: 0;
+            }
+            .route-history-result-title {
+                color: #0f172a;
+                font-size: 13px;
+                font-weight: 700;
+            }
+            .route-history-result-meta,
+            .route-history-result-load {
+                margin-top: 2px;
+                font-size: 12px;
+            }
+            .route-history-result-meta {
+                color: #475569;
+            }
+            .route-history-result-load {
+                color: #64748b;
+            }
+            .route-history-result-badges {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            @media (prefers-reduced-motion: reduce) {
+                *,
+                *::before,
+                *::after {
+                    transition-duration: 0.01ms !important;
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    scroll-behavior: auto !important;
+                }
             }
             @media (max-width: 720px) {
                 .schedule-reference {
@@ -588,77 +906,69 @@
                 padding: 10px 0;
             }
 
-            .unit-card {
-                background: white;
-                border-radius: 16px;
-                box-shadow:
-                    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            .unit-record {
+                background: #fff;
                 border: 1px solid var(--border);
-                overflow: hidden;
-                transition: all 0.3s ease;
+                border-radius: 8px;
+                transition:
+                    border-color 0.2s ease,
+                    background-color 0.2s ease;
             }
 
-            .unit-card:hover {
-                box-shadow:
-                    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-                    0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                transform: translateY(-2px);
+            .unit-record:hover {
+                background: #f8fafc;
+                border-color: var(--accent);
             }
 
-            .unit-card-header {
-                background: linear-gradient(
-                    135deg,
-                    var(--primary) 0%,
-                    var(--accent) 100%
-                );
-                padding: 20px;
-                color: white;
+            .unit-record-header {
+                padding: 16px 18px;
+                color: var(--primary);
+                border-bottom: 1px solid var(--border);
             }
 
-            .unit-card-title {
-                font-size: 20px;
-                font-weight: 700;
+            .unit-record-title {
+                font-size: 18px;
+                font-weight: 800;
                 margin: 0 0 12px 0;
                 display: flex;
                 align-items: center;
                 gap: 10px;
             }
 
-            .unit-card-meta {
+            .unit-record-meta {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
                 font-size: 12px;
-                opacity: 0.95;
+                color: var(--text-muted);
             }
 
-            .unit-card-meta-item {
+            .unit-record-meta-item {
                 display: flex;
                 align-items: center;
                 gap: 6px;
             }
 
-            .unit-card-body {
-                padding: 20px;
+            .unit-record-body {
+                padding: 0 18px;
             }
 
             .tramo-item {
-                padding: 16px;
-                background: #f8fafc;
-                border-radius: 12px;
-                margin-bottom: 12px;
-                border-left: 4px solid var(--accent);
-                transition: all 0.2s;
+                padding: 14px 0;
+                background: transparent;
+                border-bottom: 1px solid #e2e8f0;
+                transition:
+                    background-color 0.2s ease,
+                    border-color 0.2s ease;
             }
 
             .tramo-item:hover {
-                background: #e0f2fe;
-                border-left-color: var(--primary);
+                background: #f0f9ff;
+                border-color: #bae6fd;
             }
 
             .tramo-item:last-child {
-                margin-bottom: 0;
+                border-bottom: 0;
             }
 
             .tramo-header {
@@ -688,7 +998,7 @@
                 font-weight: 700;
                 color: var(--text-muted);
                 text-transform: uppercase;
-                font-size: 10px;
+                font-size: 12px;
                 letter-spacing: 0.5px;
             }
 
@@ -697,15 +1007,15 @@
                 word-break: break-word;
             }
 
-            .unit-card-footer {
-                padding: 16px 20px;
+            .unit-record-footer {
+                padding: 14px 18px;
                 background: #f8fafc;
                 border-top: 1px solid var(--border);
-                font-size: 11px;
+                font-size: 12px;
                 color: var(--text-muted);
             }
 
-            .unit-card-footer strong {
+            .unit-record-footer strong {
                 color: var(--text-main);
                 font-weight: 700;
             }
@@ -716,7 +1026,7 @@
                     gap: 16px;
                 }
 
-                .unit-card-meta {
+                .unit-record-meta {
                     grid-template-columns: 1fr;
                 }
             }
@@ -800,7 +1110,7 @@
                 letter-spacing: 0.3px;
             }
             .plantilla-card-ruta {
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 600;
                 color: #fff;
                 background: var(--primary, #0b3c49);
@@ -851,6 +1161,12 @@
                 margin-top: 12px;
                 padding-top: 10px;
                 border-top: 1px solid var(--border);
+            }
+            .section-surface {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #f8fafc;
+                padding: 14px;
             }
         </style>
     </head>
@@ -970,19 +1286,19 @@
                                     />
                                 </div>
                                 <div class="form-group">
-                                    <label
-                                        >Económico
-                                        <span
-                                            style="
-                                                font-size: 9px;
-                                                color: var(--accent);
-                                                cursor: pointer;
-                                            "
+                                    <label>
+                                        Económico
+                                        <button
+                                            type="button"
+                                            class="label-icon-btn"
                                             onclick="loadUnitsHistory()"
                                             title="Recargar historial"
-                                            >🔄</span
-                                        ></label
-                                    ><input
+                                            aria-label="Recargar historial de unidades"
+                                        >
+                                            🔄
+                                        </button>
+                                    </label>
+                                    <input
                                         type="text"
                                         id="id_vehiculo"
                                         list="economicosList"
@@ -1036,6 +1352,7 @@
                                                 type="button"
                                                 class="add-row-btn"
                                                 onclick="addPhoneField()"
+                                                aria-label="Agregar teléfono de contacto"
                                             >
                                                 +
                                             </button>
@@ -1055,6 +1372,7 @@
                                                 type="button"
                                                 class="add-row-btn"
                                                 onclick="addEquipmentField()"
+                                                aria-label="Agregar equipo aliado"
                                             >
                                                 +
                                             </button>
@@ -1108,7 +1426,7 @@
                                 </div>
                                 <p
                                     style="
-                                        font-size: 11px;
+                                        font-size: 12px;
                                         color: #991b1b;
                                         margin: 0 0 8px;
                                     "
@@ -1143,7 +1461,7 @@
                                         style="
                                             font-size: 13px;
                                             font-weight: 700;
-                                            color: #0369a1;
+                                            color: #075985;
                                         "
                                     >
                                         🚛 Viajes registrados para esta unidad
@@ -1181,13 +1499,8 @@
                                 display: none;
                                 margin-top: 30px;
                                 padding: 14px 18px;
-                                background: linear-gradient(
-                                    135deg,
-                                    #faf5ff 0%,
-                                    #f3e8ff 100%
-                                );
+                                background: #faf5ff;
                                 border: 1px solid #d8b4fe;
-                                border-left: 4px solid #9333ea;
                                 border-radius: 10px;
                             "
                         >
@@ -1238,7 +1551,7 @@
                                 id="btnNuevoTramo"
                                 class="btn btn-secondary"
                                 onclick="addDispatch()"
-                                style="padding: 8px 15px; font-size: 10px"
+                                style="padding: 10px 16px; font-size: 13px"
                             >
                                 + Nuevo Tramo
                             </button>
@@ -1389,6 +1702,7 @@
                                         type="button"
                                         class="add-row-btn"
                                         onclick="addContactPhoneField()"
+                                        aria-label="Agregar teléfono del contacto"
                                     >
                                         +
                                     </button>
@@ -1413,6 +1727,7 @@
                                         type="button"
                                         class="add-row-btn"
                                         onclick="addContactEmailField()"
+                                        aria-label="Agregar correo del contacto"
                                     >
                                         +
                                     </button>
@@ -1557,6 +1872,7 @@
                                     onclick="clearUnitFilter()"
                                     style="padding: 8px 12px; font-size: 13px"
                                     title="Limpiar filtro"
+                                    aria-label="Limpiar filtro de unidad"
                                 >
                                     ✕
                                 </button>
@@ -1648,7 +1964,7 @@
                                 type="button"
                                 class="btn btn-primary"
                                 onclick="loadUnitsFromSheets()"
-                                style="padding: 13px 15px; font-size: 10px"
+                                style="padding: 13px 15px; font-size: 13px"
                             >
                                 Actualizar
                             </button>
@@ -1685,7 +2001,7 @@
                     </div>
 
                     <!-- Tabla de plantillas -->
-                    <div class="card">
+                    <div class="section-surface">
                         <div
                             style="
                                 display: flex;
@@ -1870,11 +2186,15 @@
                     "
                 >
                     <strong style="font-size: 15px">✏️ Editar Unidad</strong>
-                    <span
+                    <button
+                        type="button"
+                        class="icon-btn icon-btn--inverse"
                         onclick="closeEditUnitModal()"
-                        style="cursor: pointer; font-size: 20px; line-height: 1"
-                        >&times;</span
+                        aria-label="Cerrar edición de unidad"
+                        title="Cerrar"
                     >
+                        &times;
+                    </button>
                 </div>
 
                 <div style="padding: 20px">
@@ -2074,11 +2394,15 @@
                     "
                 >
                     <strong style="font-size: 15px">✏️ Editar Tramo</strong>
-                    <span
+                    <button
+                        type="button"
+                        class="icon-btn icon-btn--inverse"
                         onclick="closeEditTramoModal()"
-                        style="cursor: pointer; font-size: 20px; line-height: 1"
-                        >&times;</span
+                        aria-label="Cerrar edición de tramo"
+                        title="Cerrar"
                     >
+                        &times;
+                    </button>
                 </div>
 
                 <div style="padding: 20px">
@@ -2122,7 +2446,7 @@
                     />
                     <p
                         style="
-                            font-size: 11px;
+                            font-size: 12px;
                             color: var(--text-muted, #888);
                             margin: 0 0 12px;
                         "
@@ -2554,14 +2878,14 @@
                         const div = document.createElement("div");
                         div.className = "dynamic-row";
                         if (i === 0) {
-                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>`;
+                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button>`;
                         } else {
-                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono de contacto" title="Quitar teléfono">×</button>`;
                         }
                         phoneContainer.appendChild(div);
                     });
                 } else {
-                    phoneContainer.innerHTML = `<div class="dynamic-row"><input type="tel" class="u-telefono" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()">+</button></div>`;
+                    phoneContainer.innerHTML = `<div class="dynamic-row"><input type="tel" class="u-telefono" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button></div>`;
                 }
 
                 const equipmentContainer =
@@ -2572,14 +2896,14 @@
                         const div = document.createElement("div");
                         div.className = "dynamic-row";
                         if (i === 0) {
-                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>`;
+                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button>`;
                         } else {
-                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar equipo aliado" title="Quitar equipo">×</button>`;
                         }
                         equipmentContainer.appendChild(div);
                     });
                 } else {
-                    equipmentContainer.innerHTML = `<div class="dynamic-row"><input type="text" class="id_equipo" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button></div>`;
+                    equipmentContainer.innerHTML = `<div class="dynamic-row"><input type="text" class="id_equipo" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button></div>`;
                 }
 
                 showToast("✓ Datos autocompletados desde historial");
@@ -2602,14 +2926,14 @@
                 document.getElementById("phoneRows").innerHTML = `
           <div class="dynamic-row">
             <input type="tel" class="u-telefono" placeholder="10 dígitos" />
-            <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
+            <button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button>
           </div>
         `;
 
                 document.getElementById("equipmentRows").innerHTML = `
           <div class="dynamic-row">
             <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
-            <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
+            <button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button>
           </div>
         `;
 
@@ -2635,7 +2959,7 @@
                     dot.style.background = "#ef4444";
                 } else {
                     status.classList.remove("sync-error");
-                    dot.style.background = "#10b981";
+                    dot.style.background = "#047857";
                 }
 
                 setTimeout(() => {
@@ -2786,37 +3110,37 @@
                     const firstRow = rows[0];
 
                     html += `
-            <div class="unit-card">
-              <div class="unit-card-header">
-                <div class="unit-card-title">
+            <div class="unit-record">
+              <div class="unit-record-header">
+                <div class="unit-record-title">
                   <span>🚛</span>
                   <span>${economico}</span>
                 </div>
-                <div class="unit-card-meta">
-                  <div class="unit-card-meta-item">
+                <div class="unit-record-meta">
+                  <div class="unit-record-meta-item">
                     <span>🏷️</span>
                     <span>Placas: ${firstRow[3] || "N/A"}</span>
                   </div>
-                  <div class="unit-card-meta-item">
+                  <div class="unit-record-meta-item">
                     <span>👤</span>
                     <span>Operador: ${firstRow[5] || "N/A"}</span>
                   </div>
-                  <div class="unit-card-meta-item">
+                  <div class="unit-record-meta-item">
                     <span>📅</span>
                     <span>${firstRow[0] || "Sin fecha"}</span>
                   </div>
-                  <div class="unit-card-meta-item">
+                  <div class="unit-record-meta-item">
                     <span>📞</span>
                     <span>${firstRow[6] || "Sin teléfono"}</span>
                   </div>
-                  <div class="unit-card-meta-item" style="grid-column: 1 / -1;">
+                  <div class="unit-record-meta-item" style="grid-column: 1 / -1;">
                     <span>🏢</span>
                     <span>Cliente: ${firstRow[16] || "N/A"}</span>
                   </div>
                 </div>
               </div>
 
-              <div class="unit-card-body">
+              <div class="unit-record-body">
           `;
 
                     rows.forEach((row, i) => {
@@ -2832,17 +3156,20 @@
                         row[20]
                             ? `<span style="display: flex; gap: 6px;">
                         <button
+                          type="button"
                           onclick="editTramo(${row[20]})"
                           class="btn btn-secondary"
-                          style="padding: 4px 10px; font-size: 10px; display: flex; align-items: center; gap: 4px;"
-                          title="Editar datos de ruta de este tramo">
+                          style="padding: 6px 10px; font-size: 12px; display: flex; align-items: center; gap: 4px;"
+                          title="Editar datos de ruta de este tramo"
+                          aria-label="Editar datos de ruta del tramo ${row[21] || i + 1}">
                           ✏️ Editar
                         </button>
                         <button
+                          type="button"
                           onclick="deleteTramo(${row[20]})"
-                          class="btn"
-                          style="padding: 4px 10px; font-size: 10px; background: #ed1515; color: #fff; border: none; display: flex; align-items: center; gap: 4px;"
-                          title="Eliminar este tramo">
+                          class="icon-btn icon-btn--danger"
+                          title="Eliminar este tramo"
+                          aria-label="Eliminar tramo ${row[21] || i + 1}">
                           🗑️
                         </button>
                       </span>`
@@ -2940,10 +3267,12 @@
                         .map(
                             (f) => `
                     <button
+                      type="button"
                       onclick="deleteRegistro(${f.clienteId}, ${f.unidadId}, '${String(f.folio).replace(/'/g, "\\'")}')"
                       class="btn"
-                      style="padding: 8px 12px; font-size: 11px; background: #ef4444; color: white; border: none; display: flex; align-items: center; gap: 5px;"
-                      title="Eliminar el viaje completo ${f.folio} (todos sus tramos)">
+                      style="padding: 8px 12px; font-size: 12px; background: #ef4444; color: white; border: none; display: flex; align-items: center; gap: 5px;"
+                      title="Eliminar el viaje completo ${f.folio} (todos sus tramos)"
+                      aria-label="Eliminar viaje ${f.folio} completo">
                       🗑️ Eliminar viaje ${f.folio}
                     </button>`,
                         )
@@ -2952,17 +3281,19 @@
                     html += `
               </div>
 
-              <div class="unit-card-footer">
+              <div class="unit-record-footer">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                   <div>
                     <strong>IDs Equipos:</strong> ${firstRow[4] || "No especificado"}
                   </div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button
+                      type="button"
                       onclick="editUnit(${firstRow[18] || 0})"
                       class="btn btn-secondary"
-                      style="padding: 8px 12px; font-size: 11px; display: flex; align-items: center; gap: 5px;"
-                      title="Editar datos de la unidad">
+                      style="padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 5px;"
+                      title="Editar datos de la unidad"
+                      aria-label="Editar datos de la unidad ${economico}">
                       ✏️ Editar unidad
                     </button>
                     ${botonesEliminarViaje}
@@ -3111,10 +3442,10 @@
                             endDate,
                         ).toLocaleDateString("es-ES");
                         filterText = `📅 ${startFormatted} - ${endFormatted}`;
-                        filterColor = "#10b981";
+                        filterColor = "#047857";
                     } else {
                         filterText = "📅 Rango personalizado";
-                        filterColor = "#10b981";
+                        filterColor = "#047857";
                     }
                 } else {
                     filterText = "🗓️ Todo el historial";
@@ -3814,13 +4145,13 @@
                 document.getElementById("phoneRows").innerHTML = `
                   <div class="dynamic-row">
                     <input type="tel" class="u-telefono" placeholder="10 dígitos" />
-                    <button type="button" class="add-row-btn" onclick="addPhoneField()">+</button>
+                    <button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button>
                   </div>`;
 
                 document.getElementById("equipmentRows").innerHTML = `
                   <div class="dynamic-row">
                     <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
-                    <button type="button" class="add-row-btn" onclick="addEquipmentField()">+</button>
+                    <button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button>
                   </div>`;
 
                 document.getElementById("dispatchContainer").innerHTML = "";
@@ -3992,7 +4323,7 @@
                     if (!json.ok || !json.viajes?.length) return;
 
                     const estadoColor = {
-                        planificado: "#0369a1",
+                        planificado: "#075985",
                         en_curso: "#d97706",
                         completado: "#047857",
                         cancelado: "#9ca3af",
@@ -4012,39 +4343,39 @@
                                 v.estado !== "completado";
                             const vid = v.viaje_id ?? v.id;
                             const numSiguiente = (v.total_tramos || 0) + 1;
-                            return `<div style="padding:8px 0;border-bottom:1px solid #e0f2fe;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                                <div>
-                                    <span style="font-weight:700;">${escapeHtml(v.folio)}</span>
-                                    <span style="color:#64748b;margin-left:8px;">${fechas}</span>
-                                    ${multiDia ? '<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:4px;">Multi-día</span>' : ""}
-                                </div>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <button type="button" onclick="toggleTramosViaje(${vid})"
-                                            id="btn-ver-tramos-${vid}"
-                                            style="color:#0369a1;background:none;border:none;cursor:pointer;font-size:12px;font-weight:600;text-decoration:underline;">
-                                        ${v.total_tramos} tramo${v.total_tramos !== 1 ? "s" : ""} ▾
-                                    </button>
-                                    <span style="color:${color};font-weight:600;text-transform:capitalize;">${v.estado}</span>
-                                </div>
-                            </div>
-                            <div id="tramos-list-${vid}" style="display:none;margin-top:8px;"></div>
-                            ${
-                                puedeAgregar
-                                    ? `<div style="margin-top:6px;">
-                                <button type="button"
-                                        onclick="iniciarAgregarTramoExistente(${vid}, '${String(
-                                            v.folio || "",
+                            return `<div class="trip-row">
+                            <div class="trip-row-header">
+                                 <div>
+                                     <span class="trip-row-title">${escapeHtml(v.folio)}</span>
+                                     <span class="trip-row-date">${fechas}</span>
+                                     ${multiDia ? '<span class="chip chip--warning">Multi-día</span>' : ""}
+                                 </div>
+                                 <div class="trip-row-actions">
+                                     <button type="button" onclick="toggleTramosViaje(${vid})"
+                                             id="btn-ver-tramos-${vid}"
+                                             class="trip-toggle">
+                                         ${v.total_tramos} tramo${v.total_tramos !== 1 ? "s" : ""} ▾
+                                     </button>
+                                     <span class="trip-state" style="--trip-state-color:${color};">${v.estado}</span>
+                                 </div>
+                             </div>
+                             <div id="tramos-list-${vid}" class="trip-tramos-list"></div>
+                             ${
+                                 puedeAgregar
+                                     ? `<div class="trip-add-wrap">
+                                 <button type="button"
+                                         onclick="iniciarAgregarTramoExistente(${vid}, '${String(
+                                             v.folio || "",
                                         )
                                             .replace(/'/g, "\\'")
-                                            .replace(
-                                                /"/g,
-                                                "&quot;",
-                                            )}', ${numSiguiente})"
-                                        style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:#7e22ce;border:1px dashed #d8b4fe;background:#faf5ff;border-radius:8px;padding:6px;font-weight:600;cursor:pointer;">
-                                    ＋ Agregar tramo
-                                </button>
-                            </div>`
+                                             .replace(
+                                                 /"/g,
+                                                 "&quot;",
+                                             )}', ${numSiguiente})"
+                                         class="trip-add-btn">
+                                     ＋ Agregar tramo
+                                 </button>
+                             </div>`
                                     : ""
                             }
                         </div>`;
@@ -4076,7 +4407,7 @@
                 cont.style.display = "block";
                 if (btn) btn.innerHTML = btn.innerHTML.replace("▾", "▴");
                 cont.innerHTML =
-                    '<p style="font-size:11px;color:#94a3b8;padding:4px;">Cargando tramos…</p>';
+                    '<p class="inline-note">Cargando tramos...</p>';
 
                 try {
                     const res = await fetch(
@@ -4090,14 +4421,14 @@
                     const json = await res.json().catch(() => ({}));
                     if (!res.ok || !json.ok) {
                         cont.innerHTML =
-                            '<p style="font-size:11px;color:#dc2626;padding:4px;">No se pudieron cargar los tramos.</p>';
+                            '<p class="inline-note inline-note--danger">No se pudieron cargar los tramos.</p>';
                         return;
                     }
                     renderTramosViaje(viajeId, json.viaje?.tramos || []);
                 } catch (e) {
                     console.error("toggleTramosViaje:", e);
                     cont.innerHTML =
-                        '<p style="font-size:11px;color:#dc2626;padding:4px;">Error de red al cargar tramos.</p>';
+                        '<p class="inline-note inline-note--danger">Error de red al cargar tramos.</p>';
                 }
             }
 
@@ -4106,7 +4437,7 @@
                 if (!cont) return;
                 if (!tramos.length) {
                     cont.innerHTML =
-                        '<p style="font-size:11px;color:#94a3b8;padding:4px;">Sin tramos.</p>';
+                        '<p class="inline-note">Sin tramos.</p>';
                     return;
                 }
                 const estadoColor = {
@@ -4117,12 +4448,12 @@
                 };
                 const linea = (etiqueta, valor) =>
                     valor
-                        ? `<span style="color:#64748b;margin-right:10px;"><b>${etiqueta}:</b> ${escapeHtml(formatDateTime(valor))}</span>`
+                        ? `<span class="trip-field"><b>${etiqueta}:</b> ${escapeHtml(formatDateTime(valor))}</span>`
                         : "";
                 const grupoProgramado = (titulo, contenido) =>
                     contenido
-                        ? `<div style="border:1px solid #e2e8f0;border-radius:8px;background:#fff;padding:6px 8px;">
-                              <div style="font-size:9px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">${titulo}</div>
+                        ? `<div class="programmed-group">
+                              <div class="programmed-group-title">${titulo}</div>
                               <div>${contenido}</div>
                            </div>`
                         : "";
@@ -4133,12 +4464,12 @@
                             [t.origen, t.destino].filter(Boolean).join(" → ") ||
                             t.ruta ||
                             "(sin ruta)";
-                        return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
-                                <span style="font-weight:700;font-size:12px;color:#0f172a;">Tramo ${t.tramo_numero} — ${escapeHtml(ruta)}</span>
-                                <span style="color:${col};font-weight:600;font-size:11px;text-transform:capitalize;">${String(t.estado || "").replace("_", " ")}</span>
+                        return `<div class="trip-segment">
+                            <div class="trip-segment-header">
+                                <span class="trip-segment-title">Tramo ${t.tramo_numero} - ${escapeHtml(ruta)}</span>
+                                <span class="trip-state" style="--trip-state-color:${col};">${String(t.estado || "").replace("_", " ")}</span>
                             </div>
-                            <div style="display:grid;gap:6px;font-size:10px;line-height:1.6;">
+                            <div class="trip-segment-grid">
                                 ${linea("Salida patio", t.salida_patio)}
                                 ${grupoProgramado("Carga programada", `${linea("Cita carga", t.cita_carga)}${linea("Salida carga", t.salida_carga)}`)}
                                 ${grupoProgramado("Descarga programada", linea("Cita descarga", t.descarga_programada))}
@@ -4534,7 +4865,7 @@
                 const container = document.getElementById("phoneRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="tel" class="u-telefono" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+                div.innerHTML = `<input type="tel" class="u-telefono" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono de contacto" title="Quitar teléfono">×</button>`;
                 container.appendChild(div);
             }
 
@@ -4542,7 +4873,7 @@
                 const container = document.getElementById("equipmentRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="text" class="id_equipo" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+                div.innerHTML = `<input type="text" class="id_equipo" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar equipo aliado" title="Quitar equipo">×</button>`;
                 container.appendChild(div);
             }
 
@@ -4550,7 +4881,7 @@
                 const container = document.getElementById("contactPhoneRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="tel" class="c-telefono" placeholder="Otro número"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+                div.innerHTML = `<input type="tel" class="c-telefono" placeholder="Otro número"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono del contacto" title="Quitar teléfono">×</button>`;
                 container.appendChild(div);
             }
 
@@ -4558,7 +4889,7 @@
                 const container = document.getElementById("contactEmailRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="email" class="c-correo" placeholder="Otro correo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()">×</button>`;
+                div.innerHTML = `<input type="email" class="c-correo" placeholder="Otro correo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar correo del contacto" title="Quitar correo">×</button>`;
                 container.appendChild(div);
             }
 
@@ -4642,8 +4973,8 @@
                     <span style="font-size: 18px;">🔎</span>
                     <label>Buscar ruta del historial</label>
                 </div>
-                <input type="search" class="ruta-historial-search" placeholder="Busca por ruta, origen, carga o destino" oninput="buscarRutasHistorial(this)" autocomplete="off" style="width: 100%; padding: 8px; border: 1px solid #7dd3fc; border-radius: 4px; background: white;">
-                <div class="ruta-historial-results" style="display: none; margin-top: 8px;"></div>
+                <input type="search" class="ruta-historial-search route-history-search" placeholder="Busca por ruta, origen, carga o destino" oninput="buscarRutasHistorial(this)" autocomplete="off">
+                <div class="ruta-historial-results route-history-results"></div>
                 <small>Selecciona una ruta para llenar Ruta / Identificador, Origen, Lugar de Carga y Destino. Puedes editar cualquier campo después.</small>
             </div>
 
@@ -4664,6 +4995,7 @@
                       <label>Salida de Patio</label>
                       <input type="datetime-local" class="d-salida-patio" min="${minDateTime}"/>
                     </div>
+                    <p class="schedule-reference-copy">Referencia inicial del viaje. El monitorista la vera en bitacora, pero no la captura como fecha real.</p>
                 </div>
 
                 <details class="schedule-section" open>
@@ -4693,7 +5025,7 @@
             </div>
             ${
                 dispatchCount > 1
-                    ? '<button type="button" class="remove-btn" style="position:absolute; top: 10px; right: 10px;" onclick="this.parentElement.remove()">×</button>'
+                    ? '<button type="button" class="remove-btn" style="position:absolute; top: 10px; right: 10px;" onclick="this.parentElement.remove()" aria-label="Quitar tramo del formulario" title="Quitar tramo">×</button>'
                     : ""
             }
         `;
@@ -4762,13 +5094,13 @@
                 document.getElementById("contactPhoneRows").innerHTML = `
             <div class="dynamic-row">
                 <input type="tel" class="c-telefono" placeholder="Número 10 dígitos">
-                <button type="button" class="add-row-btn" onclick="addContactPhoneField()">+</button>
+                <button type="button" class="add-row-btn" onclick="addContactPhoneField()" aria-label="Agregar teléfono del contacto">+</button>
             </div>
         `;
                 document.getElementById("contactEmailRows").innerHTML = `
             <div class="dynamic-row">
                 <input type="email" class="c-correo" placeholder="ejemplo@empresa.com">
-                <button type="button" class="add-row-btn" onclick="addContactEmailField()">+</button>
+                <button type="button" class="add-row-btn" onclick="addContactEmailField()" aria-label="Agregar correo del contacto">+</button>
             </div>
         `;
                 document
@@ -4843,7 +5175,7 @@
                 </td>
                 <td>
                     <b>${escapeHtml(c.nombre)}</b><br>
-                    <span style="color: var(--accent); font-size: 11px;">${escapeHtml(
+                    <span style="color: var(--accent); font-size: 12px;">${escapeHtml(
                         c.cargo,
                     )}</span>
                 </td>
@@ -4851,15 +5183,15 @@
                     <div style="margin-bottom: 5px;">📞 ${escapeHtml(
                         c.telefonos || "-",
                     )}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">✉️ ${escapeHtml(
+                    <div style="font-size: 12px; color: var(--text-muted);">✉️ ${escapeHtml(
                         c.correos || "-",
                     )}</div>
                 </td>
                 <td>${badgesHTML}</td>
-                <td style="font-size: 11px;">${escapeHtml(c.observaciones)}</td>
-                <td><button class="remove-btn" onclick="removeContact(${
+                <td style="font-size: 12px;">${escapeHtml(c.observaciones)}</td>
+                <td><button type="button" class="remove-btn" onclick="removeContact(${
                     c.id
-                })">×</button></td>
+                })" aria-label="Quitar contacto ${escapeHtml(c.nombre)}" title="Quitar contacto">×</button></td>
             `;
                     body.appendChild(row);
                 });
@@ -5190,8 +5522,8 @@
                         <td style="padding:8px;border-bottom:1px solid var(--border)">${escapeHtmlOp(op.nombre)}</td>
                         <td style="padding:8px;border-bottom:1px solid var(--border)">${escapeHtmlOp(op.telefonos || "—")}</td>
                         <td style="padding:8px;border-bottom:1px solid var(--border);white-space:nowrap">
-                            <button type="button" onclick="editarOperador(${op.id})" title="Editar" style="background:none;border:none;cursor:pointer;font-size:15px">✏️</button>
-                            <button type="button" onclick="eliminarOperador(${op.id})" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:15px">🗑️</button>
+                            <button type="button" class="icon-btn icon-btn--ghost" onclick="editarOperador(${op.id})" title="Editar operador" aria-label="Editar operador ${escapeHtmlOp(op.nombre)}">✏️</button>
+                            <button type="button" class="icon-btn icon-btn--danger" onclick="eliminarOperador(${op.id})" title="Eliminar operador" aria-label="Eliminar operador ${escapeHtmlOp(op.nombre)}">🗑️</button>
                         </td>
                     </tr>`,
                     )
@@ -5539,10 +5871,11 @@
                     <div class="plantilla-card">
                         <div class="plantilla-card-head">
                             <button
-                                class="btn-fav"
+                                type="button"
+                                class="icon-btn icon-btn--ghost btn-fav"
                                 onclick="toggleFavoritoRuta(${plantilla.id}, ${plantilla.es_favorito ? "false" : "true"})"
                                 title="${tituloFav}"
-                                style="background:none; border:none; cursor:pointer; font-size:18px; padding:0; margin-right:6px;"
+                                aria-label="${tituloFav}: ${escapeHtml(plantilla.etiqueta)}"
                             >${estrella}</button>
                             <strong class="plantilla-card-etiqueta">${escapeHtml(plantilla.etiqueta)}</strong>
                             ${ruta}
@@ -5556,6 +5889,7 @@
                         </div>
                         <div class="plantilla-card-acciones">
                             <button
+                                type="button"
                                 class="btn btn-sm btn-secondary"
                                 onclick="renombrarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}', ${plantilla.es_favorito ? "true" : "false"})"
                                 title="Renombrar etiqueta"
@@ -5564,9 +5898,11 @@
                             </button>
 
                             <button
-                                class="btn btn-sm btn-danger"
+                                type="button"
+                                class="icon-btn icon-btn--danger"
                                 onclick="ocultarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}')"
                                 title="Ocultar del historial"
+                                aria-label="Ocultar ruta ${escapeHtml(plantilla.etiqueta)} del historial"
                             >
                                 🗑️
                             </button>
@@ -5996,7 +6332,7 @@
                 card._rutasHistorial = rutas || [];
                 if (!card._rutasHistorial.length) {
                     panel.style.display = "block";
-                    panel.innerHTML = `<div style="padding: 8px; border: 1px dashed #cbd5e1; border-radius: 6px; background: white; color: #64748b; font-size: 12px;">Sin coincidencias. Captura la ruta manualmente y quedará disponible cuando se guarde.</div>`;
+                    panel.innerHTML = `<div class="inline-note inline-note--empty">Sin coincidencias. Captura la ruta manualmente y quedará disponible cuando se guarde.</div>`;
                     return;
                 }
                 panel.style.display = "block";
@@ -6012,16 +6348,16 @@
                         const recorrido = `${ruta.origen || "Origen"} -> ${ruta.destino || "Destino"}`;
                         return `
                             <button type="button" onclick="aplicarRutaHistorial(this)" data-ruta-index="${index}"
-                                    style="width: 100%; text-align: left; padding: 9px 10px; border: 1px solid #e2e8f0; border-radius: 6px; background: white; margin-top: ${index ? "6px" : "0"}; cursor: pointer;">
-                                <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start;">
-                                    <div style="min-width: 0;">
-                                        <div style="font-weight: 700; color: #0f172a; font-size: 13px;">${escapeHtml(ruta.ruta || ruta.etiqueta || recorrido)}</div>
-                                        <div style="color: #475569; font-size: 12px; margin-top: 2px;">${escapeHtml(recorrido)}</div>
-                                        ${ruta.lugar_carga ? `<div style="color: #64748b; font-size: 11px; margin-top: 2px;">Carga: ${escapeHtml(ruta.lugar_carga)}</div>` : ""}
+                                    class="route-history-result">
+                                <div class="route-history-result-main">
+                                    <div class="route-history-result-copy">
+                                        <div class="route-history-result-title">${escapeHtml(ruta.ruta || ruta.etiqueta || recorrido)}</div>
+                                        <div class="route-history-result-meta">${escapeHtml(recorrido)}</div>
+                                        ${ruta.lugar_carga ? `<div class="route-history-result-load">Carga: ${escapeHtml(ruta.lugar_carga)}</div>` : ""}
                                     </div>
-                                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0;">
-                                        <span style="font-size: 11px; color: #075985; background: #e0f2fe; border-radius: 999px; padding: 2px 7px;">${escapeHtml(usoTxt)}</span>
-                                        <span style="font-size: 11px; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 2px 7px;">Última: ${escapeHtml(ultima)}</span>
+                                    <div class="route-history-result-badges">
+                                        <span class="chip chip--info">${escapeHtml(usoTxt)}</span>
+                                        <span class="chip chip--muted">Última: ${escapeHtml(ultima)}</span>
                                     </div>
                                 </div>
                             </button>`;
@@ -6047,13 +6383,13 @@
                     if (!clienteId) {
                         if (panel) {
                             panel.style.display = "block";
-                            panel.innerHTML = `<div style="padding: 8px; border: 1px dashed #facc15; border-radius: 6px; background: #fffbeb; color: #92400e; font-size: 12px;">Selecciona un cliente antes de buscar rutas.</div>`;
+                            panel.innerHTML = `<div class="inline-note inline-note--warning">Selecciona un cliente antes de buscar rutas.</div>`;
                         }
                         return;
                     }
                     if (panel) {
                         panel.style.display = "block";
-                        panel.innerHTML = `<div style="padding: 8px; color: #64748b; font-size: 12px;">Buscando rutas...</div>`;
+                        panel.innerHTML = `<div class="inline-note">Buscando rutas...</div>`;
                     }
                     try {
                         const response = await fetch(
@@ -6068,7 +6404,7 @@
                             planificadorTokenExpiresAt = 0;
                             if (panel) {
                                 panel.style.display = "block";
-                                panel.innerHTML = `<div style="padding: 8px; border: 1px solid #facc15; border-radius: 6px; background: #fffbeb; color: #92400e; font-size: 12px;">Tu sesión expiró. Inicia sesión de nuevo para buscar rutas.</div>`;
+                                panel.innerHTML = `<div class="inline-note inline-note--warning">Tu sesión expiró. Inicia sesión de nuevo para buscar rutas.</div>`;
                             }
                             document
                                 .getElementById("loginOverlay")
@@ -6091,7 +6427,7 @@
                         );
                         if (panel && panel.innerHTML.trim() === "") {
                             panel.style.display = "block";
-                            panel.innerHTML = `<div style="padding: 8px; border: 1px solid #fecaca; border-radius: 6px; background: #fef2f2; color: #991b1b; font-size: 12px;">No se pudo cargar el historial de rutas.</div>`;
+                            panel.innerHTML = `<div class="inline-note inline-note--danger">No se pudo cargar el historial de rutas.</div>`;
                         }
                     }
                 }, 220);
