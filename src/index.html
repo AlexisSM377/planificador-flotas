@@ -3982,8 +3982,6 @@
                         card.querySelector(".d-salida-patio")?.value || "",
                     cita_carga:
                         card.querySelector(".d-cita-carga")?.value || "",
-                    salida_carga:
-                        card.querySelector(".d-salida-carga")?.value || "",
                     descarga_programada:
                         card.querySelector(".d-descarga")?.value || "",
                 }));
@@ -3993,7 +3991,6 @@
                 const camposTiempo = [
                     ["salida_patio", "Salida de Patio"],
                     ["cita_carga", "Cita de Carga"],
-                    ["salida_carga", "Salida de Carga"],
                     ["descarga_programada", "Cita de Descarga"],
                 ];
                 for (let i = 0; i < tramos.length; i++) {
@@ -4470,7 +4467,7 @@
                             </div>
                             <div class="trip-segment-grid">
                                 ${linea("Salida patio", t.salida_patio)}
-                                ${grupoProgramado("Carga programada", `${linea("Cita carga", t.cita_carga)}${linea("Salida carga", t.salida_carga)}`)}
+                                ${grupoProgramado("Carga programada", linea("Cita carga", t.cita_carga))}
                                 ${grupoProgramado("Descarga programada", linea("Cita descarga", t.descarga_programada))}
                             </div>
                         </div>`;
@@ -4577,8 +4574,6 @@
                     card.querySelector(".d-salida-patio")?.value || "";
                 const citaCarga =
                     card.querySelector(".d-cita-carga")?.value || "";
-                const salidaCarga =
-                    card.querySelector(".d-salida-carga")?.value || "";
                 const descarga = card.querySelector(".d-descarga")?.value || "";
 
                 if (!destino) {
@@ -4592,7 +4587,6 @@
                 const tiempos = [
                     [salidaPatio, "Salida de Patio"],
                     [citaCarga, "Cita de Carga"],
-                    [salidaCarga, "Salida de Carga"],
                     [descarga, "Cita de Descarga"],
                 ];
                 for (const [val, etiqueta] of tiempos) {
@@ -4629,7 +4623,6 @@
                                     instrucciones: v(".d-instrucciones"),
                                     salida_patio: salidaPatio || null,
                                     cita_carga: citaCarga || null,
-                                    salida_carga: salidaCarga || null,
                                     descarga_programada: descarga || null,
                                 },
                             }),
@@ -5000,12 +4993,11 @@
                     <summary>
                         <div class="schedule-summary">
                             <span class="schedule-summary-title">Carga programada</span>
-                            <span class="schedule-summary-meta">Cita y salida de carga</span>
+                            <span class="schedule-summary-meta">Cita de carga</span>
                         </div>
                     </summary>
                     <div class="schedule-grid">
                         <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga" min="${minDateTime}"></div>
-                        <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga" min="${minDateTime}"></div>
                     </div>
                 </details>
 
@@ -6556,3 +6548,5 @@
         </script>
     </body>
 </html>
+
+

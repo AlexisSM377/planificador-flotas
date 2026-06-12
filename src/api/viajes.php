@@ -1453,7 +1453,7 @@ function handle_completar_tramo($conn, $ctx)
  * PUT ?action=actualizar_tramo
  * Body JSON: { tramo_id, origen?, lugar_carga?, destino?, ruta?, instrucciones?,
  *              salida_patio?, cita_carga?, salida_carga?, descarga_programada?,
- *              cita_carga_real?, salida_carga_real?, descarga_real?, vacio_real?,
+ *              salida_patio_real?, cita_carga_real?, salida_carga_real?, descarga_real?, vacio_real?,
  *              estado? }
  */
 function handle_actualizar_tramo($conn, $ctx)
@@ -1468,12 +1468,6 @@ function handle_actualizar_tramo($conn, $ctx)
     $tramo_id = (int) ($body["tramo_id"] ?? 0);
     if ($tramo_id <= 0) {
         throw new Exception("tramo_id requerido", 400);
-    }
-    if (array_key_exists("salida_patio_real", $body)) {
-        throw new Exception(
-            "Salida de patio se toma de la captura del cliente y no se actualiza como campo real",
-            400,
-        );
     }
 
     // Verificar existencia y acceso vía viaje
@@ -1505,12 +1499,14 @@ function handle_actualizar_tramo($conn, $ctx)
         "cita_carga",
         "salida_carga",
         "descarga_programada",
+        "salida_patio_real",
         "cita_carga_real",
         "salida_carga_real",
         "descarga_real",
         "vacio_real",
     ];
     $campos_reales = [
+        "salida_patio_real",
         "cita_carga_real",
         "salida_carga_real",
         "descarga_real",
@@ -3991,6 +3987,9 @@ try {
         in_array($code, [400, 401, 403, 404, 409, 500], true) ? $code : 500,
     );
 }
+
+
+
 
 
 
