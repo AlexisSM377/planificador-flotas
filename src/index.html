@@ -898,136 +898,217 @@
                 }
             }
 
-            /* Grilla de Cards para Unidades en Sesión */
-            .units-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-                gap: 24px;
-                padding: 10px 0;
-            }
-
-            .unit-record {
-                background: #fff;
+            /* Tabla operativa para Unidades en Sesión */
+            .session-units-shell {
                 border: 1px solid var(--border);
-                border-radius: 8px;
-                transition:
-                    border-color 0.2s ease,
-                    background-color 0.2s ease;
+                border-radius: 14px;
+                background: #fff;
+                overflow: hidden;
             }
 
-            .unit-record:hover {
+            .session-units-scroll {
+                overflow-x: auto;
+            }
+
+            .session-units-table {
+                width: 100%;
+                min-width: 1080px;
+                border-collapse: collapse;
+                table-layout: fixed;
+            }
+
+            .session-units-table th {
+                padding: 11px 14px;
                 background: #f8fafc;
-                border-color: var(--accent);
-            }
-
-            .unit-record-header {
-                padding: 16px 18px;
-                color: var(--primary);
-                border-bottom: 1px solid var(--border);
-            }
-
-            .unit-record-title {
-                font-size: 18px;
+                border-bottom: 1px solid #cbd5e1;
+                color: #475569;
+                font-size: 11px;
                 font-weight: 800;
-                margin: 0 0 12px 0;
-                display: flex;
-                align-items: center;
-                gap: 10px;
+                letter-spacing: 0.04em;
+                text-align: left;
+                text-transform: uppercase;
             }
 
-            .unit-record-meta {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                font-size: 12px;
+            .session-units-table td {
+                padding: 12px 14px;
+                border-bottom: 1px solid #e2e8f0;
+                color: var(--text-main);
+                font-size: 13px;
+                vertical-align: top;
+            }
+
+            .session-units-table tbody tr:hover td {
+                background: #f8fafc;
+            }
+
+            .session-units-table .col-toggle {
+                width: 46px;
+                text-align: center;
+            }
+
+            .session-units-table .col-unit {
+                width: 170px;
+            }
+
+            .session-units-table .col-tramos {
+                width: 120px;
+            }
+
+            .session-unit-name {
+                color: var(--primary);
+                font-size: 15px;
+                font-weight: 800;
+            }
+
+            .session-unit-sub {
+                margin-top: 3px;
                 color: var(--text-muted);
+                font-size: 12px;
+                font-weight: 600;
             }
 
-            .unit-record-meta-item {
+            .session-cell-muted {
+                color: var(--text-muted);
+                font-size: 12px;
+                line-height: 1.45;
+            }
+
+            .session-route-preview {
+                overflow: hidden;
+                color: #0f172a;
+                font-weight: 700;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .session-route-meta {
+                margin-top: 4px;
+                color: var(--text-muted);
+                font-size: 12px;
+                line-height: 1.4;
+            }
+
+            .session-row-actions {
                 display: flex;
-                align-items: center;
+                flex-wrap: wrap;
                 gap: 6px;
             }
 
-            .unit-record-body {
-                padding: 0 18px;
-            }
-
-            .tramo-item {
-                padding: 14px 0;
-                background: transparent;
-                border-bottom: 1px solid #e2e8f0;
+            .session-expand-btn {
+                width: 30px;
+                height: 30px;
+                border: 1px solid #cbd5e1;
+                border-radius: 8px;
+                background: #fff;
+                color: #075985;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 800;
+                line-height: 1;
                 transition:
-                    background-color 0.2s ease,
-                    border-color 0.2s ease;
+                    background-color 0.18s ease,
+                    border-color 0.18s ease,
+                    transform 0.18s ease;
             }
 
-            .tramo-item:hover {
-                background: #f0f9ff;
-                border-color: #bae6fd;
+            .session-expand-btn:hover,
+            .session-expand-btn:focus-visible {
+                background: #e0f2fe;
+                border-color: #7dd3fc;
+                outline: none;
             }
 
-            .tramo-item:last-child {
+            .session-expand-btn[aria-expanded="true"] {
+                transform: rotate(90deg);
+            }
+
+            .session-tramos-row td {
+                padding: 0;
+                background: #f8fafc;
+            }
+
+            .session-tramos-panel {
+                padding: 12px 14px 14px 60px;
+                border-bottom: 1px solid #cbd5e1;
+            }
+
+            .session-tramos-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            .session-tramos-table th,
+            .session-tramos-table td {
+                padding: 8px 10px;
+                border-bottom: 1px solid #e2e8f0;
+                font-size: 12px;
+            }
+
+            .session-tramos-table th {
+                background: #f8fafc;
+                color: #64748b;
+                font-size: 10px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+
+            .session-tramos-table tr:last-child td {
                 border-bottom: 0;
             }
 
-            .tramo-header {
-                font-size: 13px;
+            .session-tramo-route {
+                max-width: 360px;
+                overflow: hidden;
+                color: #0f172a;
                 font-weight: 700;
-                color: var(--accent);
-                margin-bottom: 12px;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .session-tramo-notes {
+                max-width: 260px;
+                overflow: hidden;
+                color: #64748b;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .session-pagination {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 12px 14px;
+                background: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+                color: var(--text-muted);
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .session-pagination-controls {
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }
 
-            .tramo-details {
-                display: grid;
-                gap: 8px;
-                font-size: 12px;
-            }
-
-            .tramo-detail-row {
-                display: grid;
-                grid-template-columns: 100px 1fr;
-                gap: 8px;
-                align-items: start;
-            }
-
-            .tramo-detail-label {
-                font-weight: 700;
-                color: var(--text-muted);
-                text-transform: uppercase;
-                font-size: 12px;
-                letter-spacing: 0.5px;
-            }
-
-            .tramo-detail-value {
-                color: var(--text-main);
-                word-break: break-word;
-            }
-
-            .unit-record-footer {
-                padding: 14px 18px;
-                background: #f8fafc;
-                border-top: 1px solid var(--border);
-                font-size: 12px;
-                color: var(--text-muted);
-            }
-
-            .unit-record-footer strong {
-                color: var(--text-main);
-                font-weight: 700;
-            }
-
             @media (max-width: 768px) {
-                .units-grid {
-                    grid-template-columns: 1fr;
-                    gap: 16px;
+                .session-units-table {
+                    min-width: 960px;
                 }
 
-                .unit-record-meta {
-                    grid-template-columns: 1fr;
+                .session-pagination {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+
+                .session-tramos-panel {
+                    padding-left: 14px;
                 }
             }
 
@@ -2615,6 +2696,8 @@
             let dateFilter = "today";
             let allUnitsData = [];
             let filterByUnit = "";
+            let sessionUnitsPage = 1;
+            const SESSION_UNITS_PAGE_SIZE = 10;
             let currentCliente = "";
             let planificadorUser = null;
             let planificadorToken = "";
@@ -3000,6 +3083,7 @@
 
                     if (json.ok && json.data) {
                         allUnitsData = json.data;
+                        sessionUnitsPage = 1;
                         updateUnitFilterDatalist(json.data);
                         renderUnitsTable(allUnitsData, dateFilter);
                         showToast("✓ Unidades cargadas exitosamente");
@@ -3103,151 +3187,68 @@
 
                 updateUnitCounter(Object.keys(unitGroups).length, filter);
 
-                let html = '<div class="units-grid">';
+                const unitEntries = Object.keys(unitGroups).map(
+                    (economico) => ({
+                        economico,
+                        rows: unitGroups[economico],
+                    }),
+                );
+                const totalUnits = unitEntries.length;
+                const totalPages = Math.max(
+                    1,
+                    Math.ceil(totalUnits / SESSION_UNITS_PAGE_SIZE),
+                );
+                sessionUnitsPage = Math.min(
+                    Math.max(1, sessionUnitsPage),
+                    totalPages,
+                );
+                const pageStart =
+                    (sessionUnitsPage - 1) * SESSION_UNITS_PAGE_SIZE;
+                const pageItems = unitEntries.slice(
+                    pageStart,
+                    pageStart + SESSION_UNITS_PAGE_SIZE,
+                );
+                const rangeStart = totalUnits ? pageStart + 1 : 0;
+                const rangeEnd = Math.min(
+                    pageStart + SESSION_UNITS_PAGE_SIZE,
+                    totalUnits,
+                );
 
-                Object.keys(unitGroups).forEach((economico, index) => {
-                    const rows = unitGroups[economico];
+                const routeText = (row) =>
+                    row[7] ||
+                    [row[8] || "Origen", row[9] ? `Carga: ${row[9]}` : "", row[10] || "Destino"]
+                        .filter(Boolean)
+                        .join(" → ");
+                const scheduleText = (row) =>
+                    [
+                        row[11] ? `Patio ${formatDateTime(row[11])}` : "",
+                        row[12] ? `Carga ${formatDateTime(row[12])}` : "",
+                        row[14] ? `Descarga ${formatDateTime(row[14])}` : "",
+                    ]
+                        .filter(Boolean)
+                        .join(" · ") || "Sin horario";
+
+                let html = `
+                    <div class="session-units-shell">
+                      <div class="session-units-scroll">
+                        <table class="session-units-table">
+                          <thead>
+                            <tr>
+                              <th class="col-toggle"></th>
+                              <th class="col-unit">Unidad</th>
+                              <th>Operador</th>
+                              <th>Cliente</th>
+                              <th class="col-tramos">Tramos</th>
+                              <th>Próximo / ruta</th>
+                              <th>Equipos</th>
+                              <th>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>`;
+
+                pageItems.forEach(({ economico, rows }, index) => {
                     const firstRow = rows[0];
-
-                    html += `
-            <div class="unit-record">
-              <div class="unit-record-header">
-                <div class="unit-record-title">
-                  <span>🚛</span>
-                  <span>${economico}</span>
-                </div>
-                <div class="unit-record-meta">
-                  <div class="unit-record-meta-item">
-                    <span>🏷️</span>
-                    <span>Placas: ${firstRow[3] || "N/A"}</span>
-                  </div>
-                  <div class="unit-record-meta-item">
-                    <span>👤</span>
-                    <span>Operador: ${firstRow[5] || "N/A"}</span>
-                  </div>
-                  <div class="unit-record-meta-item">
-                    <span>📅</span>
-                    <span>${firstRow[0] || "Sin fecha"}</span>
-                  </div>
-                  <div class="unit-record-meta-item">
-                    <span>📞</span>
-                    <span>${firstRow[6] || "Sin teléfono"}</span>
-                  </div>
-                  <div class="unit-record-meta-item" style="grid-column: 1 / -1;">
-                    <span>🏢</span>
-                    <span>Cliente: ${firstRow[16] || "N/A"}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="unit-record-body">
-          `;
-
-                    rows.forEach((row, i) => {
-                        html += `
-                <div class="tramo-item">
-                  <div class="tramo-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="display: flex; align-items: center; gap: 5px;">
-                      <span>📍</span>
-                      <span>TRAMO ${row[21] || i + 1}</span>
-                      <span style="color: var(--text-muted); font-weight: 400;">· ${row[1] || ""}</span>
-                    </span>
-                    ${
-                        row[20]
-                            ? `<span style="display: flex; gap: 6px;">
-                        <button
-                          type="button"
-                          onclick="editTramo(${row[20]})"
-                          class="btn btn-secondary"
-                          style="padding: 6px 10px; font-size: 12px; display: flex; align-items: center; gap: 4px;"
-                          title="Editar datos de ruta de este tramo"
-                          aria-label="Editar datos de ruta del tramo ${row[21] || i + 1}">
-                          ✏️ Editar
-                        </button>
-                        <button
-                          type="button"
-                          onclick="deleteTramo(${row[20]})"
-                          class="icon-btn icon-btn--danger"
-                          title="Eliminar este tramo"
-                          aria-label="Eliminar tramo ${row[21] || i + 1}">
-                          🗑️
-                        </button>
-                      </span>`
-                            : ""
-                    }
-                  </div>
-                  <div class="tramo-details">
-                    ${
-                        row[7]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">Ruta</div>
-                      <div class="tramo-detail-value">${row[7]}</div>
-                    </div>`
-                            : ""
-                    }
-                    ${
-                        row[8] || row[9] || row[10]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">Recorrido</div>
-                      <div class="tramo-detail-value">
-                        ${row[8] || "-"} ${row[9] ? `→ 📦 ${row[9]}` : ""} → ${row[10] || "-"}
-                      </div>
-                    </div>`
-                            : ""
-                    }
-                    ${
-                        row[11]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">🚪 Sal. Patio</div>
-                      <div class="tramo-detail-value">${formatDateTime(row[11])}</div>
-                    </div>`
-                            : ""
-                    }
-                    ${
-                        row[12]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">📦 Cita Carga</div>
-                      <div class="tramo-detail-value">${formatDateTime(row[12])}</div>
-                    </div>`
-                            : ""
-                    }
-                    ${
-                        row[13]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">🚚 Sal. Carga</div>
-                      <div class="tramo-detail-value">${formatDateTime(row[13])}</div>
-                    </div>`
-                            : ""
-                    }
-                    ${
-                        row[14]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">🎯 Descarga</div>
-                      <div class="tramo-detail-value">${formatDateTime(row[14])}</div>
-                    </div>`
-                            : ""
-                    }
-                    ${
-                        row[15]
-                            ? `
-                    <div class="tramo-detail-row">
-                      <div class="tramo-detail-label">📝 Instrucciones</div>
-                      <div class="tramo-detail-value">${row[15]}</div>
-                    </div>`
-                            : ""
-                    }
-                  </div>
-                </div>
-            `;
-                    });
-
-                    // Folios distintos de esta unidad → un botón "eliminar viaje" por folio
+                    const rowKey = `session-unit-${pageStart + index}`;
                     const foliosUnidad = [
                         ...new Map(
                             rows
@@ -3262,50 +3263,149 @@
                                 ]),
                         ).values(),
                     ];
-
-                    const botonesEliminarViaje = foliosUnidad
-                        .map(
-                            (f) => `
-                    <button
-                      type="button"
-                      onclick="deleteRegistro(${f.clienteId}, ${f.unidadId}, '${String(f.folio).replace(/'/g, "\\'")}')"
-                      class="btn"
-                      style="padding: 8px 12px; font-size: 12px; background: #ef4444; color: white; border: none; display: flex; align-items: center; gap: 5px;"
-                      title="Eliminar el viaje completo ${f.folio} (todos sus tramos)"
-                      aria-label="Eliminar viaje ${f.folio} completo">
-                      🗑️ Eliminar viaje ${f.folio}
-                    </button>`,
-                        )
+                    const foliosLabel = foliosUnidad.length
+                        ? `${foliosUnidad.length} folio${foliosUnidad.length !== 1 ? "s" : ""}`
+                        : "Sin folio";
+                    const firstRoute = routeText(firstRow);
+                    const firstSchedule = scheduleText(firstRow);
+                    const tramosHtml = rows
+                        .map((row, i) => {
+                            const tramoNumero = row[21] || i + 1;
+                            const tramoId = parseInt(row[20], 10) || 0;
+                            const route = routeText(row);
+                            const recorrido = `${row[8] || "-"}${row[9] ? ` → Carga: ${row[9]}` : ""} → ${row[10] || "-"}`;
+                            const tramoActions = tramoId
+                                ? `
+                                  <button
+                                    type="button"
+                                    onclick="editTramo(${tramoId})"
+                                    class="btn btn-secondary"
+                                    style="padding: 6px 9px; font-size: 11px;">
+                                    Editar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onclick="deleteTramo(${tramoId})"
+                                    class="icon-btn icon-btn--danger"
+                                    title="Eliminar tramo ${escapeHtml(tramoNumero)}">
+                                    🗑️
+                                  </button>`
+                                : "";
+                            return `
+                              <tr>
+                                <td><span class="chip chip--info">T${escapeHtml(tramoNumero)}</span></td>
+                                <td>
+                                  <div class="session-tramo-route" title="${escapeHtml(route)}">${escapeHtml(route)}</div>
+                                  <div class="session-cell-muted">${escapeHtml(recorrido)}</div>
+                                </td>
+                                <td>${escapeHtml(scheduleText(row))}</td>
+                                <td><div class="session-tramo-notes" title="${escapeHtml(row[15] || "")}">${escapeHtml(row[15] || "Sin instrucciones")}</div></td>
+                                <td><div class="session-row-actions">${tramoActions}</div></td>
+                              </tr>`;
+                        })
                         .join("");
 
                     html += `
-              </div>
-
-              <div class="unit-record-footer">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                  <div>
-                    <strong>IDs Equipos:</strong> ${firstRow[4] || "No especificado"}
-                  </div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button
-                      type="button"
-                      onclick="editUnit(${firstRow[18] || 0})"
-                      class="btn btn-secondary"
-                      style="padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 5px;"
-                      title="Editar datos de la unidad"
-                      aria-label="Editar datos de la unidad ${economico}">
-                      ✏️ Editar unidad
-                    </button>
-                    ${botonesEliminarViaje}
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
+                            <tr>
+                              <td class="col-toggle">
+                                <button
+                                  type="button"
+                                  class="session-expand-btn"
+                                  aria-expanded="false"
+                                  aria-controls="${rowKey}-details"
+                                  onclick="toggleSessionUnitDetails('${rowKey}', this)"
+                                  title="Ver tramos de ${escapeHtml(economico)}">
+                                  ›
+                                </button>
+                              </td>
+                              <td>
+                                <div class="session-unit-name">${escapeHtml(economico)}</div>
+                                <div class="session-unit-sub">Placas: ${escapeHtml(firstRow[3] || "N/A")}</div>
+                                <div class="session-unit-sub">Fecha: ${escapeHtml(firstRow[0] || "Sin fecha")}</div>
+                              </td>
+                              <td>
+                                <div>${escapeHtml(firstRow[5] || "N/A")}</div>
+                                <div class="session-cell-muted">${escapeHtml(firstRow[6] || "Sin teléfono")}</div>
+                              </td>
+                              <td>${escapeHtml(firstRow[16] || "N/A")}</td>
+                              <td>
+                                <span class="chip chip--info">${rows.length} tramo${rows.length !== 1 ? "s" : ""}</span>
+                                <span class="chip chip--muted">${foliosLabel}</span>
+                              </td>
+                              <td>
+                                <div class="session-route-preview" title="${escapeHtml(firstRoute)}">${escapeHtml(firstRoute)}</div>
+                                <div class="session-route-meta">${escapeHtml(firstSchedule)}</div>
+                              </td>
+                              <td class="session-cell-muted">${escapeHtml(firstRow[4] || "No especificado")}</td>
+                              <td>
+                                <div class="session-row-actions">
+                                  <button
+                                    type="button"
+                                    onclick="editUnit(${firstRow[18] || 0})"
+                                    class="btn btn-secondary"
+                                    style="padding: 7px 10px; font-size: 11px;">
+                                    Editar unidad
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr id="${rowKey}-details" class="session-tramos-row" hidden>
+                              <td colspan="8">
+                                <div class="session-tramos-panel">
+                                  <table class="session-tramos-table">
+                                    <thead>
+                                      <tr>
+                                        <th>Tramo</th>
+                                        <th>Ruta / recorrido</th>
+                                        <th>Horarios programados</th>
+                                        <th>Instrucciones</th>
+                                        <th>Acciones</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>${tramosHtml}</tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>`;
                 });
 
-                html += "</div>";
+                html += `
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="session-pagination">
+                        <span>Mostrando ${rangeStart}-${rangeEnd} de ${totalUnits} unidades</span>
+                        <div class="session-pagination-controls">
+                          <button type="button" class="btn btn-secondary" onclick="setSessionUnitsPage(${sessionUnitsPage - 1})" ${sessionUnitsPage <= 1 ? "disabled" : ""}>Anterior</button>
+                          <span>Página ${sessionUnitsPage} de ${totalPages}</span>
+                          <button type="button" class="btn btn-secondary" onclick="setSessionUnitsPage(${sessionUnitsPage + 1})" ${sessionUnitsPage >= totalPages ? "disabled" : ""}>Siguiente</button>
+                        </div>
+                      </div>
+                    </div>`;
                 container.innerHTML = html;
+            }
+
+            function setSessionUnitsPage(page) {
+                sessionUnitsPage = Math.max(1, parseInt(page, 10) || 1);
+                const startDate =
+                    dateFilter === "custom"
+                        ? document.getElementById("startDate")?.value || null
+                        : null;
+                const endDate =
+                    dateFilter === "custom"
+                        ? document.getElementById("endDate")?.value || null
+                        : null;
+                renderUnitsTable(allUnitsData, dateFilter, startDate, endDate);
+            }
+
+            function toggleSessionUnitDetails(rowKey, button) {
+                const row = document.getElementById(`${rowKey}-details`);
+                if (!row) return;
+                const isHidden = row.hidden;
+                row.hidden = !isHidden;
+                if (button) {
+                    button.setAttribute("aria-expanded", String(isHidden));
+                }
             }
 
             function formatDateForSheets(dateTimeStr) {
@@ -3358,6 +3458,7 @@
 
             function changeDateFilter(filter) {
                 dateFilter = filter;
+                sessionUnitsPage = 1;
 
                 // Show/hide custom date range inputs
                 const customRange = document.getElementById("customDateRange");
@@ -3390,6 +3491,7 @@
                 const endDate = document.getElementById("endDate").value;
 
                 if (startDate && endDate && allUnitsData.length > 0) {
+                    sessionUnitsPage = 1;
                     renderUnitsTable(
                         allUnitsData,
                         "custom",
@@ -3871,6 +3973,7 @@
 
             function applyUnitFilter(value) {
                 filterByUnit = value.trim();
+                sessionUnitsPage = 1;
                 if (allUnitsData.length > 0) {
                     renderUnitsTable(allUnitsData, dateFilter);
                 }
@@ -3878,6 +3981,7 @@
 
             function clearUnitFilter() {
                 filterByUnit = "";
+                sessionUnitsPage = 1;
                 document.getElementById("unitFilter").value = "";
                 if (allUnitsData.length > 0) {
                     renderUnitsTable(allUnitsData, dateFilter);
