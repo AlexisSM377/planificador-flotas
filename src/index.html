@@ -180,6 +180,20 @@
                 flex-direction: column;
                 gap: 6px;
             }
+            .datos-generales-grid {
+                grid-template-columns: repeat(2, minmax(360px, 1fr));
+                align-items: end;
+            }
+            .datos-generales-grid input,
+            .datos-generales-grid select {
+                min-height: 54px;
+                font-size: 15px;
+            }
+            @media (max-width: 900px) {
+                .datos-generales-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
             label {
                 font-size: 12px;
                 font-weight: 800;
@@ -1352,7 +1366,7 @@
                             <div class="section-header">
                                 <h2>Datos Generales</h2>
                             </div>
-                            <div class="grid">
+                            <div class="grid datos-generales-grid">
                                 <div class="form-group">
                                     <label>Fecha Inicio</label
                                     ><input type="date" id="fecha_registro" />
@@ -5074,7 +5088,7 @@
                 <small>Selecciona una ruta para llenar Ruta / Identificador, Origen, Lugar de Carga y Destino. Puedes editar cualquier campo después.</small>
             </div>
 
-            <div class="grid">
+            <div class="grid datos-generales-grid">
                 <div class="form-group"><label>Ruta / Identificador</label><input type="text" class="d-ruta"></div>
                 <div class="form-group"><label>Punto de Origen</label><input type="text" class="d-origen"></div>
                 <div class="form-group"><label>Lugar de Carga</label><input type="text" class="d-lugar-carga" placeholder="Bodega / CEDIS"></div>
@@ -6652,5 +6666,6 @@
         </script>
     </body>
 </html>
+
 
 

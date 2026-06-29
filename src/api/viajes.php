@@ -77,6 +77,12 @@ function null_if_empty($v)
     return $s === "" ? null : $s;
 }
 
+function utf8_lower_v($v)
+{
+    $s = (string) ($v ?? "");
+    return function_exists("mb_strtolower") ? mb_strtolower($s, "UTF-8") : strtolower($s);
+}
+
 function db_table_exists($conn, $table)
 {
     $table = (string) $table;
@@ -2835,7 +2841,7 @@ function handle_verificar_conflictos($conn, $ctx)
  */
 function firma_ruta_normalizada($origen, $lugar_carga, $destino)
 {
-    $norm = fn($v) => mb_strtolower(trim((string) ($v ?? "")), "UTF-8");
+    $norm = fn($v) => utf8_lower_v(trim((string) ($v ?? "")));
     $firma = $norm($origen) . "|" . $norm($lugar_carga) . "|" . $norm($destino);
     return $firma === "||" ? null : $firma;
 }
@@ -2929,7 +2935,7 @@ function handle_buscar_rutas_historial($conn, $ctx)
 
     $q = trim((string) ($_GET["q"] ?? ""));
     $limit = min(max((int) ($_GET["limit"] ?? 10), 1), 10);
-    $like = "%" . mb_strtolower($q, "UTF-8") . "%";
+    $like = "%" . utf8_lower_v($q) . "%";
     $rutas_por_firma = [];
 
     $agregar_ruta = function ($row, $source_rank) use (&$rutas_por_firma) {
@@ -2937,7 +2943,7 @@ function handle_buscar_rutas_historial($conn, $ctx)
         $origen = trim((string) ($row["origen"] ?? ""));
         $lugar_carga = trim((string) ($row["lugar_carga"] ?? ""));
         $destino = trim((string) ($row["destino"] ?? ""));
-        $firma = mb_strtolower($ruta . "|" . $origen . "|" . $lugar_carga . "|" . $destino, "UTF-8");
+        $firma = utf8_lower_v($ruta . "|" . $origen . "|" . $lugar_carga . "|" . $destino);
         if ($firma === "|||") {
             return;
         }
@@ -2967,65 +2973,78 @@ function handle_buscar_rutas_historial($conn, $ctx)
         }
     };
 
-    $catalogWhere = ["cliente_id = ?", "activo = 1"];
-    $catalogWhereTypes = "i";
-    $catalogWhereParams = [$cliente_id];
-    $catalogPriority = "9";
-    $catalogPriorityTypes = "";
-    $catalogPriorityParams = [];
-    if ($q !== "") {
-        $catalogPriority = "CASE
-            WHEN LOWER(COALESCE(ruta, '')) LIKE ? THEN 0
-            WHEN LOWER(COALESCE(etiqueta, '')) LIKE ? THEN 0
-            WHEN LOWER(COALESCE(origen, '')) LIKE ? THEN 1
-            WHEN LOWER(COALESCE(lugar_carga, '')) LIKE ? THEN 2
-            WHEN LOWER(COALESCE(destino, '')) LIKE ? THEN 3
-            ELSE 4
-        END";
-        $catalogPriorityTypes = "sssss";
-        $catalogPriorityParams = [$like, $like, $like, $like, $like];
-        $catalogWhere[] = "(
-            LOWER(COALESCE(ruta, '')) LIKE ?
-            OR LOWER(COALESCE(etiqueta, '')) LIKE ?
-            OR LOWER(COALESCE(origen, '')) LIKE ?
-            OR LOWER(COALESCE(lugar_carga, '')) LIKE ?
-            OR LOWER(COALESCE(destino, '')) LIKE ?
-        )";
-        $catalogWhereTypes .= "sssss";
-        array_push($catalogWhereParams, $like, $like, $like, $like, $like);
-    }
-    $catalogSql = "
-        SELECT ruta, origen, lugar_carga, destino,
-               COALESCE(veces_usada, 0) AS veces_usada,
-               COALESCE(ultima_vez_usada, updated_at, created_at) AS ultima_vez_usada,
-               $catalogPriority AS prioridad,
-               es_favorito
-          FROM tramos_catalogo
-         WHERE " . implode(" AND ", $catalogWhere) . "
-         ORDER BY prioridad ASC, es_favorito DESC, veces_usada DESC, ultima_vez_usada DESC
-         LIMIT ?";
-    $catalogTypes = $catalogPriorityTypes . $catalogWhereTypes . "i";
-    $catalogParams = array_merge($catalogPriorityParams, $catalogWhereParams, [$limit]);
+    if (db_table_exists($conn, "tramos_catalogo")) {
+        $has_historial_cols = db_columns_exist($conn, "tramos_catalogo", [
+            "veces_usada",
+            "ultima_vez_usada",
+            "es_favorito",
+        ]);
+        $catalogWhere = ["cliente_id = ?", "activo = 1"];
+        $catalogWhereTypes = "i";
+        $catalogWhereParams = [$cliente_id];
+        $catalogPriority = "9";
+        $catalogPriorityTypes = "";
+        $catalogPriorityParams = [];
+        if ($q !== "") {
+            $catalogPriority = "CASE
+                WHEN LOWER(COALESCE(ruta, '')) LIKE ? THEN 0
+                WHEN LOWER(COALESCE(etiqueta, '')) LIKE ? THEN 0
+                WHEN LOWER(COALESCE(origen, '')) LIKE ? THEN 1
+                WHEN LOWER(COALESCE(lugar_carga, '')) LIKE ? THEN 2
+                WHEN LOWER(COALESCE(destino, '')) LIKE ? THEN 3
+                ELSE 4
+            END";
+            $catalogPriorityTypes = "sssss";
+            $catalogPriorityParams = [$like, $like, $like, $like, $like];
+            $catalogWhere[] = "(
+                LOWER(COALESCE(ruta, '')) LIKE ?
+                OR LOWER(COALESCE(etiqueta, '')) LIKE ?
+                OR LOWER(COALESCE(origen, '')) LIKE ?
+                OR LOWER(COALESCE(lugar_carga, '')) LIKE ?
+                OR LOWER(COALESCE(destino, '')) LIKE ?
+            )";
+            $catalogWhereTypes .= "sssss";
+            array_push($catalogWhereParams, $like, $like, $like, $like, $like);
+        }
 
-    $stmt = $conn->prepare($catalogSql);
-    if (!$stmt) {
-        throw new Exception("Error preparando busqueda de catalogo: " . $conn->error, 500);
-    }
-    $refs = [$catalogTypes];
-    foreach ($catalogParams as $k => $v) {
-        $refs[] = &$catalogParams[$k];
-    }
-    call_user_func_array([$stmt, "bind_param"], $refs);
-    if (!$stmt->execute()) {
-        $err = $stmt->error;
+        $vecesExpr = $has_historial_cols ? "COALESCE(veces_usada, 0)" : "0";
+        $ultimaExpr = $has_historial_cols
+            ? "COALESCE(ultima_vez_usada, updated_at, created_at)"
+            : "COALESCE(updated_at, created_at)";
+        $favoritoExpr = $has_historial_cols ? "es_favorito" : "1";
+        $catalogSql = "
+            SELECT ruta, origen, lugar_carga, destino,
+                   $vecesExpr AS veces_usada,
+                   $ultimaExpr AS ultima_vez_usada,
+                   $catalogPriority AS prioridad,
+                   $favoritoExpr AS es_favorito
+              FROM tramos_catalogo
+             WHERE " . implode(" AND ", $catalogWhere) . "
+             ORDER BY prioridad ASC, es_favorito DESC, veces_usada DESC, ultima_vez_usada DESC
+             LIMIT ?";
+        $catalogTypes = $catalogPriorityTypes . $catalogWhereTypes . "i";
+        $catalogParams = array_merge($catalogPriorityParams, $catalogWhereParams, [$limit]);
+
+        $stmt = $conn->prepare($catalogSql);
+        if (!$stmt) {
+            throw new Exception("Error preparando busqueda de catalogo: " . $conn->error, 500);
+        }
+        $refs = [$catalogTypes];
+        foreach ($catalogParams as $k => $v) {
+            $refs[] = &$catalogParams[$k];
+        }
+        call_user_func_array([$stmt, "bind_param"], $refs);
+        if (!$stmt->execute()) {
+            $err = $stmt->error;
+            $stmt->close();
+            throw new Exception("Error buscando catalogo de rutas: " . $err, 500);
+        }
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $agregar_ruta($row, ((int) ($row["es_favorito"] ?? 0)) === 1 ? 0 : 1);
+        }
         $stmt->close();
-        throw new Exception("Error buscando catalogo de rutas: " . $err, 500);
     }
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $agregar_ruta($row, ((int) ($row["es_favorito"] ?? 0)) === 1 ? 0 : 1);
-    }
-    $stmt->close();
 
     $where = [
         "v.cliente_id = ?",
@@ -3987,6 +4006,7 @@ try {
         in_array($code, [400, 401, 403, 404, 409, 500], true) ? $code : 500,
     );
 }
+
 
 
 
