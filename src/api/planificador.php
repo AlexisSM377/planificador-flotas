@@ -5,6 +5,31 @@ while (ob_get_level()) {
 }
 ob_start();
 
+register_shutdown_function(function () {
+    $error = error_get_last();
+    $fatal_types = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
+    if (!$error || !in_array($error["type"], $fatal_types, true)) {
+        return;
+    }
+
+    error_log("[api/planificador] FATAL: " . ($error["message"] ?? "Error fatal"));
+    if (!headers_sent()) {
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        header_remove();
+        header("Content-Type: application/json; charset=utf-8");
+        http_response_code(500);
+        echo json_encode(
+            [
+                "ok" => false,
+                "error" => "Error interno del servidor durante el login. Revisa la configuración de producción.",
+            ],
+            JSON_UNESCAPED_UNICODE,
+        );
+    }
+});
+
 require __DIR__ . "/../db.php";
 require __DIR__ . "/../RequestValidator.php";
 
@@ -168,7 +193,8 @@ function to_mysql_date($value)
         return $m[3] . "-" . $m[2] . "-" . $m[1];
     }
     try {
-        return new DateTime($s)->format("Y-m-d");
+        $dt = new DateTime($s);
+        return $dt->format("Y-m-d");
     } catch (Exception $e) {
         return date("Y-m-d");
     }
@@ -208,7 +234,8 @@ function to_mysql_datetime_or_null($value)
         );
     }
     try {
-        return new DateTime($s)->format("Y-m-d H:i:s");
+        $dt = new DateTime($s);
+        return $dt->format("Y-m-d H:i:s");
     } catch (Exception $e) {
         return null;
     }

@@ -294,7 +294,8 @@ function to_date($v)
         return "{$m[3]}-{$m[2]}-{$m[1]}";
     }
     try {
-        return new DateTime($s)->format("Y-m-d");
+        $dt = new DateTime($s);
+        return $dt->format("Y-m-d");
     } catch (Exception $e) {
         return null;
     }
@@ -313,7 +314,8 @@ function to_datetime($v)
         return substr($s, 0, 19);
     }
     try {
-        return new DateTime($s)->format("Y-m-d H:i:s");
+        $dt = new DateTime($s);
+        return $dt->format("Y-m-d H:i:s");
     } catch (Exception $e) {
         return null;
     }
@@ -667,7 +669,8 @@ function handle_crear($conn, $ctx)
     if (!$fecha_inicio) {
         throw new Exception("fecha_inicio requerida (YYYY-MM-DD)", 400);
     }
-    $hoy = new DateTime("today")->format("Y-m-d");
+    $dt_hoy = new DateTime("today");
+    $hoy = $dt_hoy->format("Y-m-d");
     if ($fecha_inicio < $hoy) {
         throw new Exception(
             "No se puede registrar un viaje con fecha de inicio en el pasado",
@@ -678,7 +681,8 @@ function handle_crear($conn, $ctx)
         throw new Exception("Se requiere al menos un tramo", 400);
     }
 
-    $ahora = new DateTime("now")->format("Y-m-d H:i:s");
+    $dt_ahora = new DateTime("now");
+    $ahora = $dt_ahora->format("Y-m-d H:i:s");
     $campos_tiempo = [
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
@@ -1211,7 +1215,8 @@ function handle_agregar_tramo($conn, $ctx)
         throw new Exception("tramo debe ser un objeto", 400);
     }
 
-    $ahora = new DateTime("now")->format("Y-m-d H:i:s");
+    $dt_ahora = new DateTime("now");
+    $ahora = $dt_ahora->format("Y-m-d H:i:s");
     $campos_tiempo = [
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",

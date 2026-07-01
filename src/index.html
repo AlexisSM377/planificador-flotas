@@ -2844,6 +2844,23 @@
                 return false;
             }
 
+            async function readJsonResponse(response, fallbackMessage = "Respuesta invalida del servidor") {
+                const text = await response.text();
+                if (!text.trim()) return {};
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    const clean = text
+                        .replace(/<script[\s\S]*?<\/script>/gi, " ")
+                        .replace(/<style[\s\S]*?<\/style>/gi, " ")
+                        .replace(/<[^>]+>/g, " ")
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .slice(0, 220);
+                    throw new Error(clean || fallbackMessage);
+                }
+            }
+
             async function handlePlanificadorLogin(event) {
                 event.preventDefault();
                 const error = document.getElementById("loginError");
@@ -2867,7 +2884,10 @@
                             }),
                         },
                     );
-                    const json = await res.json();
+                    const json = await readJsonResponse(
+                        res,
+                        "No se pudo leer la respuesta del login",
+                    );
                     if (!res.ok || !json.ok)
                         throw new Error(json.error || "Login invalido");
                     applyPlanificadorSession(
