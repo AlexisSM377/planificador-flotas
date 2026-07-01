@@ -1,24 +1,4 @@
 ﻿<?php
-
-/**
- * API: viajes.php
- * Gestión de viajes multi-tramo y multi-día.
- *
- * Endpoints (todos requieren Authorization: Bearer <token>):
- *
- *   POST   ?action=crear             → crea viaje completo con sus tramos (transacción)
- *   GET    ?action=listar            → viajes por cliente_id, rango de fechas, unidad
- *   GET    ?action=obtener           → un viaje con todos sus tramos
- *   PUT    ?action=actualizar        → edita cabecera del viaje
- *   POST   ?action=agregar_tramo     → agrega tramo a viaje existente
- *   PUT    ?action=actualizar_tramo  → edita un tramo
- *   PUT    ?action=completar_tramo   → completa un tramo y auto-activa el siguiente pendiente
- *   DELETE ?action=eliminar_tramo    → cancela un tramo (soft: estado='cancelado')
- *   DELETE ?action=eliminar_viaje    → cancela el viaje completo
- *   GET    ?action=unidades          → lista unidades del cliente (autocomplete)
- *   POST   ?action=duplicar          → clona viaje a nueva fecha (desplaza tramos)
- */
-
 while (ob_get_level()) {
     ob_end_clean();
 }
@@ -80,13 +60,17 @@ function null_if_empty($v)
 function utf8_lower_v($v)
 {
     $s = (string) ($v ?? "");
-    return function_exists("mb_strtolower") ? mb_strtolower($s, "UTF-8") : strtolower($s);
+    return function_exists("mb_strtolower")
+        ? mb_strtolower($s, "UTF-8")
+        : strtolower($s);
 }
 
 function db_table_exists($conn, $table)
 {
     $table = (string) $table;
-    $res = $conn->query("SHOW TABLES LIKE '" . $conn->real_escape_string($table) . "'");
+    $res = $conn->query(
+        "SHOW TABLES LIKE '" . $conn->real_escape_string($table) . "'",
+    );
     return $res && $res->num_rows > 0;
 }
 
@@ -97,7 +81,9 @@ function db_columns_exist($conn, $table, $columns)
         return false;
     }
 
-    $res = $conn->query("SHOW COLUMNS FROM `" . str_replace("`", "``", $table) . "`");
+    $res = $conn->query(
+        "SHOW COLUMNS FROM `" . str_replace("`", "``", $table) . "`",
+    );
     if (!$res) {
         return false;
     }
@@ -114,10 +100,6 @@ function db_columns_exist($conn, $table, $columns)
     }
     return true;
 }
-
-// ---------------------------------------------------------------------------
-// JWT (idéntico a planificador.php)
-// ---------------------------------------------------------------------------
 
 function base64url_encode_v($data)
 {
@@ -195,10 +177,6 @@ function get_bearer_token_v()
     return preg_match("/Bearer\s+(.+)/i", $h, $m) ? trim($m[1]) : "";
 }
 
-// ---------------------------------------------------------------------------
-// Contexto de usuario y permisos de tenant
-// ---------------------------------------------------------------------------
-
 function get_usuario_context($conn)
 {
     $token = get_bearer_token_v();
@@ -262,10 +240,6 @@ function get_usuario_context($conn)
     ];
 }
 
-/**
- * Verifica que el usuario tenga acceso al cliente_id dado.
- * Lanza excepción si no.
- */
 function assert_cliente_access($ctx, $cliente_id)
 {
     $cliente_id = (int) $cliente_id;
@@ -274,9 +248,6 @@ function assert_cliente_access($ctx, $cliente_id)
     }
 }
 
-/**
- * Verifica que el usuario no sea solo lector.
- */
 function assert_can_write($ctx)
 {
     if ($ctx["role"] === "lector") {
@@ -284,10 +255,6 @@ function assert_can_write($ctx)
     }
 }
 
-/**
- * Devuelve la cláusula WHERE + params para filtrar por cliente_ids del tenant.
- * Si es admin y no se pasa cliente_id, se filtra por todos sus clientes.
- */
 function cliente_where($ctx, $cliente_id_param = null)
 {
     if ($cliente_id_param !== null) {
@@ -300,7 +267,6 @@ function cliente_where($ctx, $cliente_id_param = null)
         ];
     }
     if ($ctx["role"] === "admin") {
-        // Sin restricción de cliente
         return ["sql" => "1=1", "types" => "", "params" => []];
     }
     $ids = $ctx["ids"];
@@ -315,10 +281,6 @@ function cliente_where($ctx, $cliente_id_param = null)
     ];
 }
 
-// ---------------------------------------------------------------------------
-// Helpers de fecha / datetime
-// ---------------------------------------------------------------------------
-
 function to_date($v)
 {
     $s = str_val($v);
@@ -332,7 +294,7 @@ function to_date($v)
         return "{$m[3]}-{$m[2]}-{$m[1]}";
     }
     try {
-        return (new DateTime($s))->format("Y-m-d");
+        return new DateTime($s)->format("Y-m-d");
     } catch (Exception $e) {
         return null;
     }
@@ -351,7 +313,7 @@ function to_datetime($v)
         return substr($s, 0, 19);
     }
     try {
-        return (new DateTime($s))->format("Y-m-d H:i:s");
+        return new DateTime($s)->format("Y-m-d H:i:s");
     } catch (Exception $e) {
         return null;
     }
@@ -365,6 +327,7 @@ function fecha_fin_desde_tramos($tramos)
         "cita_carga",
         "salida_carga",
         "descarga_programada",
+        "regreso_origen_programado",
     ];
     foreach ($tramos as $t) {
         foreach ($campos as $c) {
@@ -376,10 +339,6 @@ function fecha_fin_desde_tramos($tramos)
     }
     return $max ? substr($max, 0, 10) : null;
 }
-
-// ---------------------------------------------------------------------------
-// Helpers de tramos
-// ---------------------------------------------------------------------------
 
 function map_tramo_row($r)
 {
@@ -403,6 +362,9 @@ function map_tramo_row($r)
         "descarga_programada" => $r["descarga_programada"],
         "descarga_real" => $r["descarga_real"] ?? null,
         "vacio_real" => $r["vacio_real"] ?? null,
+        "requiere_regreso_origen" => (int) ($r["requiere_regreso_origen"] ?? 0),
+        "regreso_origen_programado" => $r["regreso_origen_programado"] ?? null,
+        "regreso_origen_real" => $r["regreso_origen_real"] ?? null,
         "estado" => $r["estado"],
         "created_at" => $r["created_at"],
         "updated_at" => $r["updated_at"],
@@ -433,15 +395,6 @@ function map_viaje_row($r)
 
 function insertar_tramo($conn, $viaje_id, $num, $t)
 {
-    $stmt = $conn->prepare(
-        'INSERT INTO viaje_tramos
-           (viaje_id, tramo_numero, origen, lugar_carga, destino, ruta,
-             instrucciones, salida_patio, cita_carga, salida_carga, descarga_programada, estado)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    );
-    if (!$stmt) {
-        throw new Exception("Error preparando tramo: " . $conn->error, 500);
-    }
     $origen = null_if_empty($t["origen"] ?? "");
     $lc = null_if_empty($t["lugar_carga"] ?? "");
     $destino = null_if_empty($t["destino"] ?? "");
@@ -451,23 +404,71 @@ function insertar_tramo($conn, $viaje_id, $num, $t)
     $cita = to_datetime($t["cita_carga"] ?? "");
     $salida_c = to_datetime($t["salida_carga"] ?? "");
     $descarga = to_datetime($t["descarga_programada"] ?? "");
+    $has_regreso_origen = db_columns_exist($conn, "viaje_tramos", [
+        "requiere_regreso_origen",
+        "regreso_origen_programado",
+        "regreso_origen_real",
+    ]);
+    $requiere_regreso = !empty($t["requiere_regreso_origen"]) ? 1 : 0;
+    $regreso_programado = $requiere_regreso
+        ? to_datetime($t["regreso_origen_programado"] ?? "")
+        : null;
     $estado = "pendiente";
 
-    $stmt->bind_param(
-        "iissssssssss",
-        $viaje_id,
-        $num,
-        $origen,
-        $lc,
-        $destino,
-        $ruta,
-        $instr,
-        $salida_p,
-        $cita,
-        $salida_c,
-        $descarga,
-        $estado,
-    );
+    if ($has_regreso_origen) {
+        $stmt = $conn->prepare(
+            'INSERT INTO viaje_tramos
+               (viaje_id, tramo_numero, origen, lugar_carga, destino, ruta,
+                 instrucciones, salida_patio, cita_carga, salida_carga, descarga_programada,
+                 requiere_regreso_origen, regreso_origen_programado, estado)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        );
+        if (!$stmt) {
+            throw new Exception("Error preparando tramo: " . $conn->error, 500);
+        }
+        $stmt->bind_param(
+            "iisssssssssiss",
+            $viaje_id,
+            $num,
+            $origen,
+            $lc,
+            $destino,
+            $ruta,
+            $instr,
+            $salida_p,
+            $cita,
+            $salida_c,
+            $descarga,
+            $requiere_regreso,
+            $regreso_programado,
+            $estado,
+        );
+    } else {
+        $stmt = $conn->prepare(
+            'INSERT INTO viaje_tramos
+               (viaje_id, tramo_numero, origen, lugar_carga, destino, ruta,
+                 instrucciones, salida_patio, cita_carga, salida_carga, descarga_programada, estado)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        );
+        if (!$stmt) {
+            throw new Exception("Error preparando tramo: " . $conn->error, 500);
+        }
+        $stmt->bind_param(
+            "iissssssssss",
+            $viaje_id,
+            $num,
+            $origen,
+            $lc,
+            $destino,
+            $ruta,
+            $instr,
+            $salida_p,
+            $cita,
+            $salida_c,
+            $descarga,
+            $estado,
+        );
+    }
     if (!$stmt->execute()) {
         $err = $stmt->error;
         $stmt->close();
@@ -478,15 +479,6 @@ function insertar_tramo($conn, $viaje_id, $num, $t)
     return $id;
 }
 
-// ---------------------------------------------------------------------------
-// Compatibilidad: sincronizar tramos a tabla despachos (tab "Unidades en Sesión")
-// ---------------------------------------------------------------------------
-
-/**
- * Inserta (o actualiza) cada tramo del viaje en la tabla `despachos`
- * para que sigan apareciendo en la tab "Unidades en Sesión" del planificador.
- * Usa el mismo patrón de legacy_key que planificador.php.
- */
 function sincronizar_despachos(
     $conn,
     $viaje_id,
@@ -533,7 +525,10 @@ function sincronizar_despachos(
                 legacy_key              = VALUES(legacy_key)',
         );
         if (!$stmt) {
-            throw new Exception("Error preparando sincronizacion despacho: " . $conn->error, 500);
+            throw new Exception(
+                "Error preparando sincronizacion despacho: " . $conn->error,
+                500,
+            );
         }
 
         $ruta = null_if_empty($t["ruta"] ?? "");
@@ -573,15 +568,6 @@ function sincronizar_despachos(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Upsert de unidad (crea si no existe, actualiza si ya existe)
-// ---------------------------------------------------------------------------
-
-/**
- * Inserta o actualiza una unidad para el cliente dado.
- * Usa UNIQUE KEY (cliente_id, economico) para el ON DUPLICATE KEY UPDATE.
- * Devuelve el id de la unidad.
- */
 function upsert_unidad(
     $conn,
     $cliente_id,
@@ -592,9 +578,10 @@ function upsert_unidad(
     $equipos,
     $operador_id = null,
 ) {
-    $operador_id = $operador_id !== null && (int) $operador_id > 0
-        ? (int) $operador_id
-        : null;
+    $operador_id =
+        $operador_id !== null && (int) $operador_id > 0
+            ? (int) $operador_id
+            : null;
     $stmt = $conn->prepare(
         'INSERT INTO unidades (cliente_id, economico, placas, operador, telefonos, equipos, operador_id, activo)
          VALUES (?, ?, ?, ?, ?, ?, ?, 1)
@@ -630,7 +617,10 @@ function upsert_unidad(
         "SELECT id FROM unidades WHERE cliente_id = ? AND economico = ? LIMIT 1",
     );
     if (!$stmt) {
-        throw new Exception("Error preparando consulta de unidad: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando consulta de unidad: " . $conn->error,
+            500,
+        );
     }
     $stmt->bind_param("is", $cliente_id, $economico);
     $stmt->execute();
@@ -645,35 +635,6 @@ function upsert_unidad(
     return (int) $row["id"];
 }
 
-// ---------------------------------------------------------------------------
-// HANDLERS
-// ---------------------------------------------------------------------------
-
-/**
- * POST ?action=crear
- * Body JSON:
- * {
- *   "cliente_id": 1,
- *   "unidad_id": 5,
- *   "folio": "FOL-001",
- *   "fecha_inicio": "2026-05-25",
- *   "fecha_fin": "2026-05-26",     // opcional
- *   "notas": "...",                // opcional
- *   "tramos": [
- *     {
- *       "origen": "CDMX",
- *       "lugar_carga": "Bodega Norte",
- *       "destino": "Puebla",
- *       "ruta": "MEX-150D",
- *       "instrucciones": "...",
- *       "salida_patio": "2026-05-25T08:00",
- *       "cita_carga": "2026-05-25T09:00",
- *       "salida_carga": "2026-05-25T10:00",
- *       "descarga_programada": "2026-05-25T14:00"
- *     }
- *   ]
- * }
- */
 function handle_crear($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -686,14 +647,10 @@ function handle_crear($conn, $ctx)
     $cliente_id = (int) ($body["cliente_id"] ?? 0);
     $folio = str_val($body["folio"] ?? "");
     $fecha_inicio = to_date($body["fecha_inicio"] ?? "");
-    // fecha_fin ya no se captura en el formulario: se deriva del último tramo
-    // más abajo (tras validar los tramos). Se mantiene la columna en BD para
-    // que la detección de conflictos de unidad siga siendo precisa.
     $fecha_fin = null;
     $notas = null_if_empty($body["notas"] ?? "");
     $tramos = $body["tramos"] ?? [];
 
-    // Datos de la unidad (pueden venir del formulario si es unidad nueva)
     $economico = str_val($body["economico"] ?? "");
     $placas = str_val($body["placas"] ?? "");
     $operador = str_val($body["operador"] ?? "");
@@ -710,8 +667,7 @@ function handle_crear($conn, $ctx)
     if (!$fecha_inicio) {
         throw new Exception("fecha_inicio requerida (YYYY-MM-DD)", 400);
     }
-    // No se permiten viajes con fecha de inicio anterior a hoy
-    $hoy = (new DateTime("today"))->format("Y-m-d");
+    $hoy = new DateTime("today")->format("Y-m-d");
     if ($fecha_inicio < $hoy) {
         throw new Exception(
             "No se puede registrar un viaje con fecha de inicio en el pasado",
@@ -722,16 +678,29 @@ function handle_crear($conn, $ctx)
         throw new Exception("Se requiere al menos un tramo", 400);
     }
 
-    // Ningún tiempo programado de los tramos puede estar en el pasado
-    $ahora = (new DateTime("now"))->format("Y-m-d H:i:s");
+    $ahora = new DateTime("now")->format("Y-m-d H:i:s");
     $campos_tiempo = [
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
         "salida_carga" => "Salida de Carga",
         "descarga_programada" => "Cita de Descarga",
+        "regreso_origen_programado" => "Fecha de Regreso",
     ];
     foreach ($tramos as $i => $t) {
+        $requiere_regreso = !empty($t["requiere_regreso_origen"]);
+        if (
+            $requiere_regreso &&
+            !to_datetime($t["regreso_origen_programado"] ?? "")
+        ) {
+            throw new Exception(
+                "Tramo " . ($i + 1) . ": Fecha de Regreso requerida",
+                400,
+            );
+        }
         foreach ($campos_tiempo as $campo => $etiqueta) {
+            if ($campo === "regreso_origen_programado" && !$requiere_regreso) {
+                continue;
+            }
             $dt = to_datetime($t[$campo] ?? "");
             if ($dt && $dt < $ahora) {
                 throw new Exception(
@@ -743,9 +712,6 @@ function handle_crear($conn, $ctx)
             }
         }
     }
-
-    // Derivar fecha_fin del tramo más lejano (para conflictos de unidad).
-    // Si ningún tramo tiene tiempos, el viaje dura solo su día de inicio.
     $fecha_fin = fecha_fin_desde_tramos($tramos);
     if ($fecha_fin && $fecha_fin < $fecha_inicio) {
         $fecha_fin = $fecha_inicio;
@@ -753,18 +719,17 @@ function handle_crear($conn, $ctx)
 
     assert_cliente_access($ctx, $cliente_id);
 
-    // ── Resolver unidad_id ────────────────────────────────────────────────────
-    // Si el frontend ya resolvió el ID (unidad existente), usarlo directamente.
-    // Si no (unidad nueva), hacer upsert con los datos del formulario.
     $unidad_id = (int) ($body["unidad_id"] ?? 0);
 
     if ($unidad_id > 0) {
-        // Verificar que la unidad pertenece al cliente
         $stmt = $conn->prepare(
             "SELECT id FROM unidades WHERE id = ? AND cliente_id = ? AND activo = 1 LIMIT 1",
         );
         if (!$stmt) {
-            throw new Exception("Error preparando verificacion de unidad: " . $conn->error, 500);
+            throw new Exception(
+                "Error preparando verificacion de unidad: " . $conn->error,
+                500,
+            );
         }
         $stmt->bind_param("ii", $unidad_id, $cliente_id);
         $stmt->execute();
@@ -777,7 +742,6 @@ function handle_crear($conn, $ctx)
             );
         }
     } else {
-        // Unidad nueva o no resuelta por el frontend: upsert por económico
         if ($economico === "") {
             throw new Exception(
                 "economico requerido para registrar una unidad nueva",
@@ -796,7 +760,6 @@ function handle_crear($conn, $ctx)
         );
     }
 
-    // Detectar conflictos de solapamiento con viajes activos de la misma unidad
     $conflictos = detectar_conflictos(
         $conn,
         $unidad_id,
@@ -804,11 +767,9 @@ function handle_crear($conn, $ctx)
         $fecha_fin,
     );
     if (count($conflictos) > 0) {
-        // Retornar 409 Conflict con detalle de los viajes que se solapan
         json_err_conflicto($conflictos);
     }
 
-    // Transacción: viaje + todos sus tramos
     $conn->begin_transaction();
     try {
         $uid = $ctx["id"];
@@ -840,19 +801,20 @@ function handle_crear($conn, $ctx)
             insertar_tramo($conn, $viaje_id, $i + 1, $t);
         }
 
-        // Sincronizar a tabla despachos para compatibilidad con "Unidades en Sesión"
         $stmt_cn = $conn->prepare(
             "SELECT nombre FROM clientes WHERE id = ? LIMIT 1",
         );
         if (!$stmt_cn) {
-            throw new Exception("Error preparando cliente: " . $conn->error, 500);
+            throw new Exception(
+                "Error preparando cliente: " . $conn->error,
+                500,
+            );
         }
         $stmt_cn->bind_param("i", $cliente_id);
         $stmt_cn->execute();
         $cliente_nombre = $stmt_cn->get_result()->fetch_assoc()["nombre"] ?? "";
         $stmt_cn->close();
 
-        // Preparar tramos con tramo_numero para sincronizar
         $tramos_sync = array_values(
             array_map(
                 function ($t, $i) {
@@ -880,15 +842,9 @@ function handle_crear($conn, $ctx)
         throw $e;
     }
 
-    // Devolver viaje recién creado con sus tramos
     json_ok(handle_obtener_data($conn, $viaje_id), 201);
 }
 
-/**
- * GET ?action=listar
- * Params opcionales:
- *   cliente_id, unidad_id, fecha_desde, fecha_hasta, estado, limit, offset
- */
 function handle_listar($conn, $ctx)
 {
     $cliente_id = isset($_GET["cliente_id"]) ? (int) $_GET["cliente_id"] : null;
@@ -910,7 +866,6 @@ function handle_listar($conn, $ctx)
         $params[] = $unidad_id;
     }
 
-    // Rango de fechas: captura viajes multi-día que se solapen con el rango
     if ($fecha_desde) {
         $where[] =
             "(v.fecha_fin >= ? OR (v.fecha_fin IS NULL AND v.fecha_inicio >= ?))";
@@ -976,7 +931,6 @@ function handle_listar($conn, $ctx)
     }
     $stmt->close();
 
-    // Total sin paginación
     $sql_count = "SELECT COUNT(DISTINCT v.id) AS total
                   FROM viajes v
                   WHERE $where_sql";
@@ -998,9 +952,6 @@ function handle_listar($conn, $ctx)
     ]);
 }
 
-/**
- * GET ?action=obtener&viaje_id=X
- */
 function handle_obtener($conn, $ctx)
 {
     $viaje_id = (int) ($_GET["viaje_id"] ?? 0);
@@ -1020,7 +971,10 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
           WHERE v.id = ? LIMIT 1',
     );
     if (!$stmt) {
-        throw new Exception("Error preparando consulta de viaje: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando consulta de viaje: " . $conn->error,
+            500,
+        );
     }
     $stmt->bind_param("i", $viaje_id);
     $stmt->execute();
@@ -1036,12 +990,14 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
 
     $viaje = map_viaje_row($r);
 
-    // Tramos
     $stmt = $conn->prepare(
         "SELECT * FROM viaje_tramos WHERE viaje_id = ? ORDER BY tramo_numero ASC",
     );
     if (!$stmt) {
-        throw new Exception("Error preparando consulta de tramos: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando consulta de tramos: " . $conn->error,
+            500,
+        );
     }
     $stmt->bind_param("i", $viaje_id);
     $stmt->execute();
@@ -1054,7 +1010,6 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
 
     $viaje["tramos"] = $tramos;
 
-    // Incidencias agrupadas por tramo
     $incidencias_map = [];
     if (db_table_exists($conn, "viaje_incidencias")) {
         $stmt = $conn->prepare(
@@ -1064,7 +1019,10 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
               ORDER BY tramo_id ASC, fecha ASC',
         );
         if (!$stmt) {
-            throw new Exception("Error preparando consulta de incidencias: " . $conn->error, 500);
+            throw new Exception(
+                "Error preparando consulta de incidencias: " . $conn->error,
+                500,
+            );
         }
         $stmt->bind_param("i", $viaje_id);
         $stmt->execute();
@@ -1085,7 +1043,6 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
         $stmt->close();
     }
 
-    // Inyectar incidencias en cada tramo
     foreach ($viaje["tramos"] as &$tramo) {
         $tramo["incidencias"] = $incidencias_map[$tramo["id"]] ?? [];
     }
@@ -1094,10 +1051,6 @@ function handle_obtener_data($conn, $viaje_id, $ctx = null)
     return ["viaje" => $viaje];
 }
 
-/**
- * PUT ?action=actualizar
- * Body JSON: { viaje_id, folio?, fecha_inicio?, fecha_fin?, estado?, notas? }
- */
 function handle_actualizar($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1112,7 +1065,6 @@ function handle_actualizar($conn, $ctx)
         throw new Exception("viaje_id requerido", 400);
     }
 
-    // Verificar existencia y acceso
     $stmt = $conn->prepare(
         "SELECT cliente_id FROM viajes WHERE id = ? LIMIT 1",
     );
@@ -1125,7 +1077,6 @@ function handle_actualizar($conn, $ctx)
     }
     assert_cliente_access($ctx, $v["cliente_id"]);
 
-    // Construir SET dinámico solo con campos enviados
     $sets = [];
     $types = "";
     $params = [];
@@ -1174,7 +1125,6 @@ function handle_actualizar($conn, $ctx)
         throw new Exception("No hay campos para actualizar", 400);
     }
 
-    // revertir_tramos: true → revierte tramos completados a pendiente (útil al reabrir un viaje)
     $revertir_tramos = !empty($body["revertir_tramos"]);
 
     $types .= "i";
@@ -1218,10 +1168,6 @@ function handle_actualizar($conn, $ctx)
     json_ok(handle_obtener_data($conn, $viaje_id));
 }
 
-/**
- * POST ?action=agregar_tramo
- * Body JSON: { viaje_id, tramo: { origen, destino, ... } }
- */
 function handle_agregar_tramo($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1252,7 +1198,6 @@ function handle_agregar_tramo($conn, $ctx)
     }
     assert_cliente_access($ctx, $v["cliente_id"]);
 
-    // Calcular siguiente número de tramo
     $stmt = $conn->prepare(
         "SELECT COALESCE(MAX(tramo_numero), 0) + 1 AS siguiente FROM viaje_tramos WHERE viaje_id = ?",
     );
@@ -1266,16 +1211,25 @@ function handle_agregar_tramo($conn, $ctx)
         throw new Exception("tramo debe ser un objeto", 400);
     }
 
-    // Ningún tiempo programado del tramo puede estar en el pasado
-    // (consistente con handle_crear y la zona horaria America/Mexico_City).
-    $ahora = (new DateTime("now"))->format("Y-m-d H:i:s");
+    $ahora = new DateTime("now")->format("Y-m-d H:i:s");
     $campos_tiempo = [
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
         "salida_carga" => "Salida de Carga",
         "descarga_programada" => "Cita de Descarga",
+        "regreso_origen_programado" => "Fecha de Regreso",
     ];
+    $requiere_regreso = !empty($tramo_data["requiere_regreso_origen"]);
+    if (
+        $requiere_regreso &&
+        !to_datetime($tramo_data["regreso_origen_programado"] ?? "")
+    ) {
+        throw new Exception("Fecha de Regreso requerida", 400);
+    }
     foreach ($campos_tiempo as $campo => $etiqueta) {
+        if ($campo === "regreso_origen_programado" && !$requiere_regreso) {
+            continue;
+        }
         $dt = to_datetime($tramo_data[$campo] ?? "");
         if ($dt && $dt < $ahora) {
             throw new Exception(
@@ -1287,8 +1241,6 @@ function handle_agregar_tramo($conn, $ctx)
 
     $tramo_id = insertar_tramo($conn, $viaje_id, $siguiente, $tramo_data);
 
-    // Extender fecha_fin del viaje si este tramo va más lejos (para que la
-    // detección de conflictos de unidad cubra toda la duración real).
     $fin_tramo = fecha_fin_desde_tramos([$tramo_data]);
     if ($fin_tramo) {
         $fin_actual = $v["fecha_fin"] ?: $v["fecha_inicio"];
@@ -1302,9 +1254,6 @@ function handle_agregar_tramo($conn, $ctx)
         }
     }
 
-    // Sincronizar el nuevo tramo a la tabla `despachos` (tabla legacy que
-    // alimenta el panel "Unidades en Sesión" del planificador). Sin esto el
-    // tramo aparece en la bitácora (lee viaje_tramos) pero NO en ese panel.
     $tramo_data["tramo_numero"] = $siguiente;
     sincronizar_despachos(
         $conn,
@@ -1317,7 +1266,6 @@ function handle_agregar_tramo($conn, $ctx)
         $v["cliente_nombre"],
     );
 
-    // Devolver el tramo creado
     $stmt = $conn->prepare("SELECT * FROM viaje_tramos WHERE id = ? LIMIT 1");
     $stmt->bind_param("i", $tramo_id);
     $stmt->execute();
@@ -1327,12 +1275,6 @@ function handle_agregar_tramo($conn, $ctx)
     json_ok(["tramo" => map_tramo_row($t)], 201);
 }
 
-/**
- * PUT ?action=completar_tramo
- * Marca un tramo como completado y auto-avanza el siguiente tramo pendiente a en_curso.
- * Body JSON: { tramo_id: int }
- * Response: { tramo_completado: {...}, tramo_activado: {...}|null }
- */
 function handle_completar_tramo($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1347,8 +1289,6 @@ function handle_completar_tramo($conn, $ctx)
         throw new Exception("tramo_id requerido", 400);
     }
 
-    // Obtener tramo actual + acceso via viaje.
-    // Traemos también los campos de ruta para alimentar el historial al completar.
     $stmt = $conn->prepare(
         'SELECT vt.id, vt.viaje_id, vt.tramo_numero, vt.estado,
                 vt.origen, vt.lugar_carga, vt.destino, vt.ruta, vt.instrucciones,
@@ -1379,7 +1319,6 @@ function handle_completar_tramo($conn, $ctx)
 
     $conn->begin_transaction();
     try {
-        // 1. Completar el tramo actual
         $stmt = $conn->prepare(
             "UPDATE viaje_tramos SET estado = ? WHERE id = ?",
         );
@@ -1393,7 +1332,6 @@ function handle_completar_tramo($conn, $ctx)
         }
         $stmt->close();
 
-        // 2. Buscar el siguiente tramo pendiente (por tramo_numero, excluyendo cancelados)
         $stmt = $conn->prepare(
             'SELECT id FROM viaje_tramos
               WHERE viaje_id = ?
@@ -1431,7 +1369,6 @@ function handle_completar_tramo($conn, $ctx)
         throw $e;
     }
 
-    // Leer tramos actualizados para devolver
     $stmt = $conn->prepare("SELECT * FROM viaje_tramos WHERE id = ? LIMIT 1");
     $stmt->bind_param("i", $tramo_id);
     $stmt->execute();
@@ -1455,13 +1392,6 @@ function handle_completar_tramo($conn, $ctx)
     ]);
 }
 
-/**
- * PUT ?action=actualizar_tramo
- * Body JSON: { tramo_id, origen?, lugar_carga?, destino?, ruta?, instrucciones?,
- *              salida_patio?, cita_carga?, salida_carga?, descarga_programada?,
- *              salida_patio_real?, cita_carga_real?, salida_carga_real?, descarga_real?, vacio_real?,
- *              estado? }
- */
 function handle_actualizar_tramo($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1476,7 +1406,6 @@ function handle_actualizar_tramo($conn, $ctx)
         throw new Exception("tramo_id requerido", 400);
     }
 
-    // Verificar existencia y acceso vía viaje
     $stmt = $conn->prepare(
         'SELECT vt.viaje_id, v.cliente_id
            FROM viaje_tramos vt
@@ -1505,11 +1434,13 @@ function handle_actualizar_tramo($conn, $ctx)
         "cita_carga",
         "salida_carga",
         "descarga_programada",
+        "regreso_origen_programado",
         "salida_patio_real",
         "cita_carga_real",
         "salida_carga_real",
         "descarga_real",
         "vacio_real",
+        "regreso_origen_real",
     ];
     $campos_reales = [
         "salida_patio_real",
@@ -1517,6 +1448,7 @@ function handle_actualizar_tramo($conn, $ctx)
         "salida_carga_real",
         "descarga_real",
         "vacio_real",
+        "regreso_origen_real",
     ];
 
     if ($ctx["role"] !== "admin") {
@@ -1542,6 +1474,16 @@ function handle_actualizar_tramo($conn, $ctx)
         }
     }
     foreach ($campos_dt as $campo) {
+        if (
+            in_array(
+                $campo,
+                ["regreso_origen_programado", "regreso_origen_real"],
+                true,
+            ) &&
+            !db_columns_exist($conn, "viaje_tramos", [$campo])
+        ) {
+            continue;
+        }
         if (array_key_exists($campo, $body)) {
             $sets[] = "$campo = ?";
             $types .= "s";
@@ -1549,6 +1491,14 @@ function handle_actualizar_tramo($conn, $ctx)
                 ? to_datetime($body[$campo])
                 : null;
         }
+    }
+    if (
+        array_key_exists("requiere_regreso_origen", $body) &&
+        db_columns_exist($conn, "viaje_tramos", ["requiere_regreso_origen"])
+    ) {
+        $sets[] = "requiere_regreso_origen = ?";
+        $types .= "i";
+        $params[] = !empty($body["requiere_regreso_origen"]) ? 1 : 0;
     }
     if (array_key_exists("estado", $body)) {
         if (!in_array($body["estado"], $estados_validos, true)) {
@@ -1587,12 +1537,6 @@ function handle_actualizar_tramo($conn, $ctx)
     json_ok(["tramo" => map_tramo_row($t)]);
 }
 
-/**
- * PUT ?action=guardar_gps
- * Body JSON: { tramo_id, gps_estado, gps_timestamp? }
- * gps_estado: JSON string con array de ítems [{ label, ok }]
- * gps_timestamp: si se omite se usa NOW()
- */
 function handle_guardar_gps($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1612,7 +1556,6 @@ function handle_guardar_gps($conn, $ctx)
         throw new Exception("gps_estado requerido", 400);
     }
 
-    // Verificar existencia y acceso
     $stmt = $conn->prepare(
         'SELECT vt.id, v.cliente_id
            FROM viaje_tramos vt
@@ -1628,7 +1571,6 @@ function handle_guardar_gps($conn, $ctx)
     }
     assert_cliente_access($ctx, $r["cliente_id"]);
 
-    // gps_estado puede ser string JSON o string simple
     if (is_array($gps_estado)) {
         $gps_estado = json_encode($gps_estado, JSON_UNESCAPED_UNICODE);
     } else {
@@ -1658,10 +1600,6 @@ function handle_guardar_gps($conn, $ctx)
     json_ok(["tramo" => map_tramo_row($t)]);
 }
 
-/**
- * POST ?action=agregar_incidencia
- * Body JSON: { tramo_id, tipo, severidad, fecha, direccion?, notas? }
- */
 function handle_agregar_incidencia($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1691,7 +1629,6 @@ function handle_agregar_incidencia($conn, $ctx)
         throw new Exception("severidad invalida (alta|media|baja)", 400);
     }
 
-    // Verificar acceso vía viaje
     $stmt = $conn->prepare(
         'SELECT vt.viaje_id, v.cliente_id
            FROM viaje_tramos vt
@@ -1711,7 +1648,6 @@ function handle_agregar_incidencia($conn, $ctx)
     $creado_por = ((int) ($ctx["id"] ?? 0)) ?: null;
     $fecha_dt = to_datetime($fecha);
 
-    // Sin creado_por para evitar problemas con NULL en bind_param
     $stmt = $conn->prepare(
         'INSERT INTO viaje_incidencias
              (viaje_id, tramo_id, tipo, severidad, fecha, direccion, notas)
@@ -1759,10 +1695,6 @@ function handle_agregar_incidencia($conn, $ctx)
     );
 }
 
-/**
- * DELETE ?action=eliminar_incidencia
- * Body JSON: { incidencia_id }
- */
 function handle_eliminar_incidencia($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1777,7 +1709,6 @@ function handle_eliminar_incidencia($conn, $ctx)
         throw new Exception("incidencia_id requerido", 400);
     }
 
-    // Verificar acceso vía viaje
     $stmt = $conn->prepare(
         'SELECT vi.id, v.cliente_id
            FROM viaje_incidencias vi
@@ -1806,11 +1737,6 @@ function handle_eliminar_incidencia($conn, $ctx)
     json_ok(["eliminado" => true]);
 }
 
-/**
- * DELETE ?action=eliminar_tramo
- * Body JSON: { tramo_id, motivo? }
- * Soft delete: cambia estado a 'cancelado'
- */
 function handle_eliminar_tramo($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1840,7 +1766,6 @@ function handle_eliminar_tramo($conn, $ctx)
     }
     assert_cliente_access($ctx, $r["cliente_id"]);
 
-    // Idempotente
     if ($r["estado"] === "cancelado") {
         json_ok([
             "tramo_id" => $tramo_id,
@@ -1861,11 +1786,6 @@ function handle_eliminar_tramo($conn, $ctx)
     json_ok(["tramo_id" => $tramo_id, "estado" => "cancelado"]);
 }
 
-/**
- * DELETE ?action=eliminar_viaje
- * Body JSON: { viaje_id, motivo? }
- * Soft delete: cambia estado a 'cancelado'
- */
 function handle_eliminar_viaje($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -1911,7 +1831,6 @@ function handle_eliminar_viaje($conn, $ctx)
         }
         $stmt->close();
 
-        // Cancelar también todos los tramos activos
         $stmt = $conn->prepare(
             "UPDATE viaje_tramos SET estado = 'cancelado'
               WHERE viaje_id = ? AND estado != 'cancelado'",
@@ -1929,10 +1848,6 @@ function handle_eliminar_viaje($conn, $ctx)
     json_ok(["viaje_id" => $viaje_id, "estado" => "cancelado"]);
 }
 
-/**
- * GET ?action=unidades&cliente_id=X
- * Retorna unidades activas del cliente para autocomplete en el formulario
- */
 function handle_unidades($conn, $ctx)
 {
     $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
@@ -2020,7 +1935,6 @@ function handle_actualizar_unidad($conn, $ctx)
         }
     }
 
-    // operador_id (entero, vínculo al catálogo de operadores; null = sin asignar)
     if (array_key_exists("operador_id", $body)) {
         $sets[] = "operador_id = ?";
         $types .= "i";
@@ -2130,7 +2044,6 @@ function handle_actualizar_despacho($conn, $ctx)
     $cliente_id = (int) $desp["cliente_id"];
     $unidad_id = (int) $desp["unidad_id"];
 
-    // ── Folio nuevo (opcional): identifica al viaje completo, no a un solo tramo ──
     $folio_nuevo = null;
     if (array_key_exists("folio", $body)) {
         $folio_nuevo = trim((string) $body["folio"]);
@@ -2142,7 +2055,6 @@ function handle_actualizar_despacho($conn, $ctx)
         }
     }
 
-    // Validar que el folio nuevo no choque con otro viaje de la misma unidad/cliente
     if ($folio_nuevo !== null) {
         $stmt = $conn->prepare(
             "SELECT id FROM despachos
@@ -2183,7 +2095,6 @@ function handle_actualizar_despacho($conn, $ctx)
 
     $conn->begin_transaction();
     try {
-        // 1. Actualizar los campos de ruta/origen/etc. de ESTE despacho
         if (count($sets)) {
             $types_d = $types . "i";
             $params_d = $params;
@@ -2203,7 +2114,6 @@ function handle_actualizar_despacho($conn, $ctx)
             $stmt->close();
         }
 
-        // 2. Sincronizar campos con el viaje_tramo correspondiente (folio VIEJO aún)
         $stmt = $conn->prepare(
             "SELECT vt.id
                FROM viaje_tramos vt
@@ -2243,8 +2153,6 @@ function handle_actualizar_despacho($conn, $ctx)
                 $stmt->close();
             }
         }
-
-        // 3. Cambiar el folio del VIAJE COMPLETO (todos sus despachos + el viaje)
         if ($folio_nuevo !== null) {
             $stmt = $conn->prepare(
                 "UPDATE despachos SET folio = ?
@@ -2536,14 +2444,6 @@ function handle_eliminar_registro($conn, $ctx)
     ]);
 }
 
-/**
- * POST ?action=duplicar
- * Body JSON: { viaje_id, nueva_fecha_inicio, ignorar_conflictos? }
- *
- * Clona el viaje y todos sus tramos a un nuevo rango de fechas.
- * La duración del viaje original se preserva (fecha_fin - fecha_inicio).
- * Los horarios de cada tramo se desplazan el mismo número de días.
- */
 function handle_duplicar($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -2564,7 +2464,6 @@ function handle_duplicar($conn, $ctx)
         throw new Exception("nueva_fecha_inicio requerida (YYYY-MM-DD)", 400);
     }
 
-    // Cargar viaje original con sus tramos
     $stmt = $conn->prepare(
         'SELECT v.*, c.nombre AS cliente_nombre, u.economico
            FROM viajes v
@@ -2582,12 +2481,10 @@ function handle_duplicar($conn, $ctx)
     }
     assert_cliente_access($ctx, $orig["cliente_id"]);
 
-    // Calcular desplazamiento de días
     $dt_orig_inicio = new DateTime($orig["fecha_inicio"]);
     $dt_nueva = new DateTime($nueva_fecha_inicio);
     $delta_dias = (int) $dt_orig_inicio->diff($dt_nueva)->format("%r%a"); // positivo = hacia adelante
 
-    // Calcular nueva fecha_fin conservando la duración
     $nueva_fecha_fin = null;
     if ($orig["fecha_fin"]) {
         $dt_fin = new DateTime($orig["fecha_fin"]);
@@ -2595,7 +2492,6 @@ function handle_duplicar($conn, $ctx)
         $nueva_fecha_fin = $dt_fin->format("Y-m-d");
     }
 
-    // Verificar conflictos en el nuevo rango (a menos que se ignore)
     if (!$ignorar_conflictos) {
         $conflictos = detectar_conflictos(
             $conn,
@@ -2608,7 +2504,6 @@ function handle_duplicar($conn, $ctx)
         }
     }
 
-    // Cargar tramos originales
     $stmt = $conn->prepare(
         "SELECT * FROM viaje_tramos WHERE viaje_id = ? ORDER BY tramo_numero ASC",
     );
@@ -2617,7 +2512,6 @@ function handle_duplicar($conn, $ctx)
     $tramos_orig = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Helper para desplazar datetime
     $desplazar_dt = function ($dt_str) use ($delta_dias) {
         if (!$dt_str) {
             return null;
@@ -2631,7 +2525,6 @@ function handle_duplicar($conn, $ctx)
         }
     };
 
-    // Transacción: clonar viaje + tramos
     $conn->begin_transaction();
     try {
         $uid = $ctx["id"];
@@ -2689,18 +2582,6 @@ function handle_duplicar($conn, $ctx)
     json_ok(handle_obtener_data($conn, $nuevo_viaje_id), 201);
 }
 
-// ---------------------------------------------------------------------------
-// Detección de conflictos
-// ---------------------------------------------------------------------------
-
-/**
- * Retorna los viajes activos de una unidad que se solapan con el rango dado.
- * Se excluyen viajes en estado 'cancelado'.
- * Un viaje con fecha_fin = NULL se trata como si terminara en fecha_inicio.
- *
- * Solapamiento: inicio_A <= fin_B  AND  fin_A >= inicio_B
- *   donde fin = fecha_fin ?? fecha_inicio
- */
 function detectar_conflictos(
     $conn,
     $unidad_id,
@@ -2708,7 +2589,6 @@ function detectar_conflictos(
     $fecha_fin,
     $excluir_viaje_id = null,
 ) {
-    // Si no hay fecha_fin el viaje dura solo el día de inicio
     $fin_nuevo = $fecha_fin ?: $fecha_inicio;
 
     $sql = "
@@ -2733,7 +2613,10 @@ function detectar_conflictos(
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
-        throw new Exception("Error preparando deteccion de conflictos: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando deteccion de conflictos: " . $conn->error,
+            500,
+        );
     }
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
@@ -2775,11 +2658,6 @@ function json_err_conflicto($conflictos)
     exit();
 }
 
-/**
- * GET ?action=verificar_conflictos&unidad_id=X&fecha_inicio=YYYY-MM-DD&fecha_fin=YYYY-MM-DD
- * Permite al frontend consultar conflictos sin crear el viaje.
- * Param opcional: excluir_viaje_id (para ediciones).
- */
 function handle_verificar_conflictos($conn, $ctx)
 {
     $unidad_id = (int) ($_GET["unidad_id"] ?? 0);
@@ -2796,7 +2674,6 @@ function handle_verificar_conflictos($conn, $ctx)
         throw new Exception("fecha_inicio requerida", 400);
     }
 
-    // Verificar acceso a la unidad vía cliente
     $stmt = $conn->prepare(
         "SELECT u.id, u.economico, u.cliente_id FROM unidades u WHERE u.id = ? LIMIT 1",
     );
@@ -2827,18 +2704,6 @@ function handle_verificar_conflictos($conn, $ctx)
     ]);
 }
 
-// ---------------------------------------------------------------------------
-// HISTORIAL INTELIGENTE DE RUTAS (modelo Uber)
-// ---------------------------------------------------------------------------
-
-/**
- * Calcula la firma normalizada de una ruta a partir de origen/lugar_carga/destino.
- * DEBE coincidir EXACTAMENTE con la normalización usada en la migración SQL
- * (migracion_historial_rutas.sql): lower + trim de cada parte, unidas por '|'.
- * Devuelve null si las tres partes están vacías (firma "||").
- *
- * @return string|null
- */
 function firma_ruta_normalizada($origen, $lugar_carga, $destino)
 {
     $norm = fn($v) => utf8_lower_v(trim((string) ($v ?? "")));
@@ -2846,21 +2711,6 @@ function firma_ruta_normalizada($origen, $lugar_carga, $destino)
     return $firma === "||" ? null : $firma;
 }
 
-/**
- * Registra/actualiza una ruta en el historial al completar un tramo.
- * Idempotente vía UNIQUE(cliente_id, firma_ruta) + ON DUPLICATE KEY:
- *   - Si la firma ya existe (manual o de historial): incrementa veces_usada
- *     y refresca ultima_vez_usada (y refresca instrucciones si llegan nuevas).
- *   - Si no existe: crea una entrada origen_tipo='historial' con etiqueta
- *     auto "Origen → Destino".
- *
- * Se llama DENTRO de la transacción del completar. No lanza si la ruta no tiene
- * firma (tramo sin origen/destino) — simplemente no registra nada.
- *
- * @param mysqli $conn   conexión activa (en transacción)
- * @param int    $cliente_id
- * @param array  $tramo  fila con keys origen, lugar_carga, destino, ruta, instrucciones
- */
 function upsert_historial_ruta($conn, $cliente_id, $tramo)
 {
     $origen = null_if_empty($tramo["origen"] ?? "");
@@ -2871,10 +2721,9 @@ function upsert_historial_ruta($conn, $cliente_id, $tramo)
 
     $firma = firma_ruta_normalizada($origen, $lugar_carga, $destino);
     if ($firma === null) {
-        return; // tramo sin datos de ruta utilizables
+        return;
     }
 
-    // Etiqueta auto legible (máx 100 chars como en la columna).
     $etiqueta = mb_substr(
         ($origen ?? "Origen") . " → " . ($destino ?? "Destino"),
         0,
@@ -2908,23 +2757,16 @@ function upsert_historial_ruta($conn, $cliente_id, $tramo)
         $firma,
     );
     if (!$stmt->execute()) {
-        // No abortamos el completado del tramo por un fallo del historial,
-        // pero sí lo propagamos para que la transacción haga rollback coherente.
         $err = $stmt->error;
         $stmt->close();
-        throw new Exception("Error registrando historial de ruta: " . $err, 500);
+        throw new Exception(
+            "Error registrando historial de ruta: " . $err,
+            500,
+        );
     }
     $stmt->close();
 }
 
-// ---------------------------------------------------------------------------
-// CATÁLOGO DE PLANTILLAS DE RUTA
-// ---------------------------------------------------------------------------
-
-/**
- * GET ?action=buscar_rutas&cliente_id=X&q=texto
- * Busca rutas usadas en viajes reales del cliente, sin exigir plantillas manuales.
- */
 function handle_buscar_rutas_historial($conn, $ctx)
 {
     $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
@@ -2943,11 +2785,15 @@ function handle_buscar_rutas_historial($conn, $ctx)
         $origen = trim((string) ($row["origen"] ?? ""));
         $lugar_carga = trim((string) ($row["lugar_carga"] ?? ""));
         $destino = trim((string) ($row["destino"] ?? ""));
-        $firma = utf8_lower_v($ruta . "|" . $origen . "|" . $lugar_carga . "|" . $destino);
+        $firma = utf8_lower_v(
+            $ruta . "|" . $origen . "|" . $lugar_carga . "|" . $destino,
+        );
         if ($firma === "|||") {
             return;
         }
-        $recorrido = trim(($origen ?: "Origen") . " -> " . ($destino ?: "Destino"));
+        $recorrido = trim(
+            ($origen ?: "Origen") . " -> " . ($destino ?: "Destino"),
+        );
         $item = [
             "ruta" => $ruta,
             "origen" => $origen,
@@ -2955,7 +2801,8 @@ function handle_buscar_rutas_historial($conn, $ctx)
             "destino" => $destino,
             "veces_usada" => (int) ($row["veces_usada"] ?? 0),
             "ultima_vez_usada" => $row["ultima_vez_usada"] ?? null,
-            "etiqueta" => $ruta !== "" ? $ruta . " · " . $recorrido : $recorrido,
+            "etiqueta" =>
+                $ruta !== "" ? $ruta . " · " . $recorrido : $recorrido,
             "_source_rank" => $source_rank,
             "_prioridad" => (int) ($row["prioridad"] ?? 9),
         ];
@@ -2966,8 +2813,16 @@ function handle_buscar_rutas_historial($conn, $ctx)
         }
 
         $actual = $rutas_por_firma[$firma];
-        $mejor = [$item["_prioridad"], $item["_source_rank"], -$item["veces_usada"]];
-        $prev = [$actual["_prioridad"], $actual["_source_rank"], -$actual["veces_usada"]];
+        $mejor = [
+            $item["_prioridad"],
+            $item["_source_rank"],
+            -$item["veces_usada"],
+        ];
+        $prev = [
+            $actual["_prioridad"],
+            $actual["_source_rank"],
+            -$actual["veces_usada"],
+        ];
         if ($mejor < $prev) {
             $rutas_por_firma[$firma] = $item;
         }
@@ -3012,22 +2867,32 @@ function handle_buscar_rutas_historial($conn, $ctx)
             ? "COALESCE(ultima_vez_usada, updated_at, created_at)"
             : "COALESCE(updated_at, created_at)";
         $favoritoExpr = $has_historial_cols ? "es_favorito" : "1";
-        $catalogSql = "
+        $catalogSql =
+            "
             SELECT ruta, origen, lugar_carga, destino,
                    $vecesExpr AS veces_usada,
                    $ultimaExpr AS ultima_vez_usada,
                    $catalogPriority AS prioridad,
                    $favoritoExpr AS es_favorito
               FROM tramos_catalogo
-             WHERE " . implode(" AND ", $catalogWhere) . "
+             WHERE " .
+            implode(" AND ", $catalogWhere) .
+            "
              ORDER BY prioridad ASC, es_favorito DESC, veces_usada DESC, ultima_vez_usada DESC
              LIMIT ?";
         $catalogTypes = $catalogPriorityTypes . $catalogWhereTypes . "i";
-        $catalogParams = array_merge($catalogPriorityParams, $catalogWhereParams, [$limit]);
+        $catalogParams = array_merge(
+            $catalogPriorityParams,
+            $catalogWhereParams,
+            [$limit],
+        );
 
         $stmt = $conn->prepare($catalogSql);
         if (!$stmt) {
-            throw new Exception("Error preparando busqueda de catalogo: " . $conn->error, 500);
+            throw new Exception(
+                "Error preparando busqueda de catalogo: " . $conn->error,
+                500,
+            );
         }
         $refs = [$catalogTypes];
         foreach ($catalogParams as $k => $v) {
@@ -3037,11 +2902,17 @@ function handle_buscar_rutas_historial($conn, $ctx)
         if (!$stmt->execute()) {
             $err = $stmt->error;
             $stmt->close();
-            throw new Exception("Error buscando catalogo de rutas: " . $err, 500);
+            throw new Exception(
+                "Error buscando catalogo de rutas: " . $err,
+                500,
+            );
         }
         $res = $stmt->get_result();
         while ($row = $res->fetch_assoc()) {
-            $agregar_ruta($row, ((int) ($row["es_favorito"] ?? 0)) === 1 ? 0 : 1);
+            $agregar_ruta(
+                $row,
+                ((int) ($row["es_favorito"] ?? 0)) === 1 ? 0 : 1,
+            );
         }
         $stmt->close();
     }
@@ -3079,7 +2950,8 @@ function handle_buscar_rutas_historial($conn, $ctx)
         array_push($whereParams, $like, $like, $like, $like);
     }
 
-    $sql = "
+    $sql =
+        "
         SELECT COALESCE(vt.ruta, '') AS ruta,
                COALESCE(vt.origen, '') AS origen,
                COALESCE(vt.lugar_carga, '') AS lugar_carga,
@@ -3089,7 +2961,9 @@ function handle_buscar_rutas_historial($conn, $ctx)
                MIN($prioritySql) AS prioridad
           FROM viaje_tramos vt
           INNER JOIN viajes v ON v.id = vt.viaje_id
-         WHERE " . implode(" AND ", $where) . "
+         WHERE " .
+        implode(" AND ", $where) .
+        "
          GROUP BY COALESCE(vt.ruta, ''), COALESCE(vt.origen, ''), COALESCE(vt.lugar_carga, ''), COALESCE(vt.destino, '')
          ORDER BY prioridad ASC, veces_usada DESC, ultima_vez_usada DESC
          LIMIT ?";
@@ -3098,7 +2972,10 @@ function handle_buscar_rutas_historial($conn, $ctx)
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
-        throw new Exception("Error preparando busqueda de rutas: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando busqueda de rutas: " . $conn->error,
+            500,
+        );
     }
     $refs = [$types];
     foreach ($params as $k => $v) {
@@ -3118,8 +2995,17 @@ function handle_buscar_rutas_historial($conn, $ctx)
 
     $rutas = array_values($rutas_por_firma);
     usort($rutas, function ($a, $b) {
-        return [$a["_prioridad"], $a["_source_rank"], -$a["veces_usada"], (string) ($b["ultima_vez_usada"] ?? "")]
-            <=> [$b["_prioridad"], $b["_source_rank"], -$b["veces_usada"], (string) ($a["ultima_vez_usada"] ?? "")];
+        return [
+            $a["_prioridad"],
+            $a["_source_rank"],
+            -$a["veces_usada"],
+            (string) ($b["ultima_vez_usada"] ?? ""),
+        ] <=> [
+            $b["_prioridad"],
+            $b["_source_rank"],
+            -$b["veces_usada"],
+            (string) ($a["ultima_vez_usada"] ?? ""),
+        ];
     });
     $rutas = array_slice($rutas, 0, $limit);
     foreach ($rutas as &$ruta) {
@@ -3129,10 +3015,7 @@ function handle_buscar_rutas_historial($conn, $ctx)
 
     json_ok(["rutas" => $rutas, "total" => count($rutas)]);
 }
-/**
- * GET ?action=listar_catalogo&cliente_id=X
- * Retorna todas las plantillas de ruta activas del cliente.
- */
+
 function handle_listar_catalogo($conn, $ctx)
 {
     $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
@@ -3174,10 +3057,6 @@ function handle_listar_catalogo($conn, $ctx)
     json_ok(["plantillas" => $plantillas, "total" => count($plantillas)]);
 }
 
-/**
- * GET ?action=listar_rutas&cliente_id=X
- * Retorna el historial de rutas agrupado para la UI.
- */
 function handle_listar_rutas($conn, $ctx)
 {
     $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
@@ -3187,7 +3066,12 @@ function handle_listar_rutas($conn, $ctx)
     assert_cliente_access($ctx, $cliente_id);
 
     if (!db_table_exists($conn, "tramos_catalogo")) {
-        json_ok(["favoritos" => [], "frecuentes" => [], "recientes" => [], "total" => 0]);
+        json_ok([
+            "favoritos" => [],
+            "frecuentes" => [],
+            "recientes" => [],
+            "total" => 0,
+        ]);
     }
 
     $has_historial = db_columns_exist($conn, "tramos_catalogo", [
@@ -3216,7 +3100,10 @@ function handle_listar_rutas($conn, $ctx)
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
-        throw new Exception("Error preparando listado de rutas: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando listado de rutas: " . $conn->error,
+            500,
+        );
     }
     $stmt->bind_param("i", $cliente_id);
     $stmt->execute();
@@ -3241,8 +3128,12 @@ function handle_listar_rutas($conn, $ctx)
             "origen_tipo" => $has_historial ? $r["origen_tipo"] : "manual",
             "firma_ruta" => $has_historial ? $r["firma_ruta"] : null,
             "veces_usada" => $has_historial ? (int) $r["veces_usada"] : 0,
-            "ultima_vez_usada" => $has_historial ? $r["ultima_vez_usada"] : null,
-            "es_favorito" => $has_historial ? (int) $r["es_favorito"] === 1 : false,
+            "ultima_vez_usada" => $has_historial
+                ? $r["ultima_vez_usada"]
+                : null,
+            "es_favorito" => $has_historial
+                ? (int) $r["es_favorito"] === 1
+                : false,
             "created_at" => $r["created_at"],
             "updated_at" => $r["updated_at"],
         ];
@@ -3265,12 +3156,6 @@ function handle_listar_rutas($conn, $ctx)
     ]);
 }
 
-/**
- * POST ?action=crear_plantilla
- * Body JSON: {
- *   cliente_id, etiqueta, ruta?, origen?, lugar_carga?, destino?, instrucciones?, duracion_estimada_horas?
- * }
- */
 function handle_crear_plantilla($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3302,7 +3187,6 @@ function handle_crear_plantilla($conn, $ctx)
 
     assert_cliente_access($ctx, $cliente_id);
 
-    // Verificar que la etiqueta no exista ya para este cliente
     $stmt = $conn->prepare(
         "SELECT id FROM tramos_catalogo WHERE cliente_id = ? AND etiqueta = ? AND activo = 1 LIMIT 1",
     );
@@ -3342,7 +3226,6 @@ function handle_crear_plantilla($conn, $ctx)
     $plantilla_id = (int) $stmt->insert_id;
     $stmt->close();
 
-    // Devolver la plantilla recién creada
     $stmt = $conn->prepare(
         "SELECT * FROM tramos_catalogo WHERE id = ? LIMIT 1",
     );
@@ -3372,10 +3255,6 @@ function handle_crear_plantilla($conn, $ctx)
     );
 }
 
-/**
- * PUT ?action=actualizar_plantilla
- * Body JSON: { plantilla_id, etiqueta?, ruta?, origen?, lugar_carga?, destino?, instrucciones?, duracion_estimada_horas? }
- */
 function handle_actualizar_plantilla($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3390,7 +3269,6 @@ function handle_actualizar_plantilla($conn, $ctx)
         throw new Exception("plantilla_id requerido", 400);
     }
 
-    // Verificar existencia y acceso
     $stmt = $conn->prepare(
         "SELECT cliente_id FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1",
     );
@@ -3454,7 +3332,6 @@ function handle_actualizar_plantilla($conn, $ctx)
     }
     $stmt->close();
 
-    // Devolver plantilla actualizada
     $stmt = $conn->prepare(
         "SELECT * FROM tramos_catalogo WHERE id = ? LIMIT 1",
     );
@@ -3481,11 +3358,6 @@ function handle_actualizar_plantilla($conn, $ctx)
     ]);
 }
 
-/**
- * DELETE ?action=eliminar_plantilla
- * Body JSON: { plantilla_id }
- * Soft delete: cambia activo a 0
- */
 function handle_eliminar_plantilla($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3500,7 +3372,6 @@ function handle_eliminar_plantilla($conn, $ctx)
         throw new Exception("plantilla_id requerido", 400);
     }
 
-    // Verificar existencia y acceso
     $stmt = $conn->prepare(
         "SELECT cliente_id, activo FROM tramos_catalogo WHERE id = ? LIMIT 1",
     );
@@ -3533,10 +3404,6 @@ function handle_eliminar_plantilla($conn, $ctx)
     json_ok(["plantilla_id" => $plantilla_id, "activo" => 0]);
 }
 
-/**
- * PUT ?action=marcar_favorito
- * Body JSON: { plantilla_id, es_favorito, etiqueta? }
- */
 function handle_marcar_favorito($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3581,7 +3448,10 @@ function handle_marcar_favorito($conn, $ctx)
     }
 
     if (!$stmt->execute()) {
-        throw new Exception("Error actualizando favorito: " . $stmt->error, 500);
+        throw new Exception(
+            "Error actualizando favorito: " . $stmt->error,
+            500,
+        );
     }
     $stmt->close();
 
@@ -3592,18 +3462,11 @@ function handle_marcar_favorito($conn, $ctx)
     ]);
 }
 
-/**
- * DELETE ?action=ocultar_ruta
- * Body JSON: { plantilla_id }
- */
 function handle_ocultar_ruta($conn, $ctx)
 {
     handle_eliminar_plantilla($conn, $ctx);
 }
 
-/**
- * GET ?action=obtener_plantilla&plantilla_id=X
- */
 function handle_obtener_plantilla($conn, $ctx)
 {
     $plantilla_id = (int) ($_GET["plantilla_id"] ?? 0);
@@ -3643,13 +3506,6 @@ function handle_obtener_plantilla($conn, $ctx)
     ]);
 }
 
-// ===========================================================================
-// OPERADORES (catálogo multitenant)
-// ===========================================================================
-
-/**
- * GET ?action=listar_operadores&cliente_id=X
- */
 function handle_listar_operadores($conn, $ctx)
 {
     $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
@@ -3669,7 +3525,10 @@ function handle_listar_operadores($conn, $ctx)
           ORDER BY nombre ASC',
     );
     if (!$stmt) {
-        throw new Exception("Error preparando listado de operadores: " . $conn->error, 500);
+        throw new Exception(
+            "Error preparando listado de operadores: " . $conn->error,
+            500,
+        );
     }
     $stmt->bind_param("i", $cliente_id);
     $stmt->execute();
@@ -3690,10 +3549,6 @@ function handle_listar_operadores($conn, $ctx)
     json_ok(["operadores" => $operadores, "total" => count($operadores)]);
 }
 
-/**
- * POST ?action=crear_operador
- * Body JSON: { cliente_id, nombre, telefonos? }
- */
 function handle_crear_operador($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3716,7 +3571,6 @@ function handle_crear_operador($conn, $ctx)
 
     assert_cliente_access($ctx, $cliente_id);
 
-    // Rechazar duplicado por (cliente, nombre)
     $stmt = $conn->prepare(
         "SELECT id FROM operadores WHERE cliente_id = ? AND nombre = ? AND activo = 1 LIMIT 1",
     );
@@ -3755,10 +3609,6 @@ function handle_crear_operador($conn, $ctx)
     );
 }
 
-/**
- * PUT ?action=actualizar_operador
- * Body JSON: { operador_id, nombre?, telefonos? }
- */
 function handle_actualizar_operador($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3794,7 +3644,6 @@ function handle_actualizar_operador($conn, $ctx)
         if ($nombre === "") {
             throw new Exception("El nombre no puede quedar vacío", 400);
         }
-        // Rechazar duplicado con otro operador del mismo cliente
         $stmt = $conn->prepare(
             "SELECT id FROM operadores WHERE cliente_id = ? AND nombre = ? AND activo = 1 AND id <> ? LIMIT 1",
         );
@@ -3854,10 +3703,6 @@ function handle_actualizar_operador($conn, $ctx)
     ]);
 }
 
-/**
- * DELETE ?action=eliminar_operador
- * Body JSON: { operador_id }  (soft-delete activo=0)
- */
 function handle_eliminar_operador($conn, $ctx)
 {
     assert_can_write($ctx);
@@ -3902,10 +3747,6 @@ function handle_eliminar_operador($conn, $ctx)
     json_ok(["operador_id" => $operador_id, "activo" => 0]);
 }
 
-// ---------------------------------------------------------------------------
-// Router principal
-// ---------------------------------------------------------------------------
-
 try {
     $conn = getDbConnection();
     $action = str_val($_GET["action"] ?? "");
@@ -3917,7 +3758,6 @@ try {
         }
     }
 
-    // Endpoints que requieren contexto de usuario
     $ctx = get_usuario_context($conn);
 
     match (true) {
@@ -3968,8 +3808,10 @@ try {
         $method === "DELETE" && $action === "eliminar_viaje"
             => handle_eliminar_viaje($conn, $ctx),
         // Catálogo de Plantillas de Ruta
-        $method === "GET" && $action === "listar_rutas"
-            => handle_listar_rutas($conn, $ctx),
+        $method === "GET" && $action === "listar_rutas" => handle_listar_rutas(
+            $conn,
+            $ctx,
+        ),
         $method === "GET" && $action === "buscar_rutas"
             => handle_buscar_rutas_historial($conn, $ctx),
         $method === "GET" && $action === "listar_catalogo"
@@ -4006,11 +3848,3 @@ try {
         in_array($code, [400, 401, 403, 404, 409, 500], true) ? $code : 500,
     );
 }
-
-
-
-
-
-
-
-
