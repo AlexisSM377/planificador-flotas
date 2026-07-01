@@ -180,6 +180,20 @@
                 flex-direction: column;
                 gap: 6px;
             }
+            .datos-generales-grid {
+                grid-template-columns: repeat(2, minmax(360px, 1fr));
+                align-items: end;
+            }
+            .datos-generales-grid input,
+            .datos-generales-grid select {
+                min-height: 54px;
+                font-size: 15px;
+            }
+            @media (max-width: 900px) {
+                .datos-generales-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
             label {
                 font-size: 12px;
                 font-weight: 800;
@@ -1352,7 +1366,7 @@
                             <div class="section-header">
                                 <h2>Datos Generales</h2>
                             </div>
-                            <div class="grid">
+                            <div class="grid datos-generales-grid">
                                 <div class="form-group">
                                     <label>Fecha Inicio</label
                                     ><input type="date" id="fecha_registro" />
@@ -4088,6 +4102,13 @@
                         card.querySelector(".d-cita-carga")?.value || "",
                     descarga_programada:
                         card.querySelector(".d-descarga")?.value || "",
+                    requiere_regreso_origen: card.querySelector(
+                        ".d-requiere-regreso-origen",
+                    )?.checked
+                        ? 1
+                        : 0,
+                    regreso_origen_programado:
+                        card.querySelector(".d-regreso-origen")?.value || "",
                 }));
 
                 // Validar que ningún tiempo programado del tramo esté en el pasado
@@ -4096,10 +4117,26 @@
                     ["salida_patio", "Salida de Patio"],
                     ["cita_carga", "Cita de Carga"],
                     ["descarga_programada", "Cita de Descarga"],
+                    ["regreso_origen_programado", "Fecha de Regreso"],
                 ];
                 for (let i = 0; i < tramos.length; i++) {
+                    if (
+                        tramos[i].requiere_regreso_origen &&
+                        !tramos[i].regreso_origen_programado
+                    ) {
+                        showToast(
+                            `⚠️ Tramo ${i + 1}: captura la Fecha de Regreso`,
+                        );
+                        return;
+                    }
                     for (const [campo, etiqueta] of camposTiempo) {
                         const val = tramos[i][campo];
+                        if (
+                            campo === "regreso_origen_programado" &&
+                            !tramos[i].requiere_regreso_origen
+                        ) {
+                            continue;
+                        }
                         if (val && val < ahoraDt) {
                             showToast(
                                 `⚠️ Tramo ${i + 1}: "${etiqueta}" no puede ser una fecha/hora pasada`,
@@ -4679,10 +4716,20 @@
                 const citaCarga =
                     card.querySelector(".d-cita-carga")?.value || "";
                 const descarga = card.querySelector(".d-descarga")?.value || "";
+                const requiereRegresoOrigen =
+                    card.querySelector(".d-requiere-regreso-origen")
+                        ?.checked || false;
+                const regresoOrigen =
+                    card.querySelector(".d-regreso-origen")?.value || "";
 
                 if (!destino) {
                     showToast("⚠️ El Punto de Destino es obligatorio");
                     card.querySelector(".d-destino")?.focus();
+                    return;
+                }
+                if (requiereRegresoOrigen && !regresoOrigen) {
+                    showToast("⚠️ Captura la Fecha de Regreso");
+                    card.querySelector(".d-regreso-origen")?.focus();
                     return;
                 }
 
@@ -4692,6 +4739,10 @@
                     [salidaPatio, "Salida de Patio"],
                     [citaCarga, "Cita de Carga"],
                     [descarga, "Cita de Descarga"],
+                    [
+                        requiereRegresoOrigen ? regresoOrigen : "",
+                        "Fecha de Regreso",
+                    ],
                 ];
                 for (const [val, etiqueta] of tiempos) {
                     if (val && val < ahoraDt) {
@@ -4728,6 +4779,12 @@
                                     salida_patio: salidaPatio || null,
                                     cita_carga: citaCarga || null,
                                     descarga_programada: descarga || null,
+                                    requiere_regreso_origen:
+                                        requiereRegresoOrigen ? 1 : 0,
+                                    regreso_origen_programado:
+                                        requiereRegresoOrigen
+                                            ? regresoOrigen || null
+                                            : null,
                                 },
                             }),
                         },
@@ -5074,7 +5131,7 @@
                 <small>Selecciona una ruta para llenar Ruta / Identificador, Origen, Lugar de Carga y Destino. Puedes editar cualquier campo después.</small>
             </div>
 
-            <div class="grid">
+            <div class="grid datos-generales-grid">
                 <div class="form-group"><label>Ruta / Identificador</label><input type="text" class="d-ruta"></div>
                 <div class="form-group"><label>Punto de Origen</label><input type="text" class="d-origen"></div>
                 <div class="form-group"><label>Lugar de Carga</label><input type="text" class="d-lugar-carga" placeholder="Bodega / CEDIS"></div>
@@ -5114,6 +5171,16 @@
                     </summary>
                     <div class="schedule-grid">
                         <div class="form-group"><label>Cita de Descarga</label><input type="datetime-local" class="d-descarga" min="${minDateTime}"></div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label class="return-origin-toggle">
+                                <input type="checkbox" class="d-requiere-regreso-origen" onchange="toggleRegresoOrigen(this)">
+                                Requiere seguimiento de regreso a origen
+                            </label>
+                        </div>
+                        <div class="form-group d-regreso-origen-wrap hidden">
+                            <label>Fecha de Regreso</label>
+                            <input type="datetime-local" class="d-regreso-origen" min="${minDateTime}">
+                        </div>
                     </div>
                 </details>
             </div>
@@ -5124,6 +5191,18 @@
             }
         `;
                 container.appendChild(div);
+            }
+
+            function toggleRegresoOrigen(inputEl) {
+                const card = inputEl.closest(".dispatch-card");
+                const wrap = card?.querySelector(".d-regreso-origen-wrap");
+                const fecha = card?.querySelector(".d-regreso-origen");
+                const activo = !!inputEl.checked;
+                if (wrap) wrap.classList.toggle("hidden", !activo);
+                if (fecha) {
+                    fecha.required = activo;
+                    if (!activo) fecha.value = "";
+                }
             }
 
             async function addContact() {
@@ -6633,6 +6712,7 @@
             window.addContactPhoneField = addContactPhoneField;
             window.addContactEmailField = addContactEmailField;
             window.addDispatch = addDispatch;
+            window.toggleRegresoOrigen = toggleRegresoOrigen;
             window.addContact = addContact;
             window.removeContact = removeContact;
             window.exportFinalExcel = exportFinalExcel;
@@ -6652,5 +6732,6 @@
         </script>
     </body>
 </html>
+
 
 
