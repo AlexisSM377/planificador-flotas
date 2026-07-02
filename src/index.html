@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Planificación y Contactos | Tracker México GPS</title>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
         <link
             href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
             rel="stylesheet"
@@ -127,6 +128,9 @@
                 padding: 0 20px;
             }
             .tab-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
                 padding: 18px 25px;
                 border: none;
                 background: none;
@@ -220,6 +224,28 @@
                 border-color: var(--accent);
                 background: #fff;
                 box-shadow: 0 0 0 4px rgba(0, 106, 166, 0.14);
+            }
+            .lucide-icon {
+                width: 16px;
+                height: 16px;
+                flex: 0 0 auto;
+                stroke-width: 2.2;
+                vertical-align: -0.18em;
+            }
+            .lucide-icon--inline {
+                margin-right: 6px;
+            }
+            .lucide-icon--section {
+                margin-right: 8px;
+                color: var(--accent);
+            }
+            .tab-btn .lucide-icon,
+            .btn .lucide-icon,
+            .add-row-btn .lucide-icon,
+            .remove-btn .lucide-icon,
+            .label-icon-btn .lucide-icon {
+                width: 15px;
+                height: 15px;
             }
             button:focus-visible,
             summary:focus-visible,
@@ -610,10 +636,21 @@
             }
             .route-history-search {
                 width: 100%;
-                padding: 10px 12px;
+                padding: 10px 12px 10px 38px;
                 border: 1px solid #7dd3fc;
                 border-radius: 8px;
                 background: #fff;
+            }
+            .route-history-search-wrap {
+                position: relative;
+            }
+            .route-history-search-wrap .lucide-icon {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #0284c7;
+                pointer-events: none;
             }
             .route-history-results {
                 display: none;
@@ -685,6 +722,23 @@
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
                 gap: 14px;
                 padding: 14px;
+            }
+            .return-origin-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 10px;
+                width: fit-content;
+                max-width: 100%;
+                cursor: pointer;
+                color: var(--text-main);
+            }
+            .return-origin-toggle input[type="checkbox"] {
+                width: 16px;
+                height: 16px;
+                flex: 0 0 auto;
+                margin: 0;
+                cursor: pointer;
             }
             .inline-note {
                 padding: 8px;
@@ -913,6 +967,122 @@
             }
 
             /* Tabla operativa para Unidades en Sesión */
+            #unidadesSesionTab .section-header {
+                align-items: flex-start;
+                gap: 18px;
+                flex-wrap: wrap;
+            }
+
+            .session-toolbar {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+
+            .session-filter-group {
+                display: grid;
+                gap: 6px;
+                min-width: 190px;
+            }
+
+            .session-filter-label {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--text-muted);
+                font-size: 12px;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+
+            .session-filter-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .session-filter-input,
+            .session-filter-select {
+                min-height: 40px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 700;
+                background: #f8fafc;
+                border-color: #cbd5e1;
+                transition:
+                    border-color 0.18s ease,
+                    background-color 0.18s ease,
+                    box-shadow 0.18s ease;
+            }
+
+            .session-filter-input:hover,
+            .session-filter-select:hover {
+                border-color: #94a3b8;
+                background: #f1f5f9;
+            }
+
+            .session-filter-input:focus,
+            .session-filter-select:focus {
+                border-color: var(--accent);
+                background: #fff;
+                box-shadow: 0 0 0 4px rgba(0, 106, 166, 0.14);
+                outline: none;
+            }
+
+            .session-filter-input {
+                width: 180px;
+            }
+
+            .session-filter-select {
+                width: 190px;
+                cursor: pointer;
+            }
+
+            .session-date-stack {
+                display: grid;
+                gap: 8px;
+            }
+
+            .session-date-range {
+                display: none;
+                align-items: end;
+                gap: 8px;
+                flex-wrap: wrap;
+                padding: 10px;
+                border: 1px solid #dbeafe;
+                border-radius: 10px;
+                background: #f0f9ff;
+            }
+
+            .session-date-range.is-visible {
+                display: flex;
+            }
+
+            .session-date-field {
+                display: grid;
+                gap: 5px;
+            }
+
+            .session-date-field label {
+                color: var(--text-muted);
+                font-size: 11px;
+                font-weight: 800;
+            }
+
+            .session-date-field input {
+                width: 150px;
+            }
+
+            .session-refresh-btn {
+                min-height: 40px;
+                align-self: flex-end;
+                padding: 10px 14px;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+
             .session-units-shell {
                 border: 1px solid var(--border);
                 border-radius: 14px;
@@ -1112,6 +1282,37 @@
             }
 
             @media (max-width: 768px) {
+                .session-toolbar {
+                    justify-content: stretch;
+                }
+
+                .session-filter-group,
+                .session-date-stack,
+                .session-refresh-btn {
+                    width: 100%;
+                }
+
+                .session-filter-row {
+                    align-items: stretch;
+                }
+
+                .session-filter-input,
+                .session-filter-select {
+                    width: 100%;
+                }
+
+                .session-date-range {
+                    align-items: stretch;
+                }
+
+                .session-date-field {
+                    flex: 1 1 140px;
+                }
+
+                .session-date-field input {
+                    width: 100%;
+                }
+
                 .session-units-table {
                     min-width: 960px;
                 }
@@ -1241,13 +1442,64 @@
                 margin-top: 4px;
                 font-size: 12px;
                 color: var(--text-muted, #5b7480);
-                background: #f9fafb;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
                 border-radius: 8px;
-                padding: 7px 9px;
+                padding: 8px 10px;
+                line-height: 1.45;
+            }
+            .plantilla-card-instr-header {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--text-main, #0f2a33);
+                font-weight: 700;
+                margin-bottom: 4px;
+            }
+            .plantilla-card-instr-text {
+                display: block;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+            }
+            .plantilla-card-instr-text--preview {
                 display: -webkit-box;
-                -webkit-line-clamp: 2;
+                -webkit-line-clamp: 4;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
+            }
+            .plantilla-card-instr details {
+                margin: 0;
+            }
+            .plantilla-card-instr summary {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                margin-top: 6px;
+                color: var(--accent, #028090);
+                cursor: pointer;
+                font-weight: 800;
+                list-style: none;
+            }
+            .plantilla-card-instr summary::-webkit-details-marker {
+                display: none;
+            }
+            .plantilla-card-instr details[open] .plantilla-card-instr-text--preview {
+                display: none;
+            }
+            .plantilla-card-instr:has(details[open])
+                .plantilla-card-instr-text--preview {
+                display: none;
+            }
+            .plantilla-card-instr-full {
+                display: block;
+                margin-top: 6px;
+                max-height: 190px;
+                overflow: auto;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+            }
+            .plantilla-card-instr details[open] summary {
+                margin-top: 8px;
             }
             .plantilla-card-acciones {
                 display: flex;
@@ -1332,30 +1584,35 @@
                         class="tab-btn active"
                         onclick="openTab(event, 'logisticaTab')"
                     >
+                        <i data-lucide="truck" class="lucide-icon" aria-hidden="true"></i>
                         Logística de Unidades
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'contactosTab')"
                     >
+                        <i data-lucide="contact-round" class="lucide-icon" aria-hidden="true"></i>
                         Datos de Contacto
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'unidadesSesionTab')"
                     >
+                        <i data-lucide="list-checks" class="lucide-icon" aria-hidden="true"></i>
                         Unidades en Sesión
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'plantillasRutaTab')"
                     >
+                        <i data-lucide="route" class="lucide-icon" aria-hidden="true"></i>
                         Historial de Rutas
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'operadoresTab')"
                     >
+                        <i data-lucide="user-round-cog" class="lucide-icon" aria-hidden="true"></i>
                         Operadores
                     </button>
                 </nav>
@@ -1390,7 +1647,7 @@
                                             title="Recargar historial"
                                             aria-label="Recargar historial de unidades"
                                         >
-                                            🔄
+                                            <i data-lucide="refresh-cw" class="lucide-icon" aria-hidden="true"></i>
                                         </button>
                                     </label>
                                     <input
@@ -1449,7 +1706,7 @@
                                                 onclick="addPhoneField()"
                                                 aria-label="Agregar teléfono de contacto"
                                             >
-                                                +
+                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -1469,7 +1726,7 @@
                                                 onclick="addEquipmentField()"
                                                 aria-label="Agregar equipo aliado"
                                             >
-                                                +
+                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -1503,7 +1760,8 @@
                                             color: #b91c1c;
                                         "
                                     >
-                                        ⚠️ Conflicto de fechas detectado
+                                        <i data-lucide="triangle-alert" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                        Conflicto de fechas detectado
                                     </span>
                                     <button
                                         type="button"
@@ -1516,7 +1774,7 @@
                                             color: #64748b;
                                         "
                                     >
-                                        ×
+                                        <i data-lucide="x" class="lucide-icon" aria-hidden="true"></i>
                                     </button>
                                 </div>
                                 <p
@@ -1559,7 +1817,8 @@
                                             color: #075985;
                                         "
                                     >
-                                        🚛 Viajes registrados para esta unidad
+                                        <i data-lucide="truck" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                        Viajes registrados para esta unidad
                                     </span>
                                     <button
                                         type="button"
@@ -1576,7 +1835,7 @@
                                             color: #64748b;
                                         "
                                     >
-                                        ×
+                                        <i data-lucide="x" class="lucide-icon" aria-hidden="true"></i>
                                     </button>
                                 </div>
                                 <div
@@ -1616,7 +1875,8 @@
                                     "
                                     id="bannerAgregarTramoTexto"
                                 >
-                                    ➕ Agregando tramo
+                                    <i data-lucide="circle-plus" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    Agregando tramo
                                 </span>
                                 <button
                                     type="button"
@@ -1632,7 +1892,8 @@
                                         cursor: pointer;
                                     "
                                 >
-                                    ✕ Cancelar y volver a crear viaje
+                                    <i data-lucide="x" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    Cancelar y volver a crear viaje
                                 </button>
                             </div>
                         </div>
@@ -1648,7 +1909,8 @@
                                 onclick="addDispatch()"
                                 style="padding: 10px 16px; font-size: 13px"
                             >
-                                + Nuevo Tramo
+                                <i data-lucide="plus" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                Nuevo Tramo
                             </button>
                         </div>
                         <div id="dispatchContainer"></div>
@@ -1799,8 +2061,8 @@
                                         onclick="addContactPhoneField()"
                                         aria-label="Agregar teléfono del contacto"
                                     >
-                                        +
-                                    </button>
+                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
+                                            </button>
                                 </div>
                             </div>
                         </div>
@@ -1824,8 +2086,8 @@
                                         onclick="addContactEmailField()"
                                         aria-label="Agregar correo del contacto"
                                     >
-                                        +
-                                    </button>
+                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
+                                            </button>
                                 </div>
                             </div>
                         </div>
@@ -1916,80 +2178,50 @@
                                     margin-top: 5px;
                                 "
                             >
-                                <span id="filterIndicator"
-                                    >📅 Mostrando: Hoy</span
-                                >
+                                <span id="filterIndicator">
+                                    <i data-lucide="calendar-days" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    Mostrando: Hoy
+                                </span>
                                 |
                                 <span id="unitCount">0 unidades</span>
                             </div>
                         </div>
-                        <div
-                            style="
-                                display: flex;
-                                gap: 10px;
-                                align-items: center;
-                            "
-                        >
-                            <div
-                                style="
-                                    display: flex;
-                                    gap: 5px;
-                                    align-items: center;
-                                "
-                            >
-                                <label
-                                    for="unitFilter"
-                                    style="
-                                        font-size: 12px;
-                                        color: var(--text-muted);
-                                        white-space: nowrap;
-                                    "
-                                    >🚛 Filtrar por unidad:</label
-                                >
-                                <input
-                                    type="text"
-                                    id="unitFilter"
-                                    list="unitFilterList"
-                                    placeholder="Ej: ECO-001"
-                                    style="
-                                        padding: 8px 12px;
-                                        font-size: 13px;
-                                        border: 1px solid var(--border);
-                                        border-radius: 6px;
-                                        width: 150px;
-                                    "
-                                    oninput="applyUnitFilter(this.value)"
-                                />
-                                <datalist id="unitFilterList"></datalist>
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    onclick="clearUnitFilter()"
-                                    style="padding: 8px 12px; font-size: 13px"
-                                    title="Limpiar filtro"
-                                    aria-label="Limpiar filtro de unidad"
-                                >
-                                    ✕
-                                </button>
+                        <div class="session-toolbar">
+                            <div class="session-filter-group">
+                                <label for="unitFilter" class="session-filter-label">
+                                    <i data-lucide="truck" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    Filtrar por unidad
+                                </label>
+                                <div class="session-filter-row">
+                                    <input
+                                        type="text"
+                                        id="unitFilter"
+                                        list="unitFilterList"
+                                        placeholder="Ej: ECO-001"
+                                        class="session-filter-input"
+                                        oninput="applyUnitFilter(this.value)"
+                                    />
+                                    <datalist id="unitFilterList"></datalist>
+                                    <button
+                                        type="button"
+                                        class="icon-btn icon-btn--ghost"
+                                        onclick="clearUnitFilter()"
+                                        title="Limpiar filtro"
+                                        aria-label="Limpiar filtro de unidad"
+                                    >
+                                        <i data-lucide="x" class="lucide-icon" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div
-                                style="
-                                    display: flex;
-                                    flex-direction: column;
-                                    gap: 10px;
-                                "
-                            >
+                            <div class="session-date-stack">
+                                <label for="dateFilterSelect" class="session-filter-label">
+                                    <i data-lucide="calendar-days" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    Periodo
+                                </label>
                                 <select
                                     id="dateFilterSelect"
-                                    class="btn btn-secondary"
+                                    class="session-filter-select"
                                     onchange="changeDateFilter(this.value)"
-                                    style="
-                                        padding: 10px 15px;
-                                        font-size: 13px;
-                                        cursor: pointer;
-                                        border-radius: 8px;
-                                        align-self: flex-start;
-                                    "
                                 >
                                     <option value="today">Hoy</option>
                                     <option value="tomorrow">Mañana</option>
@@ -2003,64 +2235,34 @@
 
                                 <div
                                     id="customDateRange"
-                                    style="
-                                        display: none;
-                                        flex-direction: row;
-                                        gap: 8px;
-                                        align-items: center;
-                                        margin-left: 0;
-                                    "
+                                    class="session-date-range"
                                 >
-                                    <label
-                                        for="startDate"
-                                        style="
-                                            font-size: 12px;
-                                            color: var(--text-muted);
-                                            white-space: nowrap;
-                                        "
-                                        >Desde:</label
-                                    >
-                                    <input
-                                        type="date"
-                                        id="startDate"
-                                        class="btn btn-secondary"
-                                        onchange="applyCustomDateFilter()"
-                                        style="
-                                            padding: 8px 12px;
-                                            font-size: 13px;
-                                            border-radius: 6px;
-                                            width: 140px;
-                                        "
-                                    />
-                                    <label
-                                        for="endDate"
-                                        style="
-                                            font-size: 12px;
-                                            color: var(--text-muted);
-                                            white-space: nowrap;
-                                        "
-                                        >Hasta:</label
-                                    >
-                                    <input
-                                        type="date"
-                                        id="endDate"
-                                        class="btn btn-secondary"
-                                        onchange="applyCustomDateFilter()"
-                                        style="
-                                            padding: 8px 12px;
-                                            font-size: 13px;
-                                            border-radius: 6px;
-                                            width: 140px;
-                                        "
-                                    />
+                                    <div class="session-date-field">
+                                        <label for="startDate">Desde</label>
+                                        <input
+                                            type="date"
+                                            id="startDate"
+                                            class="session-filter-input"
+                                            onchange="applyCustomDateFilter()"
+                                        />
+                                    </div>
+                                    <div class="session-date-field">
+                                        <label for="endDate">Hasta</label>
+                                        <input
+                                            type="date"
+                                            id="endDate"
+                                            class="session-filter-input"
+                                            onchange="applyCustomDateFilter()"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <button
                                 type="button"
-                                class="btn btn-primary"
+                                class="btn btn-primary session-refresh-btn"
                                 onclick="loadUnitsFromSheets()"
-                                style="padding: 13px 15px; font-size: 13px"
                             >
+                                <i data-lucide="refresh-cw" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
                                 Actualizar
                             </button>
                         </div>
@@ -2070,8 +2272,9 @@
                         id="loadingUnits"
                         style="display: none; text-align: center; padding: 40px"
                     >
-                        <div style="font-size: 18px; color: var(--accent)">
-                            ⏳ Cargando unidades...
+                                <div style="font-size: 18px; color: var(--accent)">
+                            <i data-lucide="loader-circle" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                            Cargando unidades...
                         </div>
                     </div>
 
@@ -2121,22 +2324,7 @@
                                     "
                                     onclick="cargarPlantillasRuta()"
                                 >
-                                    <svg
-                                        aria-hidden="true"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="16"
-                                        height="16"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            stroke="currentColor"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4"
-                                        />
-                                    </svg>
+                                    <i data-lucide="refresh-cw" class="lucide-icon"></i>
                                     Actualizar
                                 </button>
                             </div>
@@ -2280,7 +2468,10 @@
                         align-items: center;
                     "
                 >
-                    <strong style="font-size: 15px">✏️ Editar Unidad</strong>
+                    <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
+                        <i data-lucide="pencil" class="lucide-icon" aria-hidden="true"></i>
+                        Editar Unidad
+                    </strong>
                     <button
                         type="button"
                         class="icon-btn icon-btn--inverse"
@@ -2488,7 +2679,10 @@
                         align-items: center;
                     "
                 >
-                    <strong style="font-size: 15px">✏️ Editar Tramo</strong>
+                    <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
+                        <i data-lucide="pencil" class="lucide-icon" aria-hidden="true"></i>
+                        Editar Tramo
+                    </strong>
                     <button
                         type="button"
                         class="icon-btn icon-btn--inverse"
@@ -2546,7 +2740,8 @@
                             margin: 0 0 12px;
                         "
                     >
-                        ⚠️ Cambiar el folio afecta a todos los tramos de este
+                        <i data-lucide="triangle-alert" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                        Cambiar el folio afecta a todos los tramos de este
                         viaje.
                     </p>
 
@@ -2758,6 +2953,22 @@
                     .replace(/>/g, "&gt;")
                     .replace(/"/g, "&quot;")
                     .replace(/'/g, "&#39;");
+            }
+
+            function lucideIcon(name, className = "", attrs = "") {
+                const classes = ["lucide-icon", className]
+                    .filter(Boolean)
+                    .join(" ");
+                return `<i data-lucide="${escapeHtml(name)}" class="${classes}" aria-hidden="true" ${attrs}></i>`;
+            }
+
+            function refreshLucideIcons() {
+                if (!window.lucide?.createIcons) return;
+                window.lucide.createIcons({
+                    attrs: {
+                        "stroke-width": 2.2,
+                    },
+                });
             }
 
             function isAdminUser() {
@@ -2995,14 +3206,14 @@
                         const div = document.createElement("div");
                         div.className = "dynamic-row";
                         if (i === 0) {
-                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button>`;
+                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">${lucideIcon("plus")}</button>`;
                         } else {
-                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono de contacto" title="Quitar teléfono">×</button>`;
+                            div.innerHTML = `<input type="tel" class="u-telefono" value="${tel}" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono de contacto" title="Quitar teléfono">${lucideIcon("x")}</button>`;
                         }
                         phoneContainer.appendChild(div);
                     });
                 } else {
-                    phoneContainer.innerHTML = `<div class="dynamic-row"><input type="tel" class="u-telefono" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button></div>`;
+                    phoneContainer.innerHTML = `<div class="dynamic-row"><input type="tel" class="u-telefono" placeholder="10 dígitos" /><button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">${lucideIcon("plus")}</button></div>`;
                 }
 
                 const equipmentContainer =
@@ -3013,15 +3224,16 @@
                         const div = document.createElement("div");
                         div.className = "dynamic-row";
                         if (i === 0) {
-                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button>`;
+                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">${lucideIcon("plus")}</button>`;
                         } else {
-                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar equipo aliado" title="Quitar equipo">×</button>`;
+                            div.innerHTML = `<input type="text" class="id_equipo" value="${equip}" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar equipo aliado" title="Quitar equipo">${lucideIcon("x")}</button>`;
                         }
                         equipmentContainer.appendChild(div);
                     });
                 } else {
-                    equipmentContainer.innerHTML = `<div class="dynamic-row"><input type="text" class="id_equipo" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button></div>`;
+                    equipmentContainer.innerHTML = `<div class="dynamic-row"><input type="text" class="id_equipo" placeholder="ID Equipo / Marca" /><button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">${lucideIcon("plus")}</button></div>`;
                 }
+                refreshLucideIcons();
 
                 showToast("✓ Datos autocompletados desde historial");
             }
@@ -3043,14 +3255,14 @@
                 document.getElementById("phoneRows").innerHTML = `
           <div class="dynamic-row">
             <input type="tel" class="u-telefono" placeholder="10 dígitos" />
-            <button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button>
+            <button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">${lucideIcon("plus")}</button>
           </div>
         `;
 
                 document.getElementById("equipmentRows").innerHTML = `
           <div class="dynamic-row">
             <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
-            <button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button>
+            <button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">${lucideIcon("plus")}</button>
           </div>
         `;
 
@@ -3061,6 +3273,7 @@
                 currentCliente = isAdminUser() ? "" : getSelectedCliente();
 
                 showToast("✓ Formulario limpiado");
+                refreshLucideIcons();
             }
 
             function showSyncStatus(message, isError = false) {
@@ -3315,6 +3528,7 @@
                                     onclick="editTramo(${tramoId})"
                                     class="btn btn-secondary"
                                     style="padding: 6px 9px; font-size: 11px;">
+                                    ${lucideIcon("pencil", "lucide-icon--inline")}
                                     Editar
                                   </button>
                                   <button
@@ -3322,7 +3536,7 @@
                                     onclick="deleteTramo(${tramoId})"
                                     class="icon-btn icon-btn--danger"
                                     title="Eliminar tramo ${escapeHtml(tramoNumero)}">
-                                    🗑️
+                                    ${lucideIcon("trash-2")}
                                   </button>`
                                 : "";
                             return `
@@ -3349,7 +3563,7 @@
                                   aria-controls="${rowKey}-details"
                                   onclick="toggleSessionUnitDetails('${rowKey}', this)"
                                   title="Ver tramos de ${escapeHtml(economico)}">
-                                  ›
+                                  ${lucideIcon("chevron-right")}
                                 </button>
                               </td>
                               <td>
@@ -3378,6 +3592,7 @@
                                     onclick="editUnit(${firstRow[18] || 0})"
                                     class="btn btn-secondary"
                                     style="padding: 7px 10px; font-size: 11px;">
+                                    ${lucideIcon("pencil", "lucide-icon--inline")}
                                     Editar unidad
                                   </button>
                                 </div>
@@ -3410,13 +3625,14 @@
                       <div class="session-pagination">
                         <span>Mostrando ${rangeStart}-${rangeEnd} de ${totalUnits} unidades</span>
                         <div class="session-pagination-controls">
-                          <button type="button" class="btn btn-secondary" onclick="setSessionUnitsPage(${sessionUnitsPage - 1})" ${sessionUnitsPage <= 1 ? "disabled" : ""}>Anterior</button>
+                          <button type="button" class="btn btn-secondary" onclick="setSessionUnitsPage(${sessionUnitsPage - 1})" ${sessionUnitsPage <= 1 ? "disabled" : ""}>${lucideIcon("chevron-left", "lucide-icon--inline")} Anterior</button>
                           <span>Página ${sessionUnitsPage} de ${totalPages}</span>
-                          <button type="button" class="btn btn-secondary" onclick="setSessionUnitsPage(${sessionUnitsPage + 1})" ${sessionUnitsPage >= totalPages ? "disabled" : ""}>Siguiente</button>
+                          <button type="button" class="btn btn-secondary" onclick="setSessionUnitsPage(${sessionUnitsPage + 1})" ${sessionUnitsPage >= totalPages ? "disabled" : ""}>Siguiente ${lucideIcon("chevron-right", "lucide-icon--inline")}</button>
                         </div>
                       </div>
                     </div>`;
                 container.innerHTML = html;
+                refreshLucideIcons();
             }
 
             function setSessionUnitsPage(page) {
@@ -3494,10 +3710,9 @@
                 dateFilter = filter;
                 sessionUnitsPage = 1;
 
-                // Show/hide custom date range inputs
                 const customRange = document.getElementById("customDateRange");
                 if (filter === "custom") {
-                    customRange.style.display = "flex";
+                    customRange.classList.add("is-visible");
                     // Set default dates if not set
                     const startDate = document.getElementById("startDate");
                     const endDate = document.getElementById("endDate");
@@ -3513,7 +3728,7 @@
                     }
                     applyCustomDateFilter();
                 } else {
-                    customRange.style.display = "none";
+                    customRange.classList.remove("is-visible");
                     if (allUnitsData.length > 0) {
                         renderUnitsTable(allUnitsData, dateFilter);
                     }
@@ -3555,16 +3770,16 @@
                 let filterColor = "var(--accent)";
 
                 if (filterByUnit) {
-                    filterText = `🚛 ${filterByUnit}`;
+                    filterText = `${lucideIcon("truck", "lucide-icon--inline")} ${escapeHtml(filterByUnit)}`;
                     filterColor = "#f59e0b";
                 } else if (filter === "today") {
-                    filterText = "📅 Unidades de hoy";
+                    filterText = `${lucideIcon("calendar-days", "lucide-icon--inline")} Unidades de hoy`;
                     filterColor = "var(--accent)";
                 } else if (filter === "tomorrow") {
-                    filterText = "📆 Programadas para mañana";
+                    filterText = `${lucideIcon("calendar-clock", "lucide-icon--inline")} Programadas para mañana`;
                     filterColor = "#8b5cf6";
                 } else if (filter === "week") {
-                    filterText = "📋 Próximos 7 días";
+                    filterText = `${lucideIcon("calendar-range", "lucide-icon--inline")} Próximos 7 días`;
                     filterColor = "#0ea5e9";
                 } else if (filter === "custom") {
                     const startDate =
@@ -3577,14 +3792,14 @@
                         const endFormatted = new Date(
                             endDate,
                         ).toLocaleDateString("es-ES");
-                        filterText = `📅 ${startFormatted} - ${endFormatted}`;
+                        filterText = `${lucideIcon("calendar-range", "lucide-icon--inline")} ${escapeHtml(startFormatted)} - ${escapeHtml(endFormatted)}`;
                         filterColor = "#047857";
                     } else {
-                        filterText = "📅 Rango personalizado";
+                        filterText = `${lucideIcon("calendar-range", "lucide-icon--inline")} Rango personalizado`;
                         filterColor = "#047857";
                     }
                 } else {
-                    filterText = "🗓️ Todo el historial";
+                    filterText = `${lucideIcon("history", "lucide-icon--inline")} Todo el historial`;
                     filterColor = "var(--text-muted)";
                 }
 
@@ -3592,6 +3807,7 @@
                 indicator.style.color = filterColor;
 
                 counter.textContent = `${count} unidad${count !== 1 ? "es" : ""}`;
+                refreshLucideIcons();
             }
 
             function editUnit(unidadId) {
@@ -4303,13 +4519,13 @@
                 document.getElementById("phoneRows").innerHTML = `
                   <div class="dynamic-row">
                     <input type="tel" class="u-telefono" placeholder="10 dígitos" />
-                    <button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">+</button>
+            <button type="button" class="add-row-btn" onclick="addPhoneField()" aria-label="Agregar teléfono de contacto">${lucideIcon("plus")}</button>
                   </div>`;
 
                 document.getElementById("equipmentRows").innerHTML = `
                   <div class="dynamic-row">
                     <input type="text" class="id_equipo" placeholder="ID Equipo / Marca" />
-                    <button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">+</button>
+            <button type="button" class="add-row-btn" onclick="addEquipmentField()" aria-label="Agregar equipo aliado">${lucideIcon("plus")}</button>
                   </div>`;
 
                 document.getElementById("dispatchContainer").innerHTML = "";
@@ -4659,7 +4875,8 @@
                     "bannerAgregarTramoTexto",
                 );
                 if (bannerTxt)
-                    bannerTxt.textContent = `➕ Agregando Tramo ${numTramo} al folio ${folio}`;
+                    bannerTxt.innerHTML = `${lucideIcon("circle-plus", "lucide-icon--inline")} Agregando Tramo ${escapeHtml(numTramo)} al folio ${escapeHtml(folio)}`;
+                refreshLucideIcons();
 
                 const titulo = document.getElementById(
                     "tituloPlanificacionTramos",
@@ -5038,32 +5255,36 @@
                 const container = document.getElementById("phoneRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="tel" class="u-telefono" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono de contacto" title="Quitar teléfono">×</button>`;
+                div.innerHTML = `<input type="tel" class="u-telefono" placeholder="Otro teléfono"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono de contacto" title="Quitar teléfono">${lucideIcon("x")}</button>`;
                 container.appendChild(div);
+                refreshLucideIcons();
             }
 
             function addEquipmentField() {
                 const container = document.getElementById("equipmentRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="text" class="id_equipo" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar equipo aliado" title="Quitar equipo">×</button>`;
+                div.innerHTML = `<input type="text" class="id_equipo" placeholder="ID Equipo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar equipo aliado" title="Quitar equipo">${lucideIcon("x")}</button>`;
                 container.appendChild(div);
+                refreshLucideIcons();
             }
 
             function addContactPhoneField() {
                 const container = document.getElementById("contactPhoneRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="tel" class="c-telefono" placeholder="Otro número"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono del contacto" title="Quitar teléfono">×</button>`;
+                div.innerHTML = `<input type="tel" class="c-telefono" placeholder="Otro número"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar teléfono del contacto" title="Quitar teléfono">${lucideIcon("x")}</button>`;
                 container.appendChild(div);
+                refreshLucideIcons();
             }
 
             function addContactEmailField() {
                 const container = document.getElementById("contactEmailRows");
                 const div = document.createElement("div");
                 div.className = "dynamic-row";
-                div.innerHTML = `<input type="email" class="c-correo" placeholder="Otro correo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar correo del contacto" title="Quitar correo">×</button>`;
+                div.innerHTML = `<input type="email" class="c-correo" placeholder="Otro correo"><button type="button" class="remove-btn" onclick="this.parentElement.remove()" aria-label="Quitar correo del contacto" title="Quitar correo">${lucideIcon("x")}</button>`;
                 container.appendChild(div);
+                refreshLucideIcons();
             }
 
             function getCurrentDateTimeLocal(baseDate = null) {
@@ -5143,10 +5364,13 @@
             <!-- Buscador de historial de rutas -->
             <div class="route-history-panel">
                 <div class="route-history-title">
-                    <span style="font-size: 18px;">🔎</span>
+                    ${lucideIcon("search")}
                     <label>Buscar ruta del historial</label>
                 </div>
-                <input type="search" class="ruta-historial-search route-history-search" placeholder="Busca por ruta, origen, carga o destino" oninput="buscarRutasHistorial(this)" autocomplete="off">
+                <div class="route-history-search-wrap">
+                    ${lucideIcon("search")}
+                    <input type="search" class="ruta-historial-search route-history-search" placeholder="Busca por ruta, origen, carga o destino" oninput="buscarRutasHistorial(this)" autocomplete="off">
+                </div>
                 <div class="ruta-historial-results route-history-results"></div>
                 <small>Selecciona una ruta para llenar Ruta / Identificador, Origen, Lugar de Carga y Destino. Puedes editar cualquier campo después.</small>
             </div>
@@ -5206,11 +5430,12 @@
             </div>
             ${
                 dispatchCount > 1
-                    ? '<button type="button" class="remove-btn" style="position:absolute; top: 10px; right: 10px;" onclick="this.parentElement.remove()" aria-label="Quitar tramo del formulario" title="Quitar tramo">×</button>'
+                    ? `<button type="button" class="remove-btn" style="position:absolute; top: 10px; right: 10px;" onclick="this.parentElement.remove()" aria-label="Quitar tramo del formulario" title="Quitar tramo">${lucideIcon("x")}</button>`
                     : ""
             }
         `;
                 container.appendChild(div);
+                refreshLucideIcons();
             }
 
             function toggleRegresoOrigen(inputEl) {
@@ -5287,13 +5512,13 @@
                 document.getElementById("contactPhoneRows").innerHTML = `
             <div class="dynamic-row">
                 <input type="tel" class="c-telefono" placeholder="Número 10 dígitos">
-                <button type="button" class="add-row-btn" onclick="addContactPhoneField()" aria-label="Agregar teléfono del contacto">+</button>
+                <button type="button" class="add-row-btn" onclick="addContactPhoneField()" aria-label="Agregar teléfono del contacto">${lucideIcon("plus")}</button>
             </div>
         `;
                 document.getElementById("contactEmailRows").innerHTML = `
             <div class="dynamic-row">
                 <input type="email" class="c-correo" placeholder="ejemplo@empresa.com">
-                <button type="button" class="add-row-btn" onclick="addContactEmailField()" aria-label="Agregar correo del contacto">+</button>
+                <button type="button" class="add-row-btn" onclick="addContactEmailField()" aria-label="Agregar correo del contacto">${lucideIcon("plus")}</button>
             </div>
         `;
                 document
@@ -5307,6 +5532,7 @@
                     .forEach((cb) => {
                         cb.checked = false;
                     });
+                refreshLucideIcons();
 
                 // Guardar en base de datos multi-tenant
                 try {
@@ -5373,10 +5599,10 @@
                     )}</span>
                 </td>
                 <td>
-                    <div style="margin-bottom: 5px;">📞 ${escapeHtml(
+                    <div style="margin-bottom: 5px;">${lucideIcon("phone", "lucide-icon--inline")} ${escapeHtml(
                         c.telefonos || "-",
                     )}</div>
-                    <div style="font-size: 12px; color: var(--text-muted);">✉️ ${escapeHtml(
+                    <div style="font-size: 12px; color: var(--text-muted);">${lucideIcon("mail", "lucide-icon--inline")} ${escapeHtml(
                         c.correos || "-",
                     )}</div>
                 </td>
@@ -5384,10 +5610,11 @@
                 <td style="font-size: 12px;">${escapeHtml(c.observaciones)}</td>
                 <td><button type="button" class="remove-btn" onclick="removeContact(${
                     c.id
-                })" aria-label="Quitar contacto ${escapeHtml(c.nombre)}" title="Quitar contacto">×</button></td>
+                })" aria-label="Quitar contacto ${escapeHtml(c.nombre)}" title="Quitar contacto">${lucideIcon("trash-2")}</button></td>
             `;
                     body.appendChild(row);
                 });
+                refreshLucideIcons();
             }
 
             function removeContact(id) {
@@ -5490,6 +5717,7 @@
             }
 
             document.addEventListener("DOMContentLoaded", () => {
+                refreshLucideIcons();
                 document
                     .getElementById("loginForm")
                     ?.addEventListener("submit", handlePlanificadorLogin);
@@ -5715,8 +5943,8 @@
                         <td style="padding:8px;border-bottom:1px solid var(--border)">${escapeHtmlOp(op.nombre)}</td>
                         <td style="padding:8px;border-bottom:1px solid var(--border)">${escapeHtmlOp(op.telefonos || "—")}</td>
                         <td style="padding:8px;border-bottom:1px solid var(--border);white-space:nowrap">
-                            <button type="button" class="icon-btn icon-btn--ghost" onclick="editarOperador(${op.id})" title="Editar operador" aria-label="Editar operador ${escapeHtmlOp(op.nombre)}">✏️</button>
-                            <button type="button" class="icon-btn icon-btn--danger" onclick="eliminarOperador(${op.id})" title="Eliminar operador" aria-label="Eliminar operador ${escapeHtmlOp(op.nombre)}">🗑️</button>
+                            <button type="button" class="icon-btn icon-btn--ghost" onclick="editarOperador(${op.id})" title="Editar operador" aria-label="Editar operador ${escapeHtmlOp(op.nombre)}">${lucideIcon("pencil")}</button>
+                            <button type="button" class="icon-btn icon-btn--danger" onclick="eliminarOperador(${op.id})" title="Eliminar operador" aria-label="Eliminar operador ${escapeHtmlOp(op.nombre)}">${lucideIcon("trash-2")}</button>
                         </td>
                     </tr>`,
                     )
@@ -5732,6 +5960,7 @@
                         </thead>
                         <tbody>${filas}</tbody>
                     </table>`;
+                refreshLucideIcons();
             }
 
             function escapeHtmlOp(s) {
@@ -6038,56 +6267,64 @@
                                    <span class="plantilla-card-valor">${escapeHtml(valor)}</span>
                                </div>`
                             : "";
-                    const instr = plantilla.instrucciones
-                        ? `<div class="plantilla-card-instr" title="${escapeHtml(plantilla.instrucciones)}">
-                               📋 ${escapeHtml(plantilla.instrucciones)}
-                           </div>`
+                    const instruccionesText = String(
+                        plantilla.instrucciones || "",
+                    ).trim();
+                    const instruccionesHtml = escapeHtml(instruccionesText);
+                    const instruccionesLargas = instruccionesText.length > 180;
+                    const instr = instruccionesText
+                        ? `<div class="plantilla-card-instr" title="${instruccionesHtml}">
+                               <span class="plantilla-card-instr-header">
+                                   ${lucideIcon("clipboard-list", "lucide-icon--inline")} Instrucciones
+                               </span>
+                               ${
+                                   instruccionesLargas
+                                       ? `<span class="plantilla-card-instr-text plantilla-card-instr-text--preview">${instruccionesHtml}</span>
+                                          <details>
+                                            <summary>${lucideIcon("chevrons-down", "lucide-icon--inline")} Ver completas</summary>
+                                            <span class="plantilla-card-instr-full">${instruccionesHtml}</span>
+                                          </details>`
+                                       : `<span class="plantilla-card-instr-text">${instruccionesHtml}</span>`
+                               }
+                             </div>`
                         : "";
                     // Métricas de uso (solo si vienen del historial / tienen usos)
                     const usos =
                         plantilla.veces_usada > 0
-                            ? `<span title="Veces usada">🔁 ${plantilla.veces_usada}</span>`
+                            ? `<span title="Veces usada">${lucideIcon("repeat-2", "lucide-icon--inline")} ${plantilla.veces_usada}</span>`
                             : "";
                     const ultima = plantilla.ultima_vez_usada
-                        ? `<span title="Última vez">🕑 ${tiempoRelativo(plantilla.ultima_vez_usada)}</span>`
+                        ? `<span title="Última vez">${lucideIcon("clock-3", "lucide-icon--inline")} ${tiempoRelativo(plantilla.ultima_vez_usada)}</span>`
                         : "";
                     const metricas =
                         usos || ultima
                             ? `<div class="plantilla-card-metricas" style="display:flex; gap:12px; font-size:12px; color:var(--text-muted); margin-top:6px;">${usos}${ultima}</div>`
                             : "";
-                    const estrella = plantilla.es_favorito ? "⭐" : "☆";
+                    const puedeEditar = Number(plantilla.id || 0) > 0;
+                    const estrella = plantilla.es_favorito
+                        ? lucideIcon("star", "", 'fill="currentColor"')
+                        : lucideIcon("star");
                     const tituloFav = plantilla.es_favorito
                         ? "Quitar de favoritos"
                         : "Marcar como favorito";
-
-                    return `
-                    <div class="plantilla-card">
-                        <div class="plantilla-card-head">
-                            <button
+                    const botonFavorito = puedeEditar
+                        ? `<button
                                 type="button"
                                 class="icon-btn icon-btn--ghost btn-fav"
                                 onclick="toggleFavoritoRuta(${plantilla.id}, ${plantilla.es_favorito ? "false" : "true"})"
                                 title="${tituloFav}"
                                 aria-label="${tituloFav}: ${escapeHtml(plantilla.etiqueta)}"
-                            >${estrella}</button>
-                            <strong class="plantilla-card-etiqueta">${escapeHtml(plantilla.etiqueta)}</strong>
-                            ${ruta}
-                        </div>
-                        <div class="plantilla-card-body">
-                            ${fila("📍", "Origen", plantilla.origen)}
-                            ${fila("🏭", "Carga", plantilla.lugar_carga)}
-                            ${fila("🏁", "Destino", plantilla.destino)}
-                            ${instr}
-                            ${metricas}
-                        </div>
-                        <div class="plantilla-card-acciones">
+                            >${estrella}</button>`
+                        : "";
+                    const acciones = puedeEditar
+                        ? `<div class="plantilla-card-acciones">
                             <button
                                 type="button"
                                 class="btn btn-sm btn-secondary"
                                 onclick="renombrarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}', ${plantilla.es_favorito ? "true" : "false"})"
                                 title="Renombrar etiqueta"
                             >
-                                ✏️ Renombrar
+                                ${lucideIcon("pencil", "lucide-icon--inline")} Renombrar
                             </button>
 
                             <button
@@ -6097,18 +6334,38 @@
                                 title="Ocultar del historial"
                                 aria-label="Ocultar ruta ${escapeHtml(plantilla.etiqueta)} del historial"
                             >
-                                🗑️
+                                ${lucideIcon("trash-2")}
                             </button>
+                        </div>`
+                        : "";
+
+                    return `
+                    <div class="plantilla-card">
+                        <div class="plantilla-card-head">
+                            ${botonFavorito}
+                            <strong class="plantilla-card-etiqueta">${escapeHtml(plantilla.etiqueta)}</strong>
+                            ${ruta}
                         </div>
+                        <div class="plantilla-card-body">
+                            ${fila(lucideIcon("map-pin"), "Origen", plantilla.origen)}
+                            ${fila(lucideIcon("warehouse"), "Carga", plantilla.lugar_carga)}
+                            ${fila(lucideIcon("flag"), "Destino", plantilla.destino)}
+                            ${instr}
+                            ${metricas}
+                        </div>
+                        ${acciones}
                     </div>`;
                 };
 
-                const seccion = (titulo, subtitulo, items) => {
+                const seccion = (icono, titulo, subtitulo, items) => {
                     if (!items || items.length === 0) return "";
                     const cards = items.map(card).join("");
                     return `
                         <div class="historial-seccion" style="margin-bottom: 28px;">
-                            <h3 style="margin: 0 0 4px;">${titulo} <span style="color:var(--text-muted); font-weight:normal;">(${items.length})</span></h3>
+                            <h3 style="margin: 0 0 4px; display:flex; align-items:center;">
+                                ${lucideIcon(icono, "lucide-icon--section")}
+                                ${titulo} <span style="color:var(--text-muted); font-weight:normal; margin-left: 6px;">(${items.length})</span>
+                            </h3>
                             <p style="margin: 0 0 12px; font-size: 12px; color: var(--text-muted);">${subtitulo}</p>
                             <div class="plantillas-grid">${cards}</div>
                         </div>`;
@@ -6116,20 +6373,24 @@
 
                 container.innerHTML =
                     seccion(
-                        "⭐ Favoritos",
+                        "star",
+                        "Favoritos",
                         "Rutas fijadas que siempre aparecen primero.",
                         plantillasRutaSecciones.favoritos,
                     ) +
                     seccion(
-                        "🔁 Frecuentes",
+                        "repeat-2",
+                        "Frecuentes",
                         "Rutas que ya has completado, ordenadas por uso.",
                         plantillasRutaSecciones.frecuentes,
                     ) +
                     seccion(
-                        "🕑 Recientes",
+                        "clock-3",
+                        "Recientes",
                         "Rutas recientes detectadas en el historial.",
                         plantillasRutaSecciones.recientes,
                     );
+                refreshLucideIcons();
             }
 
             /**
@@ -6335,8 +6596,8 @@
                     if (json.ok) {
                         showToast(
                             esFavorito
-                                ? "⭐ Añadida a favoritos"
-                                : "☆ Quitada de favoritos",
+                                ? "Añadida a favoritos"
+                                : "Quitada de favoritos",
                             "success",
                         );
                         await cargarPlantillasRuta();
@@ -6468,7 +6729,7 @@
 
             /**
              * Construye el HTML de <option> para los selectores de ruta de los
-             * tramos, agrupadas por sección (⭐ Favoritos / 🔁 Frecuentes / 🕑
+             * tramos, agrupadas por sección (Favoritos / Frecuentes /
              * Recientes) usando <optgroup>. La etiqueta de frecuentes/recientes
              * muestra el contador de usos para dar señal tipo Uber.
              */
@@ -6490,17 +6751,17 @@
                 };
 
                 html += grupo(
-                    "⭐ Favoritos",
+                    "Favoritos",
                     plantillasRutaSecciones.favoritos,
                     false,
                 );
                 html += grupo(
-                    "🔁 Frecuentes",
+                    "Frecuentes",
                     plantillasRutaSecciones.frecuentes,
                     true,
                 );
                 html += grupo(
-                    "🕑 Recientes",
+                    "Recientes",
                     plantillasRutaSecciones.recientes,
                     false,
                 );
@@ -6549,13 +6810,14 @@
                                         ${ruta.lugar_carga ? `<div class="route-history-result-load">Carga: ${escapeHtml(ruta.lugar_carga)}</div>` : ""}
                                     </div>
                                     <div class="route-history-result-badges">
-                                        <span class="chip chip--info">${escapeHtml(usoTxt)}</span>
-                                        <span class="chip chip--muted">Última: ${escapeHtml(ultima)}</span>
+                                        <span class="chip chip--info">${lucideIcon("repeat-2", "lucide-icon--inline")} ${escapeHtml(usoTxt)}</span>
+                                        <span class="chip chip--muted">${lucideIcon("clock-3", "lucide-icon--inline")} Última: ${escapeHtml(ultima)}</span>
                                     </div>
                                 </div>
                             </button>`;
                     })
                     .join("");
+                refreshLucideIcons();
             }
 
             async function buscarRutasHistorial(inputEl) {
