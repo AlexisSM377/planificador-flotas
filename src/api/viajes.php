@@ -101,6 +101,35 @@ function db_columns_exist($conn, $table, $columns)
     return true;
 }
 
+function ensure_planificador_edit_columns($conn)
+{
+    $required = [
+        "planificador_creado_at" => "ALTER TABLE despachos ADD COLUMN planificador_creado_at DATETIME NULL DEFAULT NULL",
+        "planificador_editado_at" => "ALTER TABLE despachos ADD COLUMN planificador_editado_at DATETIME NULL DEFAULT NULL",
+        "planificador_editado_por_usuario_id" => "ALTER TABLE despachos ADD COLUMN planificador_editado_por_usuario_id INT(10) UNSIGNED NULL DEFAULT NULL",
+        "planificador_campos_editados" => "ALTER TABLE despachos ADD COLUMN planificador_campos_editados TEXT NULL DEFAULT NULL",
+    ];
+
+    $existing = [];
+    $res = $conn->query("SHOW COLUMNS FROM despachos");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $existing[$row["Field"]] = true;
+        }
+    }
+
+    foreach ($required as $column => $sql) {
+        if (empty($existing[$column])) {
+            if (!$conn->query($sql)) {
+                throw new Exception(
+                    "Error preparando control de edición: " . $conn->error,
+                    500,
+                );
+            }
+        }
+    }
+}
+
 function base64url_encode_v($data)
 {
     return rtrim(strtr(base64_encode($data), "+/", "-_"), "=");
@@ -491,6 +520,8 @@ function sincronizar_despachos(
     $tramos,
     $cliente_nombre,
 ) {
+    ensure_planificador_edit_columns($conn);
+
     foreach ($tramos as $idx => $t) {
         $tramo_numero = (int) ($t["tramo_numero"] ?? $idx + 1);
         $legacy_key = substr(
@@ -512,8 +543,8 @@ function sincronizar_despachos(
                 cliente_id, unidad_id, folio, fecha_programada, tramo_numero,
                 ruta, origen, lugar_carga, destino, instrucciones,
                 salida_patio_programada, cita_carga, salida_carga_programada,
-                descarga_programada, source_system, legacy_key
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "planificador", ?)
+                descarga_programada, source_system, legacy_key, planificador_creado_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "planificador", ?, NOW())
              ON DUPLICATE KEY UPDATE
                 ruta                    = VALUES(ruta),
                 origen                  = VALUES(origen),
@@ -681,8 +712,8 @@ function handle_crear($conn, $ctx)
         throw new Exception("Se requiere al menos un tramo", 400);
     }
 
-    $dt_ahora = new DateTime("now");
-    $ahora = $dt_ahora->format("Y-m-d H:i:s");
+    $dt_hoy_tramo = new DateTime("today");
+    $hoy_tramo = $dt_hoy_tramo->format("Y-m-d");
     $campos_tiempo = [
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
@@ -692,25 +723,16 @@ function handle_crear($conn, $ctx)
     ];
     foreach ($tramos as $i => $t) {
         $requiere_regreso = !empty($t["requiere_regreso_origen"]);
-        if (
-            $requiere_regreso &&
-            !to_datetime($t["regreso_origen_programado"] ?? "")
-        ) {
-            throw new Exception(
-                "Tramo " . ($i + 1) . ": Fecha de Regreso requerida",
-                400,
-            );
-        }
         foreach ($campos_tiempo as $campo => $etiqueta) {
             if ($campo === "regreso_origen_programado" && !$requiere_regreso) {
                 continue;
             }
             $dt = to_datetime($t[$campo] ?? "");
-            if ($dt && $dt < $ahora) {
+            if ($dt && substr($dt, 0, 10) < $hoy_tramo) {
                 throw new Exception(
                     "Tramo " .
                         ($i + 1) .
-                        ": \"$etiqueta\" no puede ser una fecha/hora pasada",
+                        ": \"$etiqueta\" no puede tener una fecha pasada",
                     400,
                 );
             }
@@ -1215,8 +1237,8 @@ function handle_agregar_tramo($conn, $ctx)
         throw new Exception("tramo debe ser un objeto", 400);
     }
 
-    $dt_ahora = new DateTime("now");
-    $ahora = $dt_ahora->format("Y-m-d H:i:s");
+    $dt_hoy_tramo = new DateTime("today");
+    $hoy_tramo = $dt_hoy_tramo->format("Y-m-d");
     $campos_tiempo = [
         "salida_patio" => "Salida de Patio",
         "cita_carga" => "Cita de Carga",
@@ -1225,20 +1247,14 @@ function handle_agregar_tramo($conn, $ctx)
         "regreso_origen_programado" => "Fecha de Regreso",
     ];
     $requiere_regreso = !empty($tramo_data["requiere_regreso_origen"]);
-    if (
-        $requiere_regreso &&
-        !to_datetime($tramo_data["regreso_origen_programado"] ?? "")
-    ) {
-        throw new Exception("Fecha de Regreso requerida", 400);
-    }
     foreach ($campos_tiempo as $campo => $etiqueta) {
         if ($campo === "regreso_origen_programado" && !$requiere_regreso) {
             continue;
         }
         $dt = to_datetime($tramo_data[$campo] ?? "");
-        if ($dt && $dt < $ahora) {
+        if ($dt && substr($dt, 0, 10) < $hoy_tramo) {
             throw new Exception(
-                "\"$etiqueta\" no puede ser una fecha/hora pasada",
+                "\"$etiqueta\" no puede tener una fecha pasada",
                 400,
             );
         }
@@ -2022,6 +2038,7 @@ function handle_actualizar_unidad($conn, $ctx)
 function handle_actualizar_despacho($conn, $ctx)
 {
     assert_can_write($ctx);
+    ensure_planificador_edit_columns($conn);
 
     $body = json_decode(file_get_contents("php://input"), true);
     if (!is_array($body)) {
@@ -2034,7 +2051,11 @@ function handle_actualizar_despacho($conn, $ctx)
     }
 
     $stmt = $conn->prepare(
-        'SELECT id, cliente_id, unidad_id, folio, tramo_numero
+        'SELECT id, cliente_id, unidad_id, folio, fecha_programada, tramo_numero,
+                ruta, origen, lugar_carga, destino, instrucciones,
+                salida_patio_programada, cita_carga, descarga_programada,
+                planificador_creado_at, planificador_editado_at,
+                planificador_campos_editados
            FROM despachos WHERE id = ? AND eliminado_at IS NULL LIMIT 1',
     );
     $stmt->bind_param("i", $despacho_id);
@@ -2046,6 +2067,19 @@ function handle_actualizar_despacho($conn, $ctx)
         throw new Exception("Despacho no encontrado", 404);
     }
     assert_cliente_access($ctx, (int) $desp["cliente_id"]);
+
+    $created_date = substr(
+        (string) ($desp["planificador_creado_at"] ?:
+            ($desp["fecha_programada"] ?? "")),
+        0,
+        10,
+    );
+    if ($created_date !== date("Y-m-d")) {
+        throw new Exception(
+            "Solo se pueden editar tramos capturados el día de hoy",
+            403,
+        );
+    }
 
     $folio_viejo = (string) $desp["folio"];
     $cliente_id = (int) $desp["cliente_id"];
@@ -2080,20 +2114,47 @@ function handle_actualizar_despacho($conn, $ctx)
         }
     }
 
-    $campos = ["ruta", "origen", "lugar_carga", "destino", "instrucciones"];
-    $sets = [];
+    $campos = [
+        ["body" => "ruta", "despacho" => "ruta", "tramo" => "ruta", "datetime" => false],
+        ["body" => "origen", "despacho" => "origen", "tramo" => "origen", "datetime" => false],
+        ["body" => "lugar_carga", "despacho" => "lugar_carga", "tramo" => "lugar_carga", "datetime" => false],
+        ["body" => "destino", "despacho" => "destino", "tramo" => "destino", "datetime" => false],
+        ["body" => "instrucciones", "despacho" => "instrucciones", "tramo" => "instrucciones", "datetime" => false],
+        ["body" => "salida_patio_programada", "despacho" => "salida_patio_programada", "tramo" => "salida_patio", "datetime" => true],
+        ["body" => "cita_carga", "despacho" => "cita_carga", "tramo" => "cita_carga", "datetime" => true],
+        ["body" => "descarga_programada", "despacho" => "descarga_programada", "tramo" => "descarga_programada", "datetime" => true],
+    ];
+    $sets_despacho = [];
+    $sets_tramo = [];
     $types = "";
-    $params = [];
+    $params_despacho = [];
+    $params_tramo = [];
+    $edited_fields = [];
+    $normalize_compare = function ($value) {
+        return trim((string) ($value ?? ""));
+    };
+
+    if ($folio_nuevo !== null && $normalize_compare($folio_nuevo) !== $normalize_compare($desp["folio"] ?? "")) {
+        $edited_fields[] = "folio";
+    }
 
     foreach ($campos as $campo) {
-        if (array_key_exists($campo, $body)) {
-            $sets[] = "$campo = ?";
+        if (array_key_exists($campo["body"], $body)) {
+            $value = $campo["datetime"]
+                ? to_datetime($body[$campo["body"]])
+                : null_if_empty($body[$campo["body"]]);
+            if ($normalize_compare($value) !== $normalize_compare($desp[$campo["despacho"]] ?? "")) {
+                $edited_fields[] = $campo["body"];
+            }
+            $sets_despacho[] = $campo["despacho"] . " = ?";
+            $sets_tramo[] = $campo["tramo"] . " = ?";
             $types .= "s";
-            $params[] = null_if_empty($body[$campo]);
+            $params_despacho[] = $value;
+            $params_tramo[] = $value;
         }
     }
 
-    if (!count($sets) && $folio_nuevo === null) {
+    if (!count($sets_despacho) && $folio_nuevo === null) {
         throw new Exception("No hay campos para actualizar", 400);
     }
 
@@ -2102,13 +2163,13 @@ function handle_actualizar_despacho($conn, $ctx)
 
     $conn->begin_transaction();
     try {
-        if (count($sets)) {
+        if (count($sets_despacho)) {
             $types_d = $types . "i";
-            $params_d = $params;
+            $params_d = $params_despacho;
             $params_d[] = $despacho_id;
             $stmt = $conn->prepare(
                 "UPDATE despachos SET " .
-                    implode(", ", $sets) .
+                    implode(", ", $sets_despacho) .
                     " WHERE id = ?",
             );
             $stmt->bind_param($types_d, ...$params_d);
@@ -2143,14 +2204,14 @@ function handle_actualizar_despacho($conn, $ctx)
         }
         $stmt->close();
 
-        if (count($sets) && count($tramo_ids)) {
+        if (count($sets_tramo) && count($tramo_ids)) {
             $types_t = $types . "i";
             foreach ($tramo_ids as $tid) {
-                $params_t = $params;
+                $params_t = $params_tramo;
                 $params_t[] = $tid;
                 $stmt = $conn->prepare(
                     "UPDATE viaje_tramos SET " .
-                        implode(", ", $sets) .
+                        implode(", ", $sets_tramo) .
                         " WHERE id = ?",
                 );
                 $stmt->bind_param($types_t, ...$params_t);
@@ -2201,6 +2262,38 @@ function handle_actualizar_despacho($conn, $ctx)
             $folio_actualizado = true;
         }
 
+        $stored_fields = json_decode(
+            (string) ($desp["planificador_campos_editados"] ?? "[]"),
+            true,
+        );
+        if (!is_array($stored_fields)) {
+            $stored_fields = [];
+        }
+        $merged_fields = array_values(
+            array_unique(array_merge($stored_fields, $edited_fields)),
+        );
+        $edited_fields_json = json_encode(
+            $merged_fields,
+            JSON_UNESCAPED_UNICODE,
+        );
+
+        $uid = (int) $ctx["id"];
+        $stmt = $conn->prepare(
+            "UPDATE despachos
+                SET planificador_editado_at = NOW(),
+                    planificador_editado_por_usuario_id = ?,
+                    planificador_campos_editados = ?
+              WHERE id = ?",
+        );
+        $stmt->bind_param("isi", $uid, $edited_fields_json, $despacho_id);
+        if (!$stmt->execute()) {
+            throw new Exception(
+                "Error marcando edición del tramo: " . $stmt->error,
+                500,
+            );
+        }
+        $stmt->close();
+
         $conn->commit();
     } catch (Exception $e) {
         $conn->rollback();
@@ -2208,7 +2301,10 @@ function handle_actualizar_despacho($conn, $ctx)
     }
 
     $stmt = $conn->prepare(
-        'SELECT id, folio, tramo_numero, ruta, origen, lugar_carga, destino, instrucciones
+        'SELECT id, folio, tramo_numero, ruta, origen, lugar_carga, destino,
+                instrucciones, salida_patio_programada, cita_carga,
+                descarga_programada, planificador_editado_at,
+                planificador_campos_editados
            FROM despachos WHERE id = ? LIMIT 1',
     );
     $stmt->bind_param("i", $despacho_id);
@@ -2226,6 +2322,11 @@ function handle_actualizar_despacho($conn, $ctx)
             "lugar_carga" => $d["lugar_carga"],
             "destino" => $d["destino"],
             "instrucciones" => $d["instrucciones"],
+            "salida_patio_programada" => $d["salida_patio_programada"],
+            "cita_carga" => $d["cita_carga"],
+            "descarga_programada" => $d["descarga_programada"],
+            "planificador_editado_at" => $d["planificador_editado_at"],
+            "planificador_campos_editados" => $d["planificador_campos_editados"],
         ],
         "tramos_sincronizados" => $tramos_sincronizados,
         "folio_actualizado" => $folio_actualizado,
@@ -3953,3 +4054,4 @@ try {
         in_array($code, [400, 401, 403, 404, 409, 500], true) ? $code : 500,
     );
 }
+

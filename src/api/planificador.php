@@ -241,6 +241,35 @@ function to_mysql_datetime_or_null($value)
     }
 }
 
+function ensure_planificador_edit_columns($conn)
+{
+    $required = [
+        "planificador_creado_at" => "ALTER TABLE despachos ADD COLUMN planificador_creado_at DATETIME NULL DEFAULT NULL",
+        "planificador_editado_at" => "ALTER TABLE despachos ADD COLUMN planificador_editado_at DATETIME NULL DEFAULT NULL",
+        "planificador_editado_por_usuario_id" => "ALTER TABLE despachos ADD COLUMN planificador_editado_por_usuario_id INT(10) UNSIGNED NULL DEFAULT NULL",
+        "planificador_campos_editados" => "ALTER TABLE despachos ADD COLUMN planificador_campos_editados TEXT NULL DEFAULT NULL",
+    ];
+
+    $existing = [];
+    $res = $conn->query("SHOW COLUMNS FROM despachos");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $existing[$row["Field"]] = true;
+        }
+    }
+
+    foreach ($required as $column => $sql) {
+        if (empty($existing[$column])) {
+            if (!$conn->query($sql)) {
+                throw new Exception(
+                    "Error preparando control de edición: " . $conn->error,
+                    500,
+                );
+            }
+        }
+    }
+}
+
 function get_or_create_cliente($conn, $nombre)
 {
     $nombre = clean_string($nombre);
@@ -639,6 +668,8 @@ function handle_read($conn)
         throw new Exception("Tipo no soportado", 400);
     }
 
+    ensure_planificador_edit_columns($conn);
+
     $whereConds = ["d.eliminado_at IS NULL"];
     if (count($allowedClienteIds)) {
         $whereConds[] =
@@ -654,7 +685,9 @@ function handle_read($conn)
                    d.salida_carga_programada, d.descarga_programada,
                    d.instrucciones, c.nombre AS cliente,
                    GROUP_CONCAT(DISTINCT lu.email ORDER BY lu.email SEPARATOR ' / ') AS lectores,
-                   u.id AS unidad_id, d.cliente_id, d.id AS despacho_id, d.tramo_numero
+                   u.id AS unidad_id, d.cliente_id, d.id AS despacho_id, d.tramo_numero,
+                   d.planificador_creado_at, d.planificador_editado_at,
+                   d.planificador_campos_editados
               FROM despachos d
               INNER JOIN clientes c ON c.id = d.cliente_id
               INNER JOIN unidades u ON u.id = d.unidad_id
@@ -696,6 +729,9 @@ function handle_read($conn)
             isset($row["cliente_id"]) ? (int) $row["cliente_id"] : 0,
             isset($row["despacho_id"]) ? (int) $row["despacho_id"] : 0,
             isset($row["tramo_numero"]) ? (int) $row["tramo_numero"] : 0,
+            $row["planificador_creado_at"] ?? "",
+            $row["planificador_editado_at"] ?? "",
+            $row["planificador_campos_editados"] ?? "[]",
         ];
     }
     json_response(["ok" => true, "data" => $rows]);
@@ -784,6 +820,8 @@ function handle_write_usuarios($conn, $rows, $context = null)
 
 function handle_write_logistica($conn, $rows, $context = null)
 {
+    ensure_planificador_edit_columns($conn);
+
     $saved = 0;
     $tramoByUnidad = [];
 
@@ -851,8 +889,8 @@ function handle_write_logistica($conn, $rows, $context = null)
                 cliente_id, unidad_id, folio, fecha_programada, tramo_numero,
                 ruta, origen, lugar_carga, destino, instrucciones,
                 salida_patio_programada, cita_carga, salida_carga_programada,
-                descarga_programada, source_system, legacy_key
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "planificador", ?)
+                descarga_programada, source_system, legacy_key, planificador_creado_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "planificador", ?, NOW())
              ON DUPLICATE KEY UPDATE
                 ruta = VALUES(ruta),
                 origen = VALUES(origen),

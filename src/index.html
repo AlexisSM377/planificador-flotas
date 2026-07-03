@@ -130,7 +130,8 @@
             .tab-btn {
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
+                justify-content: center;
+                gap: 10px;
                 padding: 18px 25px;
                 border: none;
                 background: none;
@@ -139,6 +140,7 @@
                 font-weight: 700;
                 color: var(--text-muted);
                 cursor: pointer;
+                text-align: center;
                 border-bottom: 3px solid transparent;
                 transition:
                     color 0.2s ease,
@@ -149,6 +151,12 @@
                 color: var(--accent);
                 border-bottom-color: var(--accent);
                 background: white;
+            }
+            .tabs-nav .tab-btn .lucide-icon {
+                width: 20px;
+                height: 20px;
+                min-width: 20px;
+                min-height: 20px;
             }
             .tab-content {
                 display: none;
@@ -203,6 +211,10 @@
                 font-weight: 800;
                 color: var(--text-muted);
             }
+            .optional-label {
+                color: #64748b;
+                font-weight: 700;
+            }
             input,
             select,
             textarea {
@@ -226,8 +238,10 @@
                 box-shadow: 0 0 0 4px rgba(0, 106, 166, 0.14);
             }
             .lucide-icon {
-                width: 16px;
-                height: 16px;
+                width: 18px;
+                height: 18px;
+                min-width: 18px;
+                min-height: 18px;
                 flex: 0 0 auto;
                 stroke-width: 2.2;
                 vertical-align: -0.18em;
@@ -238,14 +252,20 @@
             .lucide-icon--section {
                 margin-right: 8px;
                 color: var(--accent);
+                width: 20px;
+                height: 20px;
+                min-width: 20px;
+                min-height: 20px;
             }
             .tab-btn .lucide-icon,
             .btn .lucide-icon,
             .add-row-btn .lucide-icon,
             .remove-btn .lucide-icon,
             .label-icon-btn .lucide-icon {
-                width: 15px;
-                height: 15px;
+                width: 18px;
+                height: 18px;
+                min-width: 18px;
+                min-height: 18px;
             }
             button:focus-visible,
             summary:focus-visible,
@@ -791,11 +811,22 @@
             .chip {
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
+                gap: 6px;
+                width: fit-content;
+                white-space: nowrap;
                 border-radius: 999px;
                 padding: 2px 7px;
                 font-size: 12px;
                 font-weight: 700;
                 line-height: 1.35;
+            }
+            .chip .lucide-icon {
+                width: 16px;
+                height: 16px;
+                min-width: 16px;
+                min-height: 16px;
+                margin-right: 0;
             }
             .chip--warning {
                 background: #fef3c7;
@@ -821,6 +852,10 @@
                 text-decoration: underline;
             }
             .trip-state {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                white-space: nowrap;
                 color: var(--trip-state-color, #334155);
                 font-size: 12px;
                 font-weight: 700;
@@ -960,6 +995,10 @@
             @media (max-width: 600px) {
                 .tabs-nav {
                     flex-direction: column;
+                }
+                .tab-btn {
+                    width: 100%;
+                    justify-content: center;
                 }
                 .tab-content {
                     padding: 20px;
@@ -1170,12 +1209,223 @@
                 color: var(--text-muted);
                 font-size: 12px;
                 line-height: 1.4;
+                min-width: 0;
+            }
+
+            .schedule-points {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                align-items: stretch;
+            }
+
+            .schedule-point {
+                display: inline-grid;
+                grid-template-columns: 22px minmax(0, 1fr);
+                align-items: center;
+                gap: 7px;
+                min-width: 150px;
+                max-width: 100%;
+                padding: 7px 9px;
+                border: 1px solid #dbeafe;
+                border-radius: 8px;
+                background: #f8fbff;
+                color: #0f172a;
+            }
+
+            .tramo-edit-input--edited {
+                border-color: #f59e0b !important;
+                box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+            }
+
+            .schedule-point__icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 22px;
+                height: 22px;
+                border-radius: 7px;
+                background: #e0f2fe;
+                color: #0369a1;
+            }
+
+            .schedule-point__icon .lucide-icon {
+                width: 14px;
+                height: 14px;
+                min-width: 14px;
+                min-height: 14px;
+            }
+
+            .schedule-point__label {
+                display: block;
+                color: #475569;
+                font-size: 10px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                line-height: 1.1;
+                text-transform: uppercase;
+            }
+
+            .schedule-point__time {
+                display: block;
+                margin-top: 2px;
+                color: #0f172a;
+                font-size: 12px;
+                font-weight: 700;
+                line-height: 1.25;
+                overflow-wrap: anywhere;
+            }
+
+            .schedule-points--compact {
+                flex-direction: column;
+                gap: 5px;
+                width: 100%;
+            }
+
+            .schedule-points--compact .schedule-point {
+                width: 100%;
+                min-width: 0;
+                padding: 6px 8px;
+            }
+
+            .schedule-points--empty {
+                color: #64748b;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .tramo-detail-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+                gap: 10px;
+                margin: 0 0 14px;
+            }
+
+            .tramo-detail-field {
+                padding: 10px 12px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background: #f8fafc;
+            }
+
+            .tramo-detail-label {
+                display: block;
+                color: #64748b;
+                font-size: 10px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                line-height: 1.2;
+                text-transform: uppercase;
+            }
+
+            .tramo-detail-value {
+                display: block;
+                margin-top: 4px;
+                color: #0f172a;
+                font-size: 13px;
+                font-weight: 700;
+                line-height: 1.35;
+                overflow-wrap: anywhere;
+            }
+
+            .tramo-detail-section {
+                margin-top: 16px;
+            }
+
+            .tramo-detail-section-title {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                margin: 0 0 8px;
+                color: #0f172a;
+                font-size: 12px;
+                font-weight: 800;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+
+            .tramo-route-points {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+                gap: 8px;
+            }
+
+            .tramo-route-point {
+                display: grid;
+                grid-template-columns: 28px minmax(0, 1fr);
+                gap: 9px;
+                align-items: start;
+                padding: 10px;
+                border: 1px solid #dbeafe;
+                border-radius: 8px;
+                background: #f8fbff;
+            }
+
+            .tramo-route-point__icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+                background: #e0f2fe;
+                color: #0369a1;
+            }
+
+            .tramo-detail-notes {
+                min-height: 54px;
+                padding: 11px 12px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background: #f8fafc;
+                color: #334155;
+                font-size: 13px;
+                line-height: 1.45;
+                white-space: pre-wrap;
             }
 
             .session-row-actions {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
+                align-items: center;
+            }
+
+            .session-row-actions--end {
+                justify-content: flex-end;
+            }
+
+            .session-row-actions--inline {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: stretch;
+                justify-content: flex-end;
+                width: max-content;
+                margin-left: auto;
+            }
+
+            .session-row-actions--inline .btn {
+                justify-content: center;
+                width: auto;
+            }
+
+            .session-row-actions--inline .icon-btn {
+                align-self: center;
+            }
+
+            .session-tramo-summary {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-width: 0;
+            }
+
+            .session-tramo-summary__meta {
+                min-width: 0;
+                color: var(--text-muted);
+                font-size: 12px;
+                line-height: 1.35;
+                overflow-wrap: anywhere;
             }
 
             .session-expand-btn {
@@ -1230,6 +1480,7 @@
                 padding: 8px 10px;
                 border-bottom: 1px solid #e2e8f0;
                 font-size: 12px;
+                vertical-align: top;
             }
 
             .session-tramos-table th {
@@ -1239,6 +1490,13 @@
                 font-weight: 800;
                 letter-spacing: 0.04em;
                 text-transform: uppercase;
+            }
+
+            .session-tramos-table th:last-child,
+            .session-tramos-table td:last-child {
+                width: 1%;
+                text-align: right;
+                white-space: nowrap;
             }
 
             .session-tramos-table tr:last-child td {
@@ -1363,6 +1621,30 @@
                 grid-template-columns: repeat(3, 1fr);
                 gap: 14px;
             }
+            .plantillas-pagination {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-top: 18px;
+                padding: 12px 14px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: #f8fafc;
+                color: var(--text-muted);
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .plantillas-pagination-controls {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .plantillas-pagination-page {
+                min-width: 70px;
+                color: var(--text-main);
+                text-align: center;
+            }
             @media (max-width: 1024px) {
                 .plantillas-grid {
                     grid-template-columns: repeat(2, 1fr);
@@ -1371,6 +1653,13 @@
             @media (max-width: 640px) {
                 .plantillas-grid {
                     grid-template-columns: 1fr;
+                }
+                .plantillas-pagination {
+                    align-items: stretch;
+                    flex-direction: column;
+                }
+                .plantillas-pagination-controls {
+                    justify-content: space-between;
                 }
             }
             .plantilla-card {
@@ -2656,7 +2945,7 @@
                 z-index: 1000;
                 align-items: center;
                 justify-content: center;
-                padding: 20px;
+                padding: clamp(8px, 2vw, 20px);
             "
         >
             <div
@@ -2664,7 +2953,10 @@
                     background: #fff;
                     border-radius: 14px;
                     width: 100%;
-                    max-width: 500px;
+                    max-width: min(860px, 100%);
+                    max-height: calc(100dvh - 24px);
+                    display: flex;
+                    flex-direction: column;
                     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
                     overflow: hidden;
                 "
@@ -2677,6 +2969,7 @@
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
+                        flex: 0 0 auto;
                     "
                 >
                     <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
@@ -2694,8 +2987,17 @@
                     </button>
                 </div>
 
-                <div style="padding: 20px">
+                <div
+                    style="
+                        padding: clamp(14px, 2.5vw, 20px);
+                        overflow-y: auto;
+                        flex: 1 1 auto;
+                        min-height: 0;
+                    "
+                >
                     <input type="hidden" id="editTramoId" />
+                    <input type="hidden" id="editTramoCreatedAt" />
+                    <input type="hidden" id="editTramoEditedAt" />
 
                     <p
                         style="
@@ -2837,6 +3139,129 @@
                         "
                     />
 
+                    <div
+                        style="
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+                            gap: 10px;
+                            margin-bottom: 12px;
+                        "
+                    >
+                        <div>
+                            <label
+                                style="
+                                    display: block;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    margin-bottom: 4px;
+                                    color: var(--text-main);
+                                "
+                                >Salida de Patio</label
+                            >
+                            <input
+                                id="editTramoSalidaPatio"
+                                type="datetime-local"
+                                oninput="updateEditTramoTimeHints()"
+                                style="
+                                    width: 100%;
+                                    padding: 9px 11px;
+                                    border: 1px solid var(--border);
+                                    border-radius: 8px;
+                                    font-size: 13px;
+                                "
+                            />
+                            <small
+                                id="editTramoSalidaPatio12h"
+                                style="
+                                    display: block;
+                                    margin-top: 4px;
+                                    color: var(--text-muted);
+                                    font-size: 11px;
+                                "
+                            ></small>
+                        </div>
+                        <div>
+                            <label
+                                style="
+                                    display: block;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    margin-bottom: 4px;
+                                    color: var(--text-main);
+                                "
+                                >Cita de Carga</label
+                            >
+                            <input
+                                id="editTramoCitaCarga"
+                                type="datetime-local"
+                                oninput="updateEditTramoTimeHints()"
+                                style="
+                                    width: 100%;
+                                    padding: 9px 11px;
+                                    border: 1px solid var(--border);
+                                    border-radius: 8px;
+                                    font-size: 13px;
+                                "
+                            />
+                            <small
+                                id="editTramoCitaCarga12h"
+                                style="
+                                    display: block;
+                                    margin-top: 4px;
+                                    color: var(--text-muted);
+                                    font-size: 11px;
+                                "
+                            ></small>
+                        </div>
+                        <div>
+                            <label
+                                style="
+                                    display: block;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    margin-bottom: 4px;
+                                    color: var(--text-main);
+                                "
+                                >Cita de Descarga</label
+                            >
+                            <input
+                                id="editTramoDescarga"
+                                type="datetime-local"
+                                oninput="updateEditTramoTimeHints()"
+                                style="
+                                    width: 100%;
+                                    padding: 9px 11px;
+                                    border: 1px solid var(--border);
+                                    border-radius: 8px;
+                                    font-size: 13px;
+                                "
+                            />
+                            <small
+                                id="editTramoDescarga12h"
+                                style="
+                                    display: block;
+                                    margin-top: 4px;
+                                    color: var(--text-muted);
+                                    font-size: 11px;
+                                "
+                            ></small>
+                        </div>
+                    </div>
+
+                    <p
+                        id="editTramoLockMessage"
+                        style="
+                            display: none;
+                            font-size: 12px;
+                            color: #b45309;
+                            background: #fffbeb;
+                            border: 1px solid #fde68a;
+                            border-radius: 8px;
+                            padding: 9px 11px;
+                            margin: 0 0 12px;
+                        "
+                    ></p>
+
                     <label
                         style="
                             display: block;
@@ -2849,13 +3274,13 @@
                     >
                     <textarea
                         id="editTramoInstrucciones"
-                        rows="3"
+                        rows="2"
                         style="
                             width: 100%;
                             padding: 9px 11px;
                             border: 1px solid var(--border);
                             border-radius: 8px;
-                            margin-bottom: 18px;
+                            margin-bottom: 12px;
                             font-size: 13px;
                             resize: vertical;
                             font-family: inherit;
@@ -2866,13 +3291,30 @@
                         style="
                             display: flex;
                             justify-content: flex-end;
+                            flex-wrap: wrap;
                             gap: 10px;
+                            position: sticky;
+                            bottom: -1px;
+                            z-index: 2;
+                            margin: 0 -2px;
+                            padding: 12px 2px 2px;
+                            background: linear-gradient(
+                                to bottom,
+                                rgba(255, 255, 255, 0.88),
+                                #fff 26%
+                            );
+                            border-top: 1px solid var(--border);
                         "
                     >
                         <button
                             onclick="closeEditTramoModal()"
                             class="btn btn-secondary"
-                            style="padding: 9px 16px; font-size: 13px"
+                            style="
+                                padding: 9px 16px;
+                                font-size: 13px;
+                                flex: 1 1 140px;
+                                max-width: 190px;
+                            "
                         >
                             Cancelar
                         </button>
@@ -2880,11 +3322,98 @@
                             id="saveTramoEditBtn"
                             onclick="saveTramoEdit()"
                             class="btn btn-primary"
-                            style="padding: 9px 16px; font-size: 13px"
+                            style="
+                                padding: 9px 16px;
+                                font-size: 13px;
+                                flex: 1 1 170px;
+                                max-width: 230px;
+                            "
                         >
                             Guardar cambios
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Ver detalle de un tramo -->
+        <div
+            id="tramoDetailModal"
+            style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(5, 25, 55, 0.45);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+                padding: clamp(8px, 2vw, 20px);
+            "
+        >
+            <div
+                style="
+                    background: #fff;
+                    border-radius: 14px;
+                    width: 100%;
+                    max-width: min(820px, 100%);
+                    max-height: calc(100dvh - 24px);
+                    display: flex;
+                    flex-direction: column;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+                    overflow: hidden;
+                "
+            >
+                <div
+                    style="
+                        background: var(--primary);
+                        color: #fff;
+                        padding: 16px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        flex: 0 0 auto;
+                    "
+                >
+                    <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
+                        <i data-lucide="clipboard-list" class="lucide-icon" aria-hidden="true"></i>
+                        Detalle del Tramo
+                    </strong>
+                    <button
+                        type="button"
+                        class="icon-btn icon-btn--inverse"
+                        onclick="closeTramoDetailModal()"
+                        aria-label="Cerrar detalle de tramo"
+                        title="Cerrar"
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div
+                    id="tramoDetailContent"
+                    style="
+                        padding: clamp(14px, 2.5vw, 20px);
+                        overflow-y: auto;
+                        flex: 1 1 auto;
+                        min-height: 0;
+                    "
+                ></div>
+                <div
+                    style="
+                        display: flex;
+                        justify-content: flex-end;
+                        padding: 12px 20px 16px;
+                        border-top: 1px solid var(--border);
+                        background: #fff;
+                    "
+                >
+                    <button
+                        type="button"
+                        onclick="closeTramoDetailModal()"
+                        class="btn btn-primary"
+                        style="padding: 9px 18px; font-size: 13px"
+                    >
+                        Cerrar
+                    </button>
                 </div>
             </div>
         </div>
@@ -2914,6 +3443,8 @@
             const PLANIFICADOR_API = "api/planificador.php";
             const VIAJES_API = "api/viajes.php";
             let plantillasRutaCache = [];
+            let plantillasRutaPage = 1;
+            const PLANTILLAS_RUTA_PAGE_SIZE = 12;
             let rutasHistorialSearchTimer = null;
             let plantillasRutaSecciones = {
                 favoritos: [],
@@ -3466,15 +3997,6 @@
                     [row[8] || "Origen", row[9] ? `Carga: ${row[9]}` : "", row[10] || "Destino"]
                         .filter(Boolean)
                         .join(" → ");
-                const scheduleText = (row) =>
-                    [
-                        row[11] ? `Patio ${formatDateTime(row[11])}` : "",
-                        row[12] ? `Carga ${formatDateTime(row[12])}` : "",
-                        row[14] ? `Descarga ${formatDateTime(row[14])}` : "",
-                    ]
-                        .filter(Boolean)
-                        .join(" · ") || "Sin horario";
-
                 let html = `
                     <div class="session-units-shell">
                       <div class="session-units-scroll">
@@ -3514,23 +4036,47 @@
                         ? `${foliosUnidad.length} folio${foliosUnidad.length !== 1 ? "s" : ""}`
                         : "Sin folio";
                     const firstRoute = routeText(firstRow);
-                    const firstSchedule = scheduleText(firstRow);
+                    const firstSchedule = schedulePointsHtml(firstRow, true);
                     const tramosHtml = rows
                         .map((row, i) => {
                             const tramoNumero = row[21] || i + 1;
                             const tramoId = parseInt(row[20], 10) || 0;
-                            const route = routeText(row);
-                            const recorrido = `${row[8] || "-"}${row[9] ? ` → Carga: ${row[9]}` : ""} → ${row[10] || "-"}`;
-                            const tramoActions = tramoId
+                            const editState = getTramoEditState(row);
+                            const detailAction = tramoId
                                 ? `
+                                  <button
+                                    type="button"
+                                    onclick="openTramoDetail(${tramoId})"
+                                    class="btn btn-secondary"
+                                    style="padding: 6px 9px; font-size: 11px;">
+                                    ${lucideIcon("eye", "lucide-icon--inline")}
+                                    Detalle
+                                  </button>`
+                                : "";
+                            const tramoActions = tramoId
+                                ? editState.canEdit
+                                    ? `
                                   <button
                                     type="button"
                                     onclick="editTramo(${tramoId})"
                                     class="btn btn-secondary"
                                     style="padding: 6px 9px; font-size: 11px;">
-                                    ${lucideIcon("pencil", "lucide-icon--inline")}
-                                    Editar
-                                  </button>
+                                     ${lucideIcon("pencil", "lucide-icon--inline")}
+                                     Editar
+                                  </button>`
+                                    : `
+                                  <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    style="padding: 6px 9px; font-size: 11px;"
+                                    disabled
+                                    title="${escapeHtml(editState.reason)}">
+                                    ${lucideIcon("lock", "lucide-icon--inline")}
+                                    Bloqueado
+                                  </button>`
+                                : "";
+                            const deleteAction = tramoId
+                                ? `
                                   <button
                                     type="button"
                                     onclick="deleteTramo(${tramoId})"
@@ -3538,17 +4084,18 @@
                                     title="Eliminar tramo ${escapeHtml(tramoNumero)}">
                                     ${lucideIcon("trash-2")}
                                   </button>`
-                                : "";
+                                 : "";
                             return `
                               <tr>
-                                <td><span class="chip chip--info">T${escapeHtml(tramoNumero)}</span></td>
                                 <td>
-                                  <div class="session-tramo-route" title="${escapeHtml(route)}">${escapeHtml(route)}</div>
-                                  <div class="session-cell-muted">${escapeHtml(recorrido)}</div>
+                                  <div class="session-tramo-summary">
+                                    <span class="chip chip--info">T${escapeHtml(tramoNumero)}</span>
+                                    <div class="session-tramo-summary__meta">
+                                      Folio ${escapeHtml(row[1] || "—")} · Unidad ${escapeHtml(row[2] || "—")}
+                                    </div>
+                                  </div>
                                 </td>
-                                <td>${escapeHtml(scheduleText(row))}</td>
-                                <td><div class="session-tramo-notes" title="${escapeHtml(row[15] || "")}">${escapeHtml(row[15] || "Sin instrucciones")}</div></td>
-                                <td><div class="session-row-actions">${tramoActions}</div></td>
+                                <td><div class="session-row-actions session-row-actions--inline">${detailAction}${tramoActions}${deleteAction}</div></td>
                               </tr>`;
                         })
                         .join("");
@@ -3582,7 +4129,7 @@
                               </td>
                               <td>
                                 <div class="session-route-preview" title="${escapeHtml(firstRoute)}">${escapeHtml(firstRoute)}</div>
-                                <div class="session-route-meta">${escapeHtml(firstSchedule)}</div>
+                                <div class="session-route-meta">${firstSchedule}</div>
                               </td>
                               <td class="session-cell-muted">${escapeHtml(firstRow[4] || "No especificado")}</td>
                               <td>
@@ -3605,9 +4152,6 @@
                                     <thead>
                                       <tr>
                                         <th>Tramo</th>
-                                        <th>Ruta / recorrido</th>
-                                        <th>Horarios programados</th>
-                                        <th>Instrucciones</th>
                                         <th>Acciones</th>
                                       </tr>
                                     </thead>
@@ -3683,27 +4227,180 @@
             function formatDateTime(dateTimeStr) {
                 if (!dateTimeStr) return "";
 
-                if (/^\d{2}\/\d{2}\/\d{4}/.test(dateTimeStr)) {
-                    return dateTimeStr;
-                }
-
-                // Si viene en formato ISO o similar, convertir
                 try {
-                    const date = new Date(dateTimeStr.replace(" ", "T"));
+                    const raw = String(dateTimeStr).trim();
+                    let date;
+                    if (
+                        /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/.test(
+                            raw,
+                        )
+                    ) {
+                        const m = raw.match(
+                            /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/,
+                        );
+                        date = new Date(
+                            Number(m[3]),
+                            Number(m[2]) - 1,
+                            Number(m[1]),
+                            Number(m[4]),
+                            Number(m[5]),
+                            Number(m[6] || 0),
+                        );
+                    } else {
+                        date = new Date(raw.replace(" ", "T"));
+                    }
                     if (isNaN(date.getTime())) return dateTimeStr;
 
                     const pad = (v) => String(v).padStart(2, "0");
                     const day = pad(date.getDate());
                     const month = pad(date.getMonth() + 1);
                     const year = date.getFullYear();
-                    const hours = pad(date.getHours());
+                    const hour24 = date.getHours();
+                    const hour12 = hour24 % 12 || 12;
                     const minutes = pad(date.getMinutes());
-                    const seconds = pad(date.getSeconds());
+                    const period = hour24 >= 12 ? "PM" : "AM";
 
-                    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                    return `${day}/${month}/${year} ${hour12}:${minutes} ${period}`;
                 } catch (e) {
                     return dateTimeStr;
                 }
+            }
+
+            function getEditedFields(row) {
+                const raw = row?.[24] || "";
+                if (!raw) return new Set();
+                if (Array.isArray(raw)) return new Set(raw.filter(Boolean));
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        return new Set(parsed.filter(Boolean));
+                    }
+                } catch (e) {
+                    // Permite valores legacy separados por coma.
+                }
+                return new Set(
+                    String(raw)
+                        .split(",")
+                        .map((v) => v.trim())
+                        .filter(Boolean),
+                );
+            }
+
+            function applyEditedInputBorders(row) {
+                const editedFields = getEditedFields(row);
+                const fieldInputMap = {
+                    folio: "editTramoFolio",
+                    ruta: "editTramoRuta",
+                    origen: "editTramoOrigen",
+                    lugar_carga: "editTramoLugarCarga",
+                    destino: "editTramoDestino",
+                    salida_patio_programada: "editTramoSalidaPatio",
+                    cita_carga: "editTramoCitaCarga",
+                    descarga_programada: "editTramoDescarga",
+                    instrucciones: "editTramoInstrucciones",
+                };
+
+                Object.entries(fieldInputMap).forEach(([field, inputId]) => {
+                    const input = document.getElementById(inputId);
+                    if (!input) return;
+                    input.classList.toggle(
+                        "tramo-edit-input--edited",
+                        editedFields.has(field),
+                    );
+                });
+            }
+
+            function schedulePointsHtml(row, compact = false) {
+                const points = [
+                    {
+                        label: "Patio",
+                        icon: "warehouse",
+                        value: row?.[11],
+                    },
+                    {
+                        label: "Carga",
+                        icon: "package-check",
+                        value: row?.[12],
+                    },
+                    {
+                        label: "Descarga",
+                        icon: "map-pin-check",
+                        value: row?.[14],
+                    },
+                ].filter((point) => point.value);
+
+                if (!points.length) {
+                    return '<span class="schedule-points--empty">Sin horario</span>';
+                }
+
+                return `<div class="schedule-points${compact ? " schedule-points--compact" : ""}">
+                    ${points
+                        .map(
+                            (point) => `
+                                <span class="schedule-point">
+                                    <span class="schedule-point__icon">${lucideIcon(point.icon)}</span>
+                                    <span>
+                                        <span class="schedule-point__label">${escapeHtml(point.label)}</span>
+                                        <span class="schedule-point__time">${escapeHtml(formatDateTime(point.value))}</span>
+                                    </span>
+                                </span>`,
+                        )
+                        .join("")}
+                </div>`;
+            }
+
+            function updateEditTramoTimeHints() {
+                const fields = [
+                    ["editTramoSalidaPatio", "editTramoSalidaPatio12h"],
+                    ["editTramoCitaCarga", "editTramoCitaCarga12h"],
+                    ["editTramoDescarga", "editTramoDescarga12h"],
+                ];
+
+                fields.forEach(([inputId, hintId]) => {
+                    const input = document.getElementById(inputId);
+                    const hint = document.getElementById(hintId);
+                    if (!input || !hint) return;
+                    hint.textContent = input.value
+                        ? formatDateTime(input.value)
+                        : "";
+                });
+            }
+
+            function toDateTimeLocalInputValue(value) {
+                if (!value) return "";
+                const s = String(value).trim();
+                if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+                    return s.slice(0, 16);
+                }
+                if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/.test(s)) {
+                    return s.replace(" ", "T").slice(0, 16);
+                }
+                const d = new Date(s);
+                if (Number.isNaN(d.getTime())) return "";
+                const pad = (v) => String(v).padStart(2, "0");
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
+
+            function getDatePart(value) {
+                const s = String(value || "").trim();
+                if (!s) return "";
+                if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+                const d = new Date(s.replace(" ", "T"));
+                if (Number.isNaN(d.getTime())) return "";
+                const pad = (v) => String(v).padStart(2, "0");
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            }
+
+            function getTramoEditState(row) {
+                const createdDate = getDatePart(row?.[22] || row?.[0] || "");
+                if (createdDate && createdDate !== todayLocal()) {
+                    return {
+                        canEdit: false,
+                        reason: "Solo se pueden editar tramos capturados hoy",
+                    };
+                }
+
+                return { canEdit: true, reason: "" };
             }
 
             function changeDateFilter(filter) {
@@ -3949,7 +4646,17 @@
                     return;
                 }
 
+                const editState = getTramoEditState(fila);
+                if (!editState.canEdit) {
+                    showToast("⚠️ " + editState.reason);
+                    return;
+                }
+
                 document.getElementById("editTramoId").value = despachoId;
+                document.getElementById("editTramoCreatedAt").value =
+                    fila[22] || "";
+                document.getElementById("editTramoEditedAt").value =
+                    fila[23] || "";
                 document.getElementById("editTramoFolio").value = fila[1] || "";
                 document.getElementById("editTramoRuta").value = fila[7] || "";
                 document.getElementById("editTramoOrigen").value =
@@ -3958,10 +4665,27 @@
                     fila[9] || "";
                 document.getElementById("editTramoDestino").value =
                     fila[10] || "";
+                document.getElementById("editTramoSalidaPatio").value =
+                    toDateTimeLocalInputValue(fila[11]);
+                document.getElementById("editTramoCitaCarga").value =
+                    toDateTimeLocalInputValue(fila[12]);
+                document.getElementById("editTramoDescarga").value =
+                    toDateTimeLocalInputValue(fila[14]);
+                updateEditTramoTimeHints();
                 document.getElementById("editTramoInstrucciones").value =
                     fila[15] || "";
                 document.getElementById("editTramoLabel").textContent =
                     `${fila[2] || "Unidad"} · Folio ${fila[1] || "—"} · Tramo ${fila[21] || ""}`;
+                applyEditedInputBorders(fila);
+
+                const lockMessage = document.getElementById(
+                    "editTramoLockMessage",
+                );
+                if (lockMessage) {
+                    lockMessage.style.display = "block";
+                    lockMessage.textContent =
+                        "Puedes guardar cambios durante el día en que se capturó el tramo. Al día siguiente queda bloqueado.";
+                }
 
                 document.getElementById("editTramoModal").style.display =
                     "flex";
@@ -3969,6 +4693,103 @@
 
             function closeEditTramoModal() {
                 document.getElementById("editTramoModal").style.display =
+                    "none";
+            }
+
+            function openTramoDetail(despachoId) {
+                despachoId = parseInt(despachoId, 10) || 0;
+                if (!despachoId) {
+                    showToast("⚠️ No se pudo identificar el tramo");
+                    return;
+                }
+
+                const fila = allUnitsData.find(
+                    (row) => parseInt(row[20], 10) === despachoId,
+                );
+                if (!fila) {
+                    showToast("⚠️ Tramo no encontrado en los datos cargados");
+                    return;
+                }
+
+                const safeValue = (value, fallback = "N/A") =>
+                    escapeHtml(value || fallback);
+                const field = (label, value, fallback = "N/A") => `
+                    <div class="tramo-detail-field">
+                        <span class="tramo-detail-label">${escapeHtml(label)}</span>
+                        <span class="tramo-detail-value">${safeValue(value, fallback)}</span>
+                    </div>`;
+                const routePoint = (label, icon, value) => `
+                    <div class="tramo-route-point">
+                        <span class="tramo-route-point__icon">${lucideIcon(icon)}</span>
+                        <span>
+                            <span class="tramo-detail-label">${escapeHtml(label)}</span>
+                            <span class="tramo-detail-value">${safeValue(value, "Sin dato")}</span>
+                        </span>
+                    </div>`;
+
+                const content = document.getElementById("tramoDetailContent");
+                if (!content) return;
+
+                content.innerHTML = `
+                    <p style="margin: 0 0 14px; color: var(--text-muted); font-size: 12px;">
+                        <strong style="color: var(--primary);">
+                            ${safeValue(fila[2], "Unidad")} · Folio ${safeValue(fila[1], "—")} · Tramo ${safeValue(fila[21], "—")}
+                        </strong>
+                    </p>
+
+                    <div class="tramo-detail-grid">
+                        ${field("Cliente", fila[16])}
+                        ${field("Operador", fila[5])}
+                        ${field("Teléfonos", fila[6], "Sin teléfono")}
+                        ${field("Placas", fila[3])}
+                        ${field("Equipos", fila[4], "No especificado")}
+                        ${field("Fecha programada", fila[0], "Sin fecha")}
+                    </div>
+
+                    <section class="tramo-detail-section">
+                        <h3 class="tramo-detail-section-title">
+                            ${lucideIcon("route", "lucide-icon--inline")}
+                            Recorrido
+                        </h3>
+                        <div class="tramo-route-points">
+                            ${routePoint("Patio / Origen", "warehouse", fila[8])}
+                            ${routePoint("Punto de Carga", "package-check", fila[9])}
+                            ${routePoint("Punto de Descarga", "map-pin-check", fila[10])}
+                        </div>
+                    </section>
+
+                    <section class="tramo-detail-section">
+                        <h3 class="tramo-detail-section-title">
+                            ${lucideIcon("clock-3", "lucide-icon--inline")}
+                            Horarios programados
+                        </h3>
+                        ${schedulePointsHtml(fila)}
+                    </section>
+
+                    <section class="tramo-detail-section">
+                        <h3 class="tramo-detail-section-title">
+                            ${lucideIcon("map", "lucide-icon--inline")}
+                            Ruta / Identificador
+                        </h3>
+                        <div class="tramo-detail-notes">${safeValue(fila[7], "Sin ruta")}</div>
+                    </section>
+
+                    <section class="tramo-detail-section">
+                        <h3 class="tramo-detail-section-title">
+                            ${lucideIcon("file-text", "lucide-icon--inline")}
+                            Instrucciones
+                        </h3>
+                        <div class="tramo-detail-notes">${safeValue(fila[15], "Sin instrucciones")}</div>
+                    </section>
+                `;
+
+                document.getElementById("tramoDetailModal").style.display =
+                    "flex";
+                refreshLucideIcons();
+            }
+
+            function closeTramoDetailModal() {
+                document.getElementById("tramoDetailModal").style.display =
                     "none";
             }
 
@@ -4002,6 +4823,15 @@
                         .value.trim(),
                     destino: document
                         .getElementById("editTramoDestino")
+                        .value.trim(),
+                    salida_patio_programada: document
+                        .getElementById("editTramoSalidaPatio")
+                        .value.trim(),
+                    cita_carga: document
+                        .getElementById("editTramoCitaCarga")
+                        .value.trim(),
+                    descarga_programada: document
+                        .getElementById("editTramoDescarga")
                         .value.trim(),
                     instrucciones: document
                         .getElementById("editTramoInstrucciones")
@@ -4347,8 +5177,9 @@
                         card.querySelector(".d-regreso-origen")?.value || "",
                 }));
 
-                // Validar que ningún tiempo programado del tramo esté en el pasado
-                const ahoraDt = nowDateTimeLocal();
+                // Validar que ningún tiempo programado del tramo tenga fecha anterior a hoy
+                // Permitir horas anteriores dentro del mismo día para capturas tardías.
+                const hoyTramoStr = todayLocal();
                 const camposTiempo = [
                     ["salida_patio", "Salida de Patio"],
                     ["cita_carga", "Cita de Carga"],
@@ -4356,15 +5187,6 @@
                     ["regreso_origen_programado", "Fecha de Regreso"],
                 ];
                 for (let i = 0; i < tramos.length; i++) {
-                    if (
-                        tramos[i].requiere_regreso_origen &&
-                        !tramos[i].regreso_origen_programado
-                    ) {
-                        showToast(
-                            `⚠️ Tramo ${i + 1}: captura la Fecha de Regreso`,
-                        );
-                        return;
-                    }
                     for (const [campo, etiqueta] of camposTiempo) {
                         const val = tramos[i][campo];
                         if (
@@ -4373,9 +5195,9 @@
                         ) {
                             continue;
                         }
-                        if (val && val < ahoraDt) {
+                        if (val && val.slice(0, 10) < hoyTramoStr) {
                             showToast(
-                                `⚠️ Tramo ${i + 1}: "${etiqueta}" no puede ser una fecha/hora pasada`,
+                                `⚠️ Tramo ${i + 1}: "${etiqueta}" no puede tener una fecha pasada`,
                             );
                             return;
                         }
@@ -4964,14 +5786,8 @@
                     card.querySelector(".d-destino")?.focus();
                     return;
                 }
-                if (requiereRegresoOrigen && !regresoOrigen) {
-                    showToast("⚠️ Captura la Fecha de Regreso");
-                    card.querySelector(".d-regreso-origen")?.focus();
-                    return;
-                }
-
-                // Ningún tiempo programado puede estar en el pasado
-                const ahoraDt = nowDateTimeLocal();
+                // Ningún tiempo programado puede tener fecha anterior a hoy.
+                const hoyTramoStr = todayLocal();
                 const tiempos = [
                     [salidaPatio, "Salida de Patio"],
                     [citaCarga, "Cita de Carga"],
@@ -4982,9 +5798,9 @@
                     ],
                 ];
                 for (const [val, etiqueta] of tiempos) {
-                    if (val && val < ahoraDt) {
+                    if (val && val.slice(0, 10) < hoyTramoStr) {
                         showToast(
-                            `⚠️ "${etiqueta}" no puede ser una fecha/hora pasada`,
+                            `⚠️ "${etiqueta}" no puede tener una fecha pasada`,
                         );
                         return;
                     }
@@ -5355,8 +6171,9 @@
                 const div = document.createElement("div");
                 div.className = "dispatch-card";
 
-                // No permitir tiempos pasados en los campos de programación del tramo
-                const minDateTime = nowDateTimeLocal();
+                // No permitir fechas anteriores a hoy en los campos de programación del tramo.
+                // La hora puede ser anterior a la actual cuando se captura tarde.
+                const minDateTime = `${todayLocal()}T00:00`;
 
                 div.innerHTML = `
             <div class="dispatch-badge">TRAMO ${dispatchCount}</div>
@@ -5415,6 +6232,17 @@
                     </summary>
                     <div class="schedule-grid">
                         <div class="form-group"><label>Cita de Descarga</label><input type="datetime-local" class="d-descarga" min="${minDateTime}"></div>
+                    </div>
+                </details>
+
+                <details class="schedule-section">
+                    <summary>
+                        <div class="schedule-summary">
+                            <span class="schedule-summary-title">Regreso a origen</span>
+                            <span class="schedule-summary-meta">Seguimiento opcional</span>
+                        </div>
+                    </summary>
+                    <div class="schedule-grid">
                         <div class="form-group" style="grid-column: 1 / -1;">
                             <label class="return-origin-toggle">
                                 <input type="checkbox" class="d-requiere-regreso-origen" onchange="toggleRegresoOrigen(this)">
@@ -5422,8 +6250,8 @@
                             </label>
                         </div>
                         <div class="form-group d-regreso-origen-wrap hidden">
-                            <label>Fecha de Regreso</label>
-                            <input type="datetime-local" class="d-regreso-origen" min="${minDateTime}">
+                            <label>Fecha de Regreso <span class="optional-label">(opcional)</span></label>
+                            <input type="datetime-local" class="d-regreso-origen" min="${minDateTime}" placeholder="Opcional: capturar al confirmar llegada a origen">
                         </div>
                     </div>
                 </details>
@@ -5445,7 +6273,7 @@
                 const activo = !!inputEl.checked;
                 if (wrap) wrap.classList.toggle("hidden", !activo);
                 if (fecha) {
-                    fecha.required = activo;
+                    fecha.required = false;
                     if (!activo) fecha.value = "";
                 }
             }
@@ -6204,6 +7032,7 @@
                             ...frecuentes,
                             ...recientes,
                         ];
+                        plantillasRutaPage = 1;
                         renderPlantillasRutaTable();
                         document.getElementById("plantillasCount").textContent =
                             plantillasRutaCache.length;
@@ -6357,40 +7186,108 @@
                     </div>`;
                 };
 
-                const seccion = (icono, titulo, subtitulo, items) => {
+                const totalRutas = plantillasRutaCache.length;
+                const totalPaginas = Math.max(
+                    1,
+                    Math.ceil(totalRutas / PLANTILLAS_RUTA_PAGE_SIZE),
+                );
+                plantillasRutaPage = Math.min(
+                    Math.max(parseInt(plantillasRutaPage || 1, 10), 1),
+                    totalPaginas,
+                );
+                const desde =
+                    (plantillasRutaPage - 1) * PLANTILLAS_RUTA_PAGE_SIZE;
+                const visibles = plantillasRutaCache.slice(
+                    desde,
+                    desde + PLANTILLAS_RUTA_PAGE_SIZE,
+                );
+                const visibleItems = new Set(visibles);
+                const seccionesVisibles = {
+                    favoritos: plantillasRutaSecciones.favoritos.filter((p) =>
+                        visibleItems.has(p),
+                    ),
+                    frecuentes: plantillasRutaSecciones.frecuentes.filter((p) =>
+                        visibleItems.has(p),
+                    ),
+                    recientes: plantillasRutaSecciones.recientes.filter((p) =>
+                        visibleItems.has(p),
+                    ),
+                };
+                const inicio = totalRutas ? desde + 1 : 0;
+                const fin = Math.min(
+                    desde + visibles.length,
+                    totalRutas,
+                );
+
+                const seccion = (icono, titulo, subtitulo, items, total) => {
                     if (!items || items.length === 0) return "";
                     const cards = items.map(card).join("");
                     return `
                         <div class="historial-seccion" style="margin-bottom: 28px;">
                             <h3 style="margin: 0 0 4px; display:flex; align-items:center;">
                                 ${lucideIcon(icono, "lucide-icon--section")}
-                                ${titulo} <span style="color:var(--text-muted); font-weight:normal; margin-left: 6px;">(${items.length})</span>
+                                ${titulo} <span style="color:var(--text-muted); font-weight:normal; margin-left: 6px;">(${total})</span>
                             </h3>
                             <p style="margin: 0 0 12px; font-size: 12px; color: var(--text-muted);">${subtitulo}</p>
                             <div class="plantillas-grid">${cards}</div>
                         </div>`;
                 };
 
+                const pagination =
+                    totalPaginas > 1
+                        ? `<div class="plantillas-pagination">
+                            <span>Mostrando ${inicio}-${fin} de ${totalRutas} rutas</span>
+                            <div class="plantillas-pagination-controls">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-secondary"
+                                    ${plantillasRutaPage <= 1 ? "disabled" : ""}
+                                    onclick="setPlantillasRutaPage(${plantillasRutaPage - 1})"
+                                >
+                                    ${lucideIcon("chevron-left", "lucide-icon--inline")} Anterior
+                                </button>
+                                <span class="plantillas-pagination-page">${plantillasRutaPage} / ${totalPaginas}</span>
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-secondary"
+                                    ${plantillasRutaPage >= totalPaginas ? "disabled" : ""}
+                                    onclick="setPlantillasRutaPage(${plantillasRutaPage + 1})"
+                                >
+                                    Siguiente ${lucideIcon("chevron-right", "lucide-icon--inline")}
+                                </button>
+                            </div>
+                        </div>`
+                        : "";
+
                 container.innerHTML =
                     seccion(
                         "star",
                         "Favoritos",
                         "Rutas fijadas que siempre aparecen primero.",
-                        plantillasRutaSecciones.favoritos,
+                        seccionesVisibles.favoritos,
+                        plantillasRutaSecciones.favoritos.length,
                     ) +
                     seccion(
                         "repeat-2",
                         "Frecuentes",
                         "Rutas que ya has completado, ordenadas por uso.",
-                        plantillasRutaSecciones.frecuentes,
+                        seccionesVisibles.frecuentes,
+                        plantillasRutaSecciones.frecuentes.length,
                     ) +
                     seccion(
                         "clock-3",
                         "Recientes",
                         "Rutas recientes detectadas en el historial.",
-                        plantillasRutaSecciones.recientes,
-                    );
+                        seccionesVisibles.recientes,
+                        plantillasRutaSecciones.recientes.length,
+                    ) +
+                    pagination;
                 refreshLucideIcons();
+            }
+
+            function setPlantillasRutaPage(page) {
+                plantillasRutaPage = Math.max(1, parseInt(page, 10) || 1);
+                renderPlantillasRutaTable();
             }
 
             /**
@@ -6984,6 +7881,7 @@
             window.aplicarPlantillaATramo = aplicarPlantillaATramo;
             window.buscarRutasHistorial = buscarRutasHistorial;
             window.aplicarRutaHistorial = aplicarRutaHistorial;
+            window.setPlantillasRutaPage = setPlantillasRutaPage;
             window.construirOpcionesRutas = construirOpcionesRutas;
             window.actualizarSelectoresPlantillas =
                 actualizarSelectoresPlantillas;
@@ -7014,6 +7912,4 @@
         </script>
     </body>
 </html>
-
-
 
