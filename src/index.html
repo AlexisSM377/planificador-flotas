@@ -1389,6 +1389,22 @@
                 flex-wrap: wrap;
                 gap: 6px;
                 align-items: center;
+                justify-content: center;
+            }
+
+            .session-unit-edit-button {
+                display: inline-flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                width: auto;
+                white-space: nowrap;
+            }
+
+            .session-unit-edit-button .lucide-icon {
+                flex: 0 0 auto;
+                margin-right: 0;
             }
 
             .session-row-actions--end {
@@ -1772,7 +1788,9 @@
             .plantilla-card-instr summary::-webkit-details-marker {
                 display: none;
             }
-            .plantilla-card-instr details[open] .plantilla-card-instr-text--preview {
+            .plantilla-card-instr
+                details[open]
+                .plantilla-card-instr-text--preview {
                 display: none;
             }
             .plantilla-card-instr:has(details[open])
@@ -1873,35 +1891,55 @@
                         class="tab-btn active"
                         onclick="openTab(event, 'logisticaTab')"
                     >
-                        <i data-lucide="truck" class="lucide-icon" aria-hidden="true"></i>
+                        <i
+                            data-lucide="truck"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Logística de Unidades
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'contactosTab')"
                     >
-                        <i data-lucide="contact-round" class="lucide-icon" aria-hidden="true"></i>
+                        <i
+                            data-lucide="contact-round"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Datos de Contacto
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'unidadesSesionTab')"
                     >
-                        <i data-lucide="list-checks" class="lucide-icon" aria-hidden="true"></i>
+                        <i
+                            data-lucide="list-checks"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Unidades en Sesión
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'plantillasRutaTab')"
                     >
-                        <i data-lucide="route" class="lucide-icon" aria-hidden="true"></i>
+                        <i
+                            data-lucide="route"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Historial de Rutas
                     </button>
                     <button
                         class="tab-btn"
                         onclick="openTab(event, 'operadoresTab')"
                     >
-                        <i data-lucide="user-round-cog" class="lucide-icon" aria-hidden="true"></i>
+                        <i
+                            data-lucide="user-round-cog"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Operadores
                     </button>
                 </nav>
@@ -1936,7 +1974,11 @@
                                             title="Recargar historial"
                                             aria-label="Recargar historial de unidades"
                                         >
-                                            <i data-lucide="refresh-cw" class="lucide-icon" aria-hidden="true"></i>
+                                            <i
+                                                data-lucide="refresh-cw"
+                                                class="lucide-icon"
+                                                aria-hidden="true"
+                                            ></i>
                                         </button>
                                     </label>
                                     <input
@@ -1995,7 +2037,11 @@
                                                 onclick="addPhoneField()"
                                                 aria-label="Agregar teléfono de contacto"
                                             >
-                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
+                                                <i
+                                                    data-lucide="plus"
+                                                    class="lucide-icon"
+                                                    aria-hidden="true"
+                                                ></i>
                                             </button>
                                         </div>
                                     </div>
@@ -2015,7 +2061,11 @@
                                                 onclick="addEquipmentField()"
                                                 aria-label="Agregar equipo aliado"
                                             >
-                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
+                                                <i
+                                                    data-lucide="plus"
+                                                    class="lucide-icon"
+                                                    aria-hidden="true"
+                                                ></i>
                                             </button>
                                         </div>
                                     </div>
@@ -2049,7 +2099,11 @@
                                             color: #b91c1c;
                                         "
                                     >
-                                        <i data-lucide="triangle-alert" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                        <i
+                                            data-lucide="triangle-alert"
+                                            class="lucide-icon lucide-icon--inline"
+                                            aria-hidden="true"
+                                        ></i>
                                         Conflicto de fechas detectado
                                     </span>
                                     <button
@@ -2063,7 +2117,11 @@
                                             color: #64748b;
                                         "
                                     >
-                                        <i data-lucide="x" class="lucide-icon" aria-hidden="true"></i>
+                                        <i
+                                            data-lucide="x"
+                                            class="lucide-icon"
+                                            aria-hidden="true"
+                                        ></i>
                                     </button>
                                 </div>
                                 <p
@@ -2106,7 +2164,11 @@
                                             color: #075985;
                                         "
                                     >
-                                        <i data-lucide="truck" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                        <i
+                                            data-lucide="truck"
+                                            class="lucide-icon lucide-icon--inline"
+                                            aria-hidden="true"
+                                        ></i>
                                         Viajes registrados para esta unidad
                                     </span>
                                     <button
@@ -2124,7 +2186,11 @@
                                             color: #64748b;
                                         "
                                     >
-                                        <i data-lucide="x" class="lucide-icon" aria-hidden="true"></i>
+                                        <i
+                                            data-lucide="x"
+                                            class="lucide-icon"
+                                            aria-hidden="true"
+                                        ></i>
                                     </button>
                                 </div>
                                 <div
@@ -2164,7 +2230,11 @@
                                     "
                                     id="bannerAgregarTramoTexto"
                                 >
-                                    <i data-lucide="circle-plus" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    <i
+                                        data-lucide="circle-plus"
+                                        class="lucide-icon lucide-icon--inline"
+                                        aria-hidden="true"
+                                    ></i>
                                     Agregando tramo
                                 </span>
                                 <button
@@ -2181,7 +2251,11 @@
                                         cursor: pointer;
                                     "
                                 >
-                                    <i data-lucide="x" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    <i
+                                        data-lucide="x"
+                                        class="lucide-icon lucide-icon--inline"
+                                        aria-hidden="true"
+                                    ></i>
                                     Cancelar y volver a crear viaje
                                 </button>
                             </div>
@@ -2198,7 +2272,11 @@
                                 onclick="addDispatch()"
                                 style="padding: 10px 16px; font-size: 13px"
                             >
-                                <i data-lucide="plus" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                <i
+                                    data-lucide="plus"
+                                    class="lucide-icon lucide-icon--inline"
+                                    aria-hidden="true"
+                                ></i>
                                 Nuevo Tramo
                             </button>
                         </div>
@@ -2350,8 +2428,12 @@
                                         onclick="addContactPhoneField()"
                                         aria-label="Agregar teléfono del contacto"
                                     >
-                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
-                                            </button>
+                                        <i
+                                            data-lucide="plus"
+                                            class="lucide-icon"
+                                            aria-hidden="true"
+                                        ></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2375,8 +2457,12 @@
                                         onclick="addContactEmailField()"
                                         aria-label="Agregar correo del contacto"
                                     >
-                                                <i data-lucide="plus" class="lucide-icon" aria-hidden="true"></i>
-                                            </button>
+                                        <i
+                                            data-lucide="plus"
+                                            class="lucide-icon"
+                                            aria-hidden="true"
+                                        ></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2468,7 +2554,11 @@
                                 "
                             >
                                 <span id="filterIndicator">
-                                    <i data-lucide="calendar-days" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                    <i
+                                        data-lucide="calendar-days"
+                                        class="lucide-icon lucide-icon--inline"
+                                        aria-hidden="true"
+                                    ></i>
                                     Mostrando: Hoy
                                 </span>
                                 |
@@ -2477,8 +2567,15 @@
                         </div>
                         <div class="session-toolbar">
                             <div class="session-filter-group">
-                                <label for="unitFilter" class="session-filter-label">
-                                    <i data-lucide="truck" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                <label
+                                    for="unitFilter"
+                                    class="session-filter-label"
+                                >
+                                    <i
+                                        data-lucide="truck"
+                                        class="lucide-icon lucide-icon--inline"
+                                        aria-hidden="true"
+                                    ></i>
                                     Filtrar por unidad
                                 </label>
                                 <div class="session-filter-row">
@@ -2498,13 +2595,24 @@
                                         title="Limpiar filtro"
                                         aria-label="Limpiar filtro de unidad"
                                     >
-                                        <i data-lucide="x" class="lucide-icon" aria-hidden="true"></i>
+                                        <i
+                                            data-lucide="x"
+                                            class="lucide-icon"
+                                            aria-hidden="true"
+                                        ></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="session-date-stack">
-                                <label for="dateFilterSelect" class="session-filter-label">
-                                    <i data-lucide="calendar-days" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                <label
+                                    for="dateFilterSelect"
+                                    class="session-filter-label"
+                                >
+                                    <i
+                                        data-lucide="calendar-days"
+                                        class="lucide-icon lucide-icon--inline"
+                                        aria-hidden="true"
+                                    ></i>
                                     Periodo
                                 </label>
                                 <select
@@ -2551,7 +2659,11 @@
                                 class="btn btn-primary session-refresh-btn"
                                 onclick="loadUnitsFromSheets()"
                             >
-                                <i data-lucide="refresh-cw" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                                <i
+                                    data-lucide="refresh-cw"
+                                    class="lucide-icon lucide-icon--inline"
+                                    aria-hidden="true"
+                                ></i>
                                 Actualizar
                             </button>
                         </div>
@@ -2561,8 +2673,12 @@
                         id="loadingUnits"
                         style="display: none; text-align: center; padding: 40px"
                     >
-                                <div style="font-size: 18px; color: var(--accent)">
-                            <i data-lucide="loader-circle" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                        <div style="font-size: 18px; color: var(--accent)">
+                            <i
+                                data-lucide="loader-circle"
+                                class="lucide-icon lucide-icon--inline"
+                                aria-hidden="true"
+                            ></i>
                             Cargando unidades...
                         </div>
                     </div>
@@ -2613,7 +2729,10 @@
                                     "
                                     onclick="cargarPlantillasRuta()"
                                 >
-                                    <i data-lucide="refresh-cw" class="lucide-icon"></i>
+                                    <i
+                                        data-lucide="refresh-cw"
+                                        class="lucide-icon"
+                                    ></i>
                                     Actualizar
                                 </button>
                             </div>
@@ -2757,8 +2876,19 @@
                         align-items: center;
                     "
                 >
-                    <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
-                        <i data-lucide="pencil" class="lucide-icon" aria-hidden="true"></i>
+                    <strong
+                        style="
+                            font-size: 15px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        "
+                    >
+                        <i
+                            data-lucide="pencil"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Editar Unidad
                     </strong>
                     <button
@@ -2972,8 +3102,19 @@
                         flex: 0 0 auto;
                     "
                 >
-                    <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
-                        <i data-lucide="pencil" class="lucide-icon" aria-hidden="true"></i>
+                    <strong
+                        style="
+                            font-size: 15px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        "
+                    >
+                        <i
+                            data-lucide="pencil"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Editar Tramo
                     </strong>
                     <button
@@ -3042,7 +3183,11 @@
                             margin: 0 0 12px;
                         "
                     >
-                        <i data-lucide="triangle-alert" class="lucide-icon lucide-icon--inline" aria-hidden="true"></i>
+                        <i
+                            data-lucide="triangle-alert"
+                            class="lucide-icon lucide-icon--inline"
+                            aria-hidden="true"
+                        ></i>
                         Cambiar el folio afecta a todos los tramos de este
                         viaje.
                     </p>
@@ -3142,7 +3287,10 @@
                     <div
                         style="
                             display: grid;
-                            grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+                            grid-template-columns: repeat(
+                                auto-fit,
+                                minmax(min(180px, 100%), 1fr)
+                            );
                             gap: 10px;
                             margin-bottom: 12px;
                         "
@@ -3374,8 +3522,19 @@
                         flex: 0 0 auto;
                     "
                 >
-                    <strong style="font-size: 15px; display:flex; align-items:center; gap:8px">
-                        <i data-lucide="clipboard-list" class="lucide-icon" aria-hidden="true"></i>
+                    <strong
+                        style="
+                            font-size: 15px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        "
+                    >
+                        <i
+                            data-lucide="clipboard-list"
+                            class="lucide-icon"
+                            aria-hidden="true"
+                        ></i>
                         Detalle del Tramo
                     </strong>
                     <button
@@ -3586,7 +3745,10 @@
                 return false;
             }
 
-            async function readJsonResponse(response, fallbackMessage = "Respuesta invalida del servidor") {
+            async function readJsonResponse(
+                response,
+                fallbackMessage = "Respuesta invalida del servidor",
+            ) {
                 const text = await response.text();
                 if (!text.trim()) return {};
                 try {
@@ -3994,7 +4156,11 @@
 
                 const routeText = (row) =>
                     row[7] ||
-                    [row[8] || "Origen", row[9] ? `Carga: ${row[9]}` : "", row[10] || "Destino"]
+                    [
+                        row[8] || "Origen",
+                        row[9] ? `Carga: ${row[9]}` : "",
+                        row[10] || "Destino",
+                    ]
                         .filter(Boolean)
                         .join(" → ");
                 let html = `
@@ -4084,7 +4250,7 @@
                                     title="Eliminar tramo ${escapeHtml(tramoNumero)}">
                                     ${lucideIcon("trash-2")}
                                   </button>`
-                                 : "";
+                                : "";
                             return `
                               <tr>
                                 <td>
@@ -4137,7 +4303,7 @@
                                   <button
                                     type="button"
                                     onclick="editUnit(${firstRow[18] || 0})"
-                                    class="btn btn-secondary"
+                                    class="btn btn-secondary session-unit-edit-button"
                                     style="padding: 7px 10px; font-size: 11px;">
                                     ${lucideIcon("pencil", "lucide-icon--inline")}
                                     Editar unidad
@@ -5776,8 +5942,8 @@
                     card.querySelector(".d-cita-carga")?.value || "";
                 const descarga = card.querySelector(".d-descarga")?.value || "";
                 const requiereRegresoOrigen =
-                    card.querySelector(".d-requiere-regreso-origen")
-                        ?.checked || false;
+                    card.querySelector(".d-requiere-regreso-origen")?.checked ||
+                    false;
                 const regresoOrigen =
                     card.querySelector(".d-regreso-origen")?.value || "";
 
@@ -7214,10 +7380,7 @@
                     ),
                 };
                 const inicio = totalRutas ? desde + 1 : 0;
-                const fin = Math.min(
-                    desde + visibles.length,
-                    totalRutas,
-                );
+                const fin = Math.min(desde + visibles.length, totalRutas);
 
                 const seccion = (icono, titulo, subtitulo, items, total) => {
                     if (!items || items.length === 0) return "";
@@ -7912,4 +8075,3 @@
         </script>
     </body>
 </html>
-
