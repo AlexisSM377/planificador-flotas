@@ -825,6 +825,21 @@ function handle_crear($conn, $ctx)
 
         foreach ($tramos as $i => $t) {
             insertar_tramo($conn, $viaje_id, $i + 1, $t);
+            $firma = firma_ruta_normalizada(
+                $t["origen"] ?? "",
+                $t["lugar_carga"] ?? "",
+                $t["destino"] ?? "",
+            );
+            if ($firma !== null) {
+                $t["veces_usada"] = 0;
+                $t["ultima_vez_usada"] = null;
+                materializar_ruta_historial_catalogo(
+                    $conn,
+                    $cliente_id,
+                    $t,
+                    $firma,
+                );
+            }
         }
 
         $stmt_cn = $conn->prepare(
@@ -1261,6 +1276,21 @@ function handle_agregar_tramo($conn, $ctx)
     }
 
     $tramo_id = insertar_tramo($conn, $viaje_id, $siguiente, $tramo_data);
+    $firma = firma_ruta_normalizada(
+        $tramo_data["origen"] ?? "",
+        $tramo_data["lugar_carga"] ?? "",
+        $tramo_data["destino"] ?? "",
+    );
+    if ($firma !== null) {
+        $tramo_data["veces_usada"] = 0;
+        $tramo_data["ultima_vez_usada"] = null;
+        materializar_ruta_historial_catalogo(
+            $conn,
+            (int) $v["cliente_id"],
+            $tramo_data,
+            $firma,
+        );
+    }
 
     $fin_tramo = fecha_fin_desde_tramos([$tramo_data]);
     if ($fin_tramo) {
@@ -2053,7 +2083,8 @@ function handle_actualizar_despacho($conn, $ctx)
     $stmt = $conn->prepare(
         'SELECT id, cliente_id, unidad_id, folio, fecha_programada, tramo_numero,
                 ruta, origen, lugar_carga, destino, instrucciones,
-                salida_patio_programada, cita_carga, descarga_programada,
+                salida_patio_programada, cita_carga, salida_carga_programada,
+                descarga_programada,
                 planificador_creado_at, planificador_editado_at,
                 planificador_campos_editados
            FROM despachos WHERE id = ? AND eliminado_at IS NULL LIMIT 1',
@@ -2122,6 +2153,7 @@ function handle_actualizar_despacho($conn, $ctx)
         ["body" => "instrucciones", "despacho" => "instrucciones", "tramo" => "instrucciones", "datetime" => false],
         ["body" => "salida_patio_programada", "despacho" => "salida_patio_programada", "tramo" => "salida_patio", "datetime" => true],
         ["body" => "cita_carga", "despacho" => "cita_carga", "tramo" => "cita_carga", "datetime" => true],
+        ["body" => "salida_carga_programada", "despacho" => "salida_carga_programada", "tramo" => "salida_carga", "datetime" => true],
         ["body" => "descarga_programada", "despacho" => "descarga_programada", "tramo" => "descarga_programada", "datetime" => true],
     ];
     $sets_despacho = [];
@@ -2303,7 +2335,8 @@ function handle_actualizar_despacho($conn, $ctx)
     $stmt = $conn->prepare(
         'SELECT id, folio, tramo_numero, ruta, origen, lugar_carga, destino,
                 instrucciones, salida_patio_programada, cita_carga,
-                descarga_programada, planificador_editado_at,
+                salida_carga_programada, descarga_programada,
+                planificador_editado_at,
                 planificador_campos_editados
            FROM despachos WHERE id = ? LIMIT 1',
     );
@@ -2324,6 +2357,7 @@ function handle_actualizar_despacho($conn, $ctx)
             "instrucciones" => $d["instrucciones"],
             "salida_patio_programada" => $d["salida_patio_programada"],
             "cita_carga" => $d["cita_carga"],
+            "salida_carga_programada" => $d["salida_carga_programada"],
             "descarga_programada" => $d["descarga_programada"],
             "planificador_editado_at" => $d["planificador_editado_at"],
             "planificador_campos_editados" => $d["planificador_campos_editados"],
@@ -2888,6 +2922,131 @@ function upsert_historial_ruta($conn, $cliente_id, $tramo)
     $stmt->close();
 }
 
+function materializar_ruta_historial_catalogo($conn, $cliente_id, $row, $firma)
+{
+    if ($firma === null || !db_table_exists($conn, "tramos_catalogo")) {
+        return 0;
+    }
+
+    $has_historial_cols = db_columns_exist($conn, "tramos_catalogo", [
+        "origen_tipo",
+        "firma_ruta",
+        "veces_usada",
+        "ultima_vez_usada",
+        "es_favorito",
+    ]);
+    $origen = null_if_empty($row["origen"] ?? "");
+    $lugar_carga = null_if_empty($row["lugar_carga"] ?? "");
+    $destino = null_if_empty($row["destino"] ?? "");
+    $ruta = null_if_empty($row["ruta"] ?? "");
+    $instrucciones = null_if_empty($row["instrucciones"] ?? "");
+    $veces_usada = max(0, (int) ($row["veces_usada"] ?? 1));
+    $ultima_vez_usada = null_if_empty($row["ultima_vez_usada"] ?? "");
+    $etiqueta = mb_substr(
+        ($origen ?? "Origen") . " → " . ($destino ?? "Destino"),
+        0,
+        100,
+        "UTF-8",
+    );
+
+    if ($has_historial_cols) {
+        $stmt = $conn->prepare(
+            "INSERT INTO tramos_catalogo
+                (cliente_id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
+                 origen_tipo, firma_ruta, veces_usada, ultima_vez_usada, es_favorito, activo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'historial', ?, ?, ?, 0, 1)
+             ON DUPLICATE KEY UPDATE
+                ruta             = COALESCE(VALUES(ruta), ruta),
+                origen           = COALESCE(VALUES(origen), origen),
+                lugar_carga      = COALESCE(VALUES(lugar_carga), lugar_carga),
+                destino          = COALESCE(VALUES(destino), destino),
+                instrucciones    = COALESCE(VALUES(instrucciones), instrucciones),
+                veces_usada      = GREATEST(veces_usada, VALUES(veces_usada)),
+                ultima_vez_usada = GREATEST(COALESCE(ultima_vez_usada, '1970-01-01'), COALESCE(VALUES(ultima_vez_usada), '1970-01-01')),
+                activo           = 1",
+        );
+    } else {
+        $stmt = $conn->prepare(
+            "INSERT INTO tramos_catalogo
+                (cliente_id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones, activo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+        );
+    }
+    if (!$stmt) {
+        throw new Exception(
+            "Error preparando materialización de ruta: " . $conn->error,
+            500,
+        );
+    }
+    if ($has_historial_cols) {
+        $stmt->bind_param(
+            "isssssssis",
+            $cliente_id,
+            $etiqueta,
+            $ruta,
+            $origen,
+            $lugar_carga,
+            $destino,
+            $instrucciones,
+            $firma,
+            $veces_usada,
+            $ultima_vez_usada,
+        );
+    } else {
+        $stmt->bind_param(
+            "issssss",
+            $cliente_id,
+            $etiqueta,
+            $ruta,
+            $origen,
+            $lugar_carga,
+            $destino,
+            $instrucciones,
+        );
+    }
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        throw new Exception("Error guardando ruta de historial: " . $err, 500);
+    }
+    $stmt->close();
+
+    $lookup_sql = $has_historial_cols
+        ? "SELECT id FROM tramos_catalogo WHERE cliente_id = ? AND firma_ruta = ? LIMIT 1"
+        : "SELECT id FROM tramos_catalogo
+             WHERE cliente_id = ?
+               AND COALESCE(ruta, '') = COALESCE(?, '')
+               AND COALESCE(origen, '') = COALESCE(?, '')
+               AND COALESCE(lugar_carga, '') = COALESCE(?, '')
+               AND COALESCE(destino, '') = COALESCE(?, '')
+             ORDER BY id DESC
+             LIMIT 1";
+    $stmt = $conn->prepare($lookup_sql);
+    if (!$stmt) {
+        throw new Exception(
+            "Error buscando ruta de historial: " . $conn->error,
+            500,
+        );
+    }
+    if ($has_historial_cols) {
+        $stmt->bind_param("is", $cliente_id, $firma);
+    } else {
+        $stmt->bind_param(
+            "issss",
+            $cliente_id,
+            $ruta,
+            $origen,
+            $lugar_carga,
+            $destino,
+        );
+    }
+    $stmt->execute();
+    $found = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return (int) ($found["id"] ?? 0);
+}
+
 function handle_buscar_rutas_historial($conn, $ctx)
 {
     $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
@@ -2916,6 +3075,7 @@ function handle_buscar_rutas_historial($conn, $ctx)
             ($origen ?: "Origen") . " -> " . ($destino ?: "Destino"),
         );
         $item = [
+            "id" => (int) ($row["id"] ?? 0),
             "ruta" => $ruta,
             "origen" => $origen,
             "lugar_carga" => $lugar_carga,
@@ -2990,7 +3150,7 @@ function handle_buscar_rutas_historial($conn, $ctx)
         $favoritoExpr = $has_historial_cols ? "es_favorito" : "1";
         $catalogSql =
             "
-            SELECT ruta, origen, lugar_carga, destino,
+            SELECT id, ruta, origen, lugar_carga, destino,
                    $vecesExpr AS veces_usada,
                    $ultimaExpr AS ultima_vez_usada,
                    $catalogPriority AS prioridad,
@@ -3109,7 +3269,38 @@ function handle_buscar_rutas_historial($conn, $ctx)
         throw new Exception("Error buscando rutas: " . $err, 500);
     }
     $res = $stmt->get_result();
+
+    $firmas_ocultas = [];
+    if (db_table_exists($conn, "tramos_catalogo")) {
+        $stmtOcultas = $conn->prepare(
+            "SELECT ruta, origen, lugar_carga, destino FROM tramos_catalogo
+             WHERE cliente_id = ? AND activo = 0",
+        );
+        $stmtOcultas->bind_param("i", $cliente_id);
+        $stmtOcultas->execute();
+        $resOcultas = $stmtOcultas->get_result();
+        while ($o = $resOcultas->fetch_assoc()) {
+            $firma_oculta = utf8_lower_v(
+                trim((string) $o["ruta"]) . "|" .
+                trim((string) $o["origen"]) . "|" .
+                trim((string) $o["lugar_carga"]) . "|" .
+                trim((string) $o["destino"]),
+            );
+            $firmas_ocultas[$firma_oculta] = true;
+        }
+        $stmtOcultas->close();
+    }
+
     while ($row = $res->fetch_assoc()) {
+        $firma_row = utf8_lower_v(
+            trim((string) ($row["ruta"] ?? "")) . "|" .
+            trim((string) ($row["origen"] ?? "")) . "|" .
+            trim((string) ($row["lugar_carga"] ?? "")) . "|" .
+            trim((string) ($row["destino"] ?? "")),
+        );
+        if (isset($firmas_ocultas[$firma_row])) {
+            continue;
+        }
         $agregar_ruta($row, 2);
     }
     $stmt->close();
@@ -3137,579 +3328,88 @@ function handle_buscar_rutas_historial($conn, $ctx)
     json_ok(["rutas" => $rutas, "total" => count($rutas)]);
 }
 
-function handle_listar_catalogo($conn, $ctx)
-{
-    $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
-    if ($cliente_id <= 0) {
-        throw new Exception("cliente_id requerido", 400);
-    }
-    assert_cliente_access($ctx, $cliente_id);
-
-    $stmt = $conn->prepare(
-        'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
-                duracion_estimada_horas, created_at, updated_at
-           FROM tramos_catalogo
-          WHERE cliente_id = ? AND activo = 1
-          ORDER BY etiqueta ASC',
-    );
-    $stmt->bind_param("i", $cliente_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-
-    $plantillas = [];
-    while ($r = $res->fetch_assoc()) {
-        $plantillas[] = [
-            "id" => (int) $r["id"],
-            "etiqueta" => $r["etiqueta"],
-            "ruta" => $r["ruta"],
-            "origen" => $r["origen"],
-            "lugar_carga" => $r["lugar_carga"],
-            "destino" => $r["destino"],
-            "instrucciones" => $r["instrucciones"],
-            "duracion_estimada_horas" => $r["duracion_estimada_horas"]
-                ? (float) $r["duracion_estimada_horas"]
-                : null,
-            "created_at" => $r["created_at"],
-            "updated_at" => $r["updated_at"],
-        ];
-    }
-    $stmt->close();
-
-    json_ok(["plantillas" => $plantillas, "total" => count($plantillas)]);
-}
-
-function handle_listar_rutas($conn, $ctx)
-{
-    $cliente_id = (int) ($_GET["cliente_id"] ?? 0);
-    if ($cliente_id <= 0) {
-        throw new Exception("cliente_id requerido", 400);
-    }
-    assert_cliente_access($ctx, $cliente_id);
-
-    $has_catalogo = db_table_exists($conn, "tramos_catalogo");
-    $has_historial = $has_catalogo && db_columns_exist($conn, "tramos_catalogo", [
-        "origen_tipo",
-        "firma_ruta",
-        "veces_usada",
-        "ultima_vez_usada",
-        "es_favorito",
-    ]);
-
-    $sql = $has_historial
-        ? 'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
-                  duracion_estimada_horas, origen_tipo, firma_ruta, veces_usada,
-                  ultima_vez_usada, es_favorito, created_at, updated_at
-             FROM tramos_catalogo
-            WHERE cliente_id = ? AND activo = 1
-            ORDER BY es_favorito DESC,
-                     veces_usada DESC,
-                     COALESCE(ultima_vez_usada, updated_at, created_at) DESC,
-                     etiqueta ASC'
-        : 'SELECT id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones,
-                  duracion_estimada_horas, created_at, updated_at
-             FROM tramos_catalogo
-            WHERE cliente_id = ? AND activo = 1
-            ORDER BY etiqueta ASC';
-
-    $favoritos = [];
-    $frecuentes = [];
-    $recientes = [];
-
-    if ($has_catalogo) {
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception(
-                "Error preparando listado de rutas: " . $conn->error,
-                500,
-            );
-        }
-        $stmt->bind_param("i", $cliente_id);
-        $stmt->execute();
-        $res = $stmt->get_result();
-
-        while ($r = $res->fetch_assoc()) {
-            $plantilla = [
-                "id" => (int) $r["id"],
-                "etiqueta" => $r["etiqueta"],
-                "ruta" => $r["ruta"],
-                "origen" => $r["origen"],
-                "lugar_carga" => $r["lugar_carga"],
-                "destino" => $r["destino"],
-                "instrucciones" => $r["instrucciones"],
-                "duracion_estimada_horas" => $r["duracion_estimada_horas"]
-                    ? (float) $r["duracion_estimada_horas"]
-                    : null,
-                "origen_tipo" => $has_historial ? $r["origen_tipo"] : "manual",
-                "firma_ruta" => $has_historial ? $r["firma_ruta"] : null,
-                "veces_usada" => $has_historial ? (int) $r["veces_usada"] : 0,
-                "ultima_vez_usada" => $has_historial
-                    ? $r["ultima_vez_usada"]
-                    : null,
-                "es_favorito" => $has_historial
-                    ? (int) $r["es_favorito"] === 1
-                    : false,
-                "created_at" => $r["created_at"],
-                "updated_at" => $r["updated_at"],
-            ];
-
-            if ($plantilla["es_favorito"]) {
-                $favoritos[] = $plantilla;
-            } elseif ($plantilla["veces_usada"] > 0) {
-                $frecuentes[] = $plantilla;
-            } else {
-                $recientes[] = $plantilla;
-            }
-        }
-        $stmt->close();
-    }
-
-    $firmas_existentes = [];
-    foreach ([$favoritos, $frecuentes, $recientes] as $grupo) {
-        foreach ($grupo as $ruta) {
-            $firma = firma_ruta_normalizada(
-                $ruta["origen"] ?? "",
-                $ruta["lugar_carga"] ?? "",
-                $ruta["destino"] ?? "",
-            );
-            if ($firma !== null) {
-                $firmas_existentes[$firma] = true;
-            }
-        }
-    }
-
-    if (db_table_exists($conn, "viaje_tramos") && db_table_exists($conn, "viajes")) {
-        $sql_historial = "
-            SELECT COALESCE(vt.ruta, '') AS ruta,
-                   COALESCE(vt.origen, '') AS origen,
-                   COALESCE(vt.lugar_carga, '') AS lugar_carga,
-                   COALESCE(vt.destino, '') AS destino,
-                   COALESCE(
-                       NULLIF(MAX(NULLIF(vt.instrucciones, '')), ''),
-                       ''
-                   ) AS instrucciones,
-                   COUNT(*) AS veces_usada,
-                   MAX(COALESCE(vt.updated_at, vt.created_at, v.updated_at, v.created_at)) AS ultima_vez_usada
-              FROM viaje_tramos vt
-              INNER JOIN viajes v ON v.id = vt.viaje_id
-             WHERE v.cliente_id = ?
-               AND vt.estado = 'completado'
-               AND (NULLIF(TRIM(COALESCE(vt.ruta, '')), '') IS NOT NULL
-                 OR NULLIF(TRIM(COALESCE(vt.origen, '')), '') IS NOT NULL
-                 OR NULLIF(TRIM(COALESCE(vt.lugar_carga, '')), '') IS NOT NULL
-                 OR NULLIF(TRIM(COALESCE(vt.destino, '')), '') IS NOT NULL)
-             GROUP BY COALESCE(vt.ruta, ''), COALESCE(vt.origen, ''), COALESCE(vt.lugar_carga, ''), COALESCE(vt.destino, '')
-             ORDER BY veces_usada DESC, ultima_vez_usada DESC
-             LIMIT 100";
-        $stmt = $conn->prepare($sql_historial);
-        if (!$stmt) {
-            throw new Exception(
-                "Error preparando historial de rutas: " . $conn->error,
-                500,
-            );
-        }
-        $stmt->bind_param("i", $cliente_id);
-        if (!$stmt->execute()) {
-            $err = $stmt->error;
-            $stmt->close();
-            throw new Exception("Error cargando historial de rutas: " . $err, 500);
-        }
-        $res = $stmt->get_result();
-        while ($r = $res->fetch_assoc()) {
-            $firma = firma_ruta_normalizada(
-                $r["origen"] ?? "",
-                $r["lugar_carga"] ?? "",
-                $r["destino"] ?? "",
-            );
-            if ($firma === null || isset($firmas_existentes[$firma])) {
-                continue;
-            }
-            $firmas_existentes[$firma] = true;
-            $origen = trim((string) ($r["origen"] ?? ""));
-            $destino = trim((string) ($r["destino"] ?? ""));
-            $recientes[] = [
-                "id" => 0,
-                "etiqueta" => mb_substr(
-                    ($origen !== "" ? $origen : "Origen") .
-                        " → " .
-                        ($destino !== "" ? $destino : "Destino"),
-                    0,
-                    100,
-                    "UTF-8",
-                ),
-                "ruta" => $r["ruta"],
-                "origen" => $r["origen"],
-                "lugar_carga" => $r["lugar_carga"],
-                "destino" => $r["destino"],
-                "instrucciones" => $r["instrucciones"],
-                "duracion_estimada_horas" => null,
-                "origen_tipo" => "historial",
-                "firma_ruta" => $firma,
-                "veces_usada" => (int) $r["veces_usada"],
-                "ultima_vez_usada" => $r["ultima_vez_usada"],
-                "es_favorito" => false,
-                "created_at" => $r["ultima_vez_usada"],
-                "updated_at" => $r["ultima_vez_usada"],
-            ];
-        }
-        $stmt->close();
-    }
-
-    json_ok([
-        "favoritos" => $favoritos,
-        "frecuentes" => $frecuentes,
-        "recientes" => $recientes,
-        "total" => count($favoritos) + count($frecuentes) + count($recientes),
-    ]);
-}
-
-function handle_crear_plantilla($conn, $ctx)
+function handle_ocultar_ruta_historial($conn, $ctx)
 {
     assert_can_write($ctx);
+
+    if (!db_table_exists($conn, "tramos_catalogo")) {
+        throw new Exception("Catálogo de rutas no disponible", 500);
+    }
 
     $body = json_decode(file_get_contents("php://input"), true);
     if (!is_array($body)) {
         throw new Exception("JSON invalido", 400);
     }
 
-    $cliente_id = (int) ($body["cliente_id"] ?? 0);
-    $etiqueta = trim((string) ($body["etiqueta"] ?? ""));
-    $ruta = null_if_empty($body["ruta"] ?? "");
-    $origen = null_if_empty($body["origen"] ?? "");
-    $lugar_carga = null_if_empty($body["lugar_carga"] ?? "");
-    $destino = null_if_empty($body["destino"] ?? "");
-    $instrucciones = null_if_empty($body["instrucciones"] ?? "");
-    $duracion =
-        isset($body["duracion_estimada_horas"]) &&
-        $body["duracion_estimada_horas"] !== ""
-            ? (float) $body["duracion_estimada_horas"]
-            : null;
+    $ruta_id = (int) ($body["id"] ?? 0);
 
+    // Fila ya existente en el catálogo: soft delete directo.
+    if ($ruta_id > 0) {
+        $stmt = $conn->prepare(
+            "SELECT cliente_id, activo FROM tramos_catalogo WHERE id = ? LIMIT 1",
+        );
+        $stmt->bind_param("i", $ruta_id);
+        $stmt->execute();
+        $p = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$p) {
+            throw new Exception("Ruta no encontrada", 404);
+        }
+        assert_cliente_access($ctx, $p["cliente_id"]);
+
+        if ((int) $p["activo"] === 0) {
+            json_ok(["id" => $ruta_id, "activo" => 0, "msg" => "Ya estaba eliminada"]);
+        }
+
+        $stmt = $conn->prepare("UPDATE tramos_catalogo SET activo = 0 WHERE id = ?");
+        $stmt->bind_param("i", $ruta_id);
+        if (!$stmt->execute()) {
+            throw new Exception("Error eliminando ruta: " . $stmt->error, 500);
+        }
+        $stmt->close();
+
+        json_ok(["id" => $ruta_id, "activo" => 0]);
+    }
+
+    // Ruta agregada de viaje_tramos, sin fila en el catálogo todavía:
+    // se crea ya inactiva para que quede excluida de futuras búsquedas.
+    $cliente_id = (int) ($body["cliente_id"] ?? 0);
     if ($cliente_id <= 0) {
         throw new Exception("cliente_id requerido", 400);
     }
-    if ($etiqueta === "") {
-        throw new Exception("etiqueta requerida", 400);
-    }
-
     assert_cliente_access($ctx, $cliente_id);
 
-    $stmt = $conn->prepare(
-        "SELECT id FROM tramos_catalogo WHERE cliente_id = ? AND etiqueta = ? AND activo = 1 LIMIT 1",
-    );
-    $stmt->bind_param("is", $cliente_id, $etiqueta);
-    $stmt->execute();
-    $existe = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    if ($existe) {
-        throw new Exception(
-            "Ya existe una plantilla con la etiqueta '$etiqueta' para este cliente",
-            400,
-        );
+    $ruta = trim((string) ($body["ruta"] ?? ""));
+    $origen = trim((string) ($body["origen"] ?? ""));
+    $lugar_carga = trim((string) ($body["lugar_carga"] ?? ""));
+    $destino = trim((string) ($body["destino"] ?? ""));
+    if ($ruta === "" && $origen === "" && $lugar_carga === "" && $destino === "") {
+        throw new Exception("Datos de ruta requeridos", 400);
     }
 
+    $recorrido = trim(($origen ?: "Origen") . " -> " . ($destino ?: "Destino"));
+    $etiqueta = ($ruta !== "" ? $ruta . " · " . $recorrido : $recorrido) . " (oculta " . uniqid() . ")";
+
     $stmt = $conn->prepare(
-        'INSERT INTO tramos_catalogo
-           (cliente_id, etiqueta, ruta, origen, lugar_carga, destino, instrucciones, duracion_estimada_horas)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        "INSERT INTO tramos_catalogo (cliente_id, etiqueta, ruta, origen, lugar_carga, destino, activo)
+         VALUES (?, ?, ?, ?, ?, ?, 0)",
     );
     $stmt->bind_param(
-        "issssssd",
+        "isssss",
         $cliente_id,
         $etiqueta,
         $ruta,
         $origen,
         $lugar_carga,
         $destino,
-        $instrucciones,
-        $duracion,
     );
     if (!$stmt->execute()) {
-        $err = $stmt->error;
-        $stmt->close();
-        throw new Exception("Error creando plantilla: " . $err, 500);
+        throw new Exception("Error ocultando ruta: " . $stmt->error, 500);
     }
-    $plantilla_id = (int) $stmt->insert_id;
+    $nuevo_id = $stmt->insert_id;
     $stmt->close();
 
-    $stmt = $conn->prepare(
-        "SELECT * FROM tramos_catalogo WHERE id = ? LIMIT 1",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    $stmt->execute();
-    $p = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    json_ok(
-        [
-            "plantilla" => [
-                "id" => (int) $p["id"],
-                "etiqueta" => $p["etiqueta"],
-                "ruta" => $p["ruta"],
-                "origen" => $p["origen"],
-                "lugar_carga" => $p["lugar_carga"],
-                "destino" => $p["destino"],
-                "instrucciones" => $p["instrucciones"],
-                "duracion_estimada_horas" => $p["duracion_estimada_horas"]
-                    ? (float) $p["duracion_estimada_horas"]
-                    : null,
-                "created_at" => $p["created_at"],
-                "updated_at" => $p["updated_at"],
-            ],
-        ],
-        201,
-    );
-}
-
-function handle_actualizar_plantilla($conn, $ctx)
-{
-    assert_can_write($ctx);
-
-    $body = json_decode(file_get_contents("php://input"), true);
-    if (!is_array($body)) {
-        throw new Exception("JSON invalido", 400);
-    }
-
-    $plantilla_id = (int) ($body["plantilla_id"] ?? 0);
-    if ($plantilla_id <= 0) {
-        throw new Exception("plantilla_id requerido", 400);
-    }
-
-    $stmt = $conn->prepare(
-        "SELECT cliente_id FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    $stmt->execute();
-    $p = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if (!$p) {
-        throw new Exception("Plantilla no encontrada", 404);
-    }
-    assert_cliente_access($ctx, $p["cliente_id"]);
-
-    $sets = [];
-    $types = "";
-    $params = [];
-
-    $campos = [
-        "etiqueta",
-        "ruta",
-        "origen",
-        "lugar_carga",
-        "destino",
-        "instrucciones",
-    ];
-    foreach ($campos as $campo) {
-        if (array_key_exists($campo, $body)) {
-            $sets[] = "$campo = ?";
-            $types .= "s";
-            $params[] =
-                $campo === "etiqueta"
-                    ? trim((string) $body[$campo])
-                    : null_if_empty($body[$campo]);
-        }
-    }
-
-    if (array_key_exists("duracion_estimada_horas", $body)) {
-        $sets[] = "duracion_estimada_horas = ?";
-        $types .= "d";
-        $params[] =
-            $body["duracion_estimada_horas"] !== ""
-                ? (float) $body["duracion_estimada_horas"]
-                : null;
-    }
-
-    if (!count($sets)) {
-        throw new Exception("No hay campos para actualizar", 400);
-    }
-
-    $types .= "i";
-    $params[] = $plantilla_id;
-
-    $stmt = $conn->prepare(
-        "UPDATE tramos_catalogo SET " . implode(", ", $sets) . " WHERE id = ?",
-    );
-    $stmt->bind_param($types, ...$params);
-    if (!$stmt->execute()) {
-        throw new Exception(
-            "Error actualizando plantilla: " . $stmt->error,
-            500,
-        );
-    }
-    $stmt->close();
-
-    $stmt = $conn->prepare(
-        "SELECT * FROM tramos_catalogo WHERE id = ? LIMIT 1",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    $stmt->execute();
-    $p = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    json_ok([
-        "plantilla" => [
-            "id" => (int) $p["id"],
-            "etiqueta" => $p["etiqueta"],
-            "ruta" => $p["ruta"],
-            "origen" => $p["origen"],
-            "lugar_carga" => $p["lugar_carga"],
-            "destino" => $p["destino"],
-            "instrucciones" => $p["instrucciones"],
-            "duracion_estimada_horas" => $p["duracion_estimada_horas"]
-                ? (float) $p["duracion_estimada_horas"]
-                : null,
-            "created_at" => $p["created_at"],
-            "updated_at" => $p["updated_at"],
-        ],
-    ]);
-}
-
-function handle_eliminar_plantilla($conn, $ctx)
-{
-    assert_can_write($ctx);
-
-    $body = json_decode(file_get_contents("php://input"), true);
-    if (!is_array($body)) {
-        throw new Exception("JSON invalido", 400);
-    }
-
-    $plantilla_id = (int) ($body["plantilla_id"] ?? 0);
-    if ($plantilla_id <= 0) {
-        throw new Exception("plantilla_id requerido", 400);
-    }
-
-    $stmt = $conn->prepare(
-        "SELECT cliente_id, activo FROM tramos_catalogo WHERE id = ? LIMIT 1",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    $stmt->execute();
-    $p = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if (!$p) {
-        throw new Exception("Plantilla no encontrada", 404);
-    }
-    assert_cliente_access($ctx, $p["cliente_id"]);
-
-    if ((int) $p["activo"] === 0) {
-        json_ok([
-            "plantilla_id" => $plantilla_id,
-            "activo" => 0,
-            "msg" => "Ya estaba eliminada",
-        ]);
-    }
-
-    $stmt = $conn->prepare(
-        "UPDATE tramos_catalogo SET activo = 0 WHERE id = ?",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    if (!$stmt->execute()) {
-        throw new Exception("Error eliminando plantilla: " . $stmt->error, 500);
-    }
-    $stmt->close();
-
-    json_ok(["plantilla_id" => $plantilla_id, "activo" => 0]);
-}
-
-function handle_marcar_favorito($conn, $ctx)
-{
-    assert_can_write($ctx);
-
-    $body = json_decode(file_get_contents("php://input"), true);
-    if (!is_array($body)) {
-        throw new Exception("JSON invalido", 400);
-    }
-
-    $plantilla_id = (int) ($body["plantilla_id"] ?? 0);
-    if ($plantilla_id <= 0) {
-        throw new Exception("plantilla_id requerido", 400);
-    }
-
-    $stmt = $conn->prepare(
-        "SELECT cliente_id FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    $stmt->execute();
-    $p = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    if (!$p) {
-        throw new Exception("Ruta no encontrada", 404);
-    }
-    assert_cliente_access($ctx, $p["cliente_id"]);
-
-    $es_favorito = !empty($body["es_favorito"]) ? 1 : 0;
-    $etiqueta = array_key_exists("etiqueta", $body)
-        ? trim((string) $body["etiqueta"])
-        : null;
-
-    if ($etiqueta !== null && $etiqueta !== "") {
-        $stmt = $conn->prepare(
-            "UPDATE tramos_catalogo SET es_favorito = ?, etiqueta = ? WHERE id = ?",
-        );
-        $stmt->bind_param("isi", $es_favorito, $etiqueta, $plantilla_id);
-    } else {
-        $stmt = $conn->prepare(
-            "UPDATE tramos_catalogo SET es_favorito = ? WHERE id = ?",
-        );
-        $stmt->bind_param("ii", $es_favorito, $plantilla_id);
-    }
-
-    if (!$stmt->execute()) {
-        throw new Exception(
-            "Error actualizando favorito: " . $stmt->error,
-            500,
-        );
-    }
-    $stmt->close();
-
-    json_ok([
-        "plantilla_id" => $plantilla_id,
-        "es_favorito" => $es_favorito === 1,
-        "etiqueta" => $etiqueta,
-    ]);
-}
-
-function handle_ocultar_ruta($conn, $ctx)
-{
-    handle_eliminar_plantilla($conn, $ctx);
-}
-
-function handle_obtener_plantilla($conn, $ctx)
-{
-    $plantilla_id = (int) ($_GET["plantilla_id"] ?? 0);
-    if ($plantilla_id <= 0) {
-        throw new Exception("plantilla_id requerido", 400);
-    }
-
-    $stmt = $conn->prepare(
-        "SELECT * FROM tramos_catalogo WHERE id = ? AND activo = 1 LIMIT 1",
-    );
-    $stmt->bind_param("i", $plantilla_id);
-    $stmt->execute();
-    $p = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-
-    if (!$p) {
-        throw new Exception("Plantilla no encontrada", 404);
-    }
-    assert_cliente_access($ctx, $p["cliente_id"]);
-
-    json_ok([
-        "plantilla" => [
-            "id" => (int) $p["id"],
-            "cliente_id" => (int) $p["cliente_id"],
-            "etiqueta" => $p["etiqueta"],
-            "ruta" => $p["ruta"],
-            "origen" => $p["origen"],
-            "lugar_carga" => $p["lugar_carga"],
-            "destino" => $p["destino"],
-            "instrucciones" => $p["instrucciones"],
-            "duracion_estimada_horas" => $p["duracion_estimada_horas"]
-                ? (float) $p["duracion_estimada_horas"]
-                : null,
-            "created_at" => $p["created_at"],
-            "updated_at" => $p["updated_at"],
-        ],
-    ]);
+    json_ok(["id" => $nuevo_id, "activo" => 0]);
 }
 
 function handle_listar_operadores($conn, $ctx)
@@ -4013,27 +3713,10 @@ try {
             => handle_eliminar_tramo($conn, $ctx),
         $method === "DELETE" && $action === "eliminar_viaje"
             => handle_eliminar_viaje($conn, $ctx),
-        // Catálogo de Plantillas de Ruta
-        $method === "GET" && $action === "listar_rutas" => handle_listar_rutas(
-            $conn,
-            $ctx,
-        ),
         $method === "GET" && $action === "buscar_rutas"
             => handle_buscar_rutas_historial($conn, $ctx),
-        $method === "GET" && $action === "listar_catalogo"
-            => handle_listar_catalogo($conn, $ctx),
-        $method === "GET" && $action === "obtener_plantilla"
-            => handle_obtener_plantilla($conn, $ctx),
-        $method === "POST" && $action === "crear_plantilla"
-            => handle_crear_plantilla($conn, $ctx),
-        $method === "PUT" && $action === "actualizar_plantilla"
-            => handle_actualizar_plantilla($conn, $ctx),
-        $method === "DELETE" && $action === "eliminar_plantilla"
-            => handle_eliminar_plantilla($conn, $ctx),
-        $method === "PUT" && $action === "marcar_favorito"
-            => handle_marcar_favorito($conn, $ctx),
-        $method === "DELETE" && $action === "ocultar_ruta"
-            => handle_ocultar_ruta($conn, $ctx),
+        $method === "DELETE" && $action === "ocultar_ruta_historial"
+            => handle_ocultar_ruta_historial($conn, $ctx),
         $method === "GET" && $action === "listar_operadores"
             => handle_listar_operadores($conn, $ctx),
         $method === "POST" && $action === "crear_operador"

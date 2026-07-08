@@ -93,6 +93,15 @@
             .hidden {
                 display: none !important;
             }
+            #confirmOverlay {
+                z-index: 1100;
+            }
+            .confirm-panel-actions {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+                margin-top: 4px;
+            }
 
             header {
                 padding: 40px 30px 20px;
@@ -432,6 +441,10 @@
             }
             .btn-success {
                 background: #047857;
+                color: white;
+            }
+            .btn-danger {
+                background: #e53e3e;
                 color: white;
             }
 
@@ -933,6 +946,16 @@
                 text-transform: uppercase;
             }
             .route-history-result {
+                display: flex;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .route-history-result + .route-history-result {
+                margin-top: 6px;
+            }
+            .route-history-result-main {
+                flex: 1;
+                min-width: 0;
                 width: 100%;
                 text-align: left;
                 padding: 9px 10px;
@@ -942,13 +965,28 @@
                 cursor: pointer;
                 font-family: inherit;
             }
-            .route-history-result + .route-history-result {
-                margin-top: 6px;
-            }
-            .route-history-result:hover,
-            .route-history-result:focus-visible {
+            .route-history-result-main:hover,
+            .route-history-result-main:focus-visible {
                 border-color: #7dd3fc;
                 background: #f8fafc;
+            }
+            .route-history-result-delete {
+                flex-shrink: 0;
+                width: 32px;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                background: #fff;
+                color: #94a3b8;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .route-history-result-delete:hover,
+            .route-history-result-delete:focus-visible {
+                border-color: #fca5a5;
+                background: #fef2f2;
+                color: #dc2626;
             }
             .route-history-result-copy {
                 min-width: 0;
@@ -1135,7 +1173,7 @@
 
             .session-units-table {
                 width: 100%;
-                min-width: 1080px;
+                min-width: 1120px;
                 border-collapse: collapse;
                 table-layout: fixed;
             }
@@ -1175,6 +1213,10 @@
 
             .session-units-table .col-tramos {
                 width: 120px;
+            }
+
+            .session-units-table .col-route {
+                width: 420px;
             }
 
             .session-unit-name {
@@ -1277,14 +1319,14 @@
             }
 
             .schedule-points--compact {
-                flex-direction: column;
+                flex-wrap: nowrap;
                 gap: 5px;
                 width: 100%;
             }
 
             .schedule-points--compact .schedule-point {
-                width: 100%;
-                min-width: 0;
+                flex: 1 1 0;
+                min-width: 118px;
                 padding: 6px 8px;
             }
 
@@ -1631,191 +1673,6 @@
                 display: block;
             }
 
-            /* Grilla de cards de plantillas guardadas */
-            .plantillas-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 14px;
-            }
-            .plantillas-pagination {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-                margin-top: 18px;
-                padding: 12px 14px;
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                background: #f8fafc;
-                color: var(--text-muted);
-                font-size: 12px;
-                font-weight: 700;
-            }
-            .plantillas-pagination-controls {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .plantillas-pagination-page {
-                min-width: 70px;
-                color: var(--text-main);
-                text-align: center;
-            }
-            @media (max-width: 1024px) {
-                .plantillas-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-            }
-            @media (max-width: 640px) {
-                .plantillas-grid {
-                    grid-template-columns: 1fr;
-                }
-                .plantillas-pagination {
-                    align-items: stretch;
-                    flex-direction: column;
-                }
-                .plantillas-pagination-controls {
-                    justify-content: space-between;
-                }
-            }
-            .plantilla-card {
-                display: flex;
-                flex-direction: column;
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                background: #fff;
-                padding: 14px;
-                box-shadow: 0 1px 3px rgba(11, 60, 73, 0.08);
-                transition:
-                    box-shadow 0.15s,
-                    transform 0.15s;
-            }
-            .plantilla-card:hover {
-                box-shadow: 0 6px 18px rgba(11, 60, 73, 0.14);
-                transform: translateY(-2px);
-            }
-            .plantilla-card-head {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                flex-wrap: wrap;
-                border-bottom: 1px solid var(--border);
-                padding-bottom: 10px;
-                margin-bottom: 10px;
-            }
-            .plantilla-card-etiqueta {
-                color: var(--accent, #028090);
-                font-size: 14px;
-                font-weight: 700;
-                letter-spacing: 0.3px;
-            }
-            .plantilla-card-ruta {
-                font-size: 12px;
-                font-weight: 600;
-                color: #fff;
-                background: var(--primary, #0b3c49);
-                padding: 2px 8px;
-                border-radius: 999px;
-                white-space: nowrap;
-            }
-            .plantilla-card-body {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .plantilla-card-fila {
-                display: flex;
-                align-items: baseline;
-                gap: 5px;
-                font-size: 12.5px;
-                line-height: 1.35;
-            }
-            .plantilla-card-icono {
-                flex-shrink: 0;
-            }
-            .plantilla-card-label {
-                font-weight: 600;
-                color: var(--text-muted, #5b7480);
-            }
-            .plantilla-card-valor {
-                color: var(--text-main, #0f2a33);
-                word-break: break-word;
-            }
-            .plantilla-card-instr {
-                margin-top: 4px;
-                font-size: 12px;
-                color: var(--text-muted, #5b7480);
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 8px 10px;
-                line-height: 1.45;
-            }
-            .plantilla-card-instr-header {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                color: var(--text-main, #0f2a33);
-                font-weight: 700;
-                margin-bottom: 4px;
-            }
-            .plantilla-card-instr-text {
-                display: block;
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
-            }
-            .plantilla-card-instr-text--preview {
-                display: -webkit-box;
-                -webkit-line-clamp: 4;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-            }
-            .plantilla-card-instr details {
-                margin: 0;
-            }
-            .plantilla-card-instr summary {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                margin-top: 6px;
-                color: var(--accent, #028090);
-                cursor: pointer;
-                font-weight: 800;
-                list-style: none;
-            }
-            .plantilla-card-instr summary::-webkit-details-marker {
-                display: none;
-            }
-            .plantilla-card-instr
-                details[open]
-                .plantilla-card-instr-text--preview {
-                display: none;
-            }
-            .plantilla-card-instr:has(details[open])
-                .plantilla-card-instr-text--preview {
-                display: none;
-            }
-            .plantilla-card-instr-full {
-                display: block;
-                margin-top: 6px;
-                max-height: 190px;
-                overflow: auto;
-                white-space: pre-wrap;
-                overflow-wrap: anywhere;
-            }
-            .plantilla-card-instr details[open] summary {
-                margin-top: 8px;
-            }
-            .plantilla-card-acciones {
-                display: flex;
-                gap: 6px;
-                justify-content: flex-end;
-                margin-top: 12px;
-                padding-top: 10px;
-                border-top: 1px solid var(--border);
-            }
             .section-surface {
                 border: 1px solid var(--border);
                 border-radius: 8px;
@@ -1859,6 +1716,28 @@
                     Entrar
                 </button>
             </form>
+        </div>
+        <div id="confirmOverlay" class="login-overlay hidden">
+            <div class="login-panel confirm-panel">
+                <h2 id="confirmModalTitle">Confirmar</h2>
+                <p id="confirmModalMessage"></p>
+                <div class="confirm-panel-actions">
+                    <button
+                        type="button"
+                        id="confirmModalCancel"
+                        class="btn btn-secondary"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        id="confirmModalAccept"
+                        class="btn btn-danger"
+                    >
+                        Confirmar
+                    </button>
+                </div>
+            </div>
         </div>
         <div class="container">
             <div class="card">
@@ -1919,17 +1798,6 @@
                             aria-hidden="true"
                         ></i>
                         Unidades en Sesión
-                    </button>
-                    <button
-                        class="tab-btn"
-                        onclick="openTab(event, 'plantillasRutaTab')"
-                    >
-                        <i
-                            data-lucide="route"
-                            class="lucide-icon"
-                            aria-hidden="true"
-                        ></i>
-                        Historial de Rutas
                     </button>
                     <button
                         class="tab-btn"
@@ -2697,66 +2565,6 @@
                     </div>
                 </div>
 
-                <!-- TAB 4: PLANTILLAS DE RUTA -->
-                <div id="plantillasRutaTab" class="tab-content">
-                    <div class="section-header">
-                        <h2>Historial de Rutas</h2>
-                    </div>
-
-                    <!-- Tabla de plantillas -->
-                    <div class="section-surface">
-                        <div
-                            style="
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                                margin-bottom: 20px;
-                                padding: 12px;
-                            "
-                        >
-                            <h3>
-                                Rutas en historial (<span id="plantillasCount"
-                                    >0</span
-                                >)
-                            </h3>
-                            <div class="flex">
-                                <button
-                                    class="btn btn-secondary"
-                                    style="
-                                        display: flex;
-                                        align-items: center;
-                                        gap: 8px;
-                                    "
-                                    onclick="cargarPlantillasRuta()"
-                                >
-                                    <i
-                                        data-lucide="refresh-cw"
-                                        class="lucide-icon"
-                                    ></i>
-                                    Actualizar
-                                </button>
-                            </div>
-                        </div>
-
-                        <div
-                            id="plantillasTableContainer"
-                            style="padding: 12px"
-                        >
-                            <p
-                                style="
-                                    text-align: center;
-                                    color: var(--text-muted);
-                                    padding: 40px;
-                                "
-                            >
-                                No hay rutas en historial todavía. Completa
-                                viajes para alimentar el historial
-                                automáticamente.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- TAB 5: OPERADORES -->
                 <div id="operadoresTab" class="tab-content">
                     <div class="section-header">
@@ -3304,7 +3112,7 @@
                                     margin-bottom: 4px;
                                     color: var(--text-main);
                                 "
-                                >Salida de Patio</label
+                                >Inicio de ruta</label
                             >
                             <input
                                 id="editTramoSalidaPatio"
@@ -3353,6 +3161,39 @@
                             />
                             <small
                                 id="editTramoCitaCarga12h"
+                                style="
+                                    display: block;
+                                    margin-top: 4px;
+                                    color: var(--text-muted);
+                                    font-size: 11px;
+                                "
+                            ></small>
+                        </div>
+                        <div>
+                            <label
+                                style="
+                                    display: block;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    margin-bottom: 4px;
+                                    color: var(--text-main);
+                                "
+                                >Salida de Carga</label
+                            >
+                            <input
+                                id="editTramoSalidaCarga"
+                                type="datetime-local"
+                                oninput="updateEditTramoTimeHints()"
+                                style="
+                                    width: 100%;
+                                    padding: 9px 11px;
+                                    border: 1px solid var(--border);
+                                    border-radius: 8px;
+                                    font-size: 13px;
+                                "
+                            />
+                            <small
+                                id="editTramoSalidaCarga12h"
                                 style="
                                     display: block;
                                     margin-top: 4px;
@@ -3601,15 +3442,7 @@
             let planificadorTokenExpiresAt = 0;
             const PLANIFICADOR_API = "api/planificador.php";
             const VIAJES_API = "api/viajes.php";
-            let plantillasRutaCache = [];
-            let plantillasRutaPage = 1;
-            const PLANTILLAS_RUTA_PAGE_SIZE = 12;
             let rutasHistorialSearchTimer = null;
-            let plantillasRutaSecciones = {
-                favoritos: [],
-                frecuentes: [],
-                recientes: [],
-            };
             let viajesUnidadesCache = {};
 
             function getAuthQuery() {
@@ -3674,6 +3507,31 @@
                 return planificadorUser?.clientes?.[0]?.nombre || "";
             }
 
+            function obtenerClienteId() {
+                const clientes = Array.isArray(planificadorUser?.clientes)
+                    ? planificadorUser.clientes
+                    : [];
+                if (!clientes.length) return null;
+                if (!isAdminUser()) return clientes[0]?.id || null;
+
+                const nombreCliente = String(
+                    currentCliente ||
+                        document.getElementById("cliente")?.value ||
+                        "",
+                )
+                    .trim()
+                    .toLowerCase();
+                if (!nombreCliente) return clientes[0]?.id || null;
+
+                const cliente = clientes.find(
+                    (c) =>
+                        String(c?.nombre || "")
+                            .trim()
+                            .toLowerCase() === nombreCliente,
+                );
+                return cliente?.id || clientes[0]?.id || null;
+            }
+
             function getSelectedClienteDirectorio() {
                 if (isAdminUser()) {
                     return document.getElementById("c_cliente").value.trim();
@@ -3717,7 +3575,6 @@
                         user.clientes?.[0]?.nombre || "";
                     document.getElementById("c_cliente").readOnly = true;
                     currentCliente = clienteInput.value;
-                    cargarPlantillasRuta(); // Cargar plantillas del cliente
                     cargarOperadores(); // Cargar operadores del cliente
                 } else {
                     clienteInput.readOnly = false;
@@ -4174,9 +4031,8 @@
                               <th>Operador</th>
                               <th>Cliente</th>
                               <th class="col-tramos">Tramos</th>
-                              <th>Próximo / ruta</th>
+                              <th class="col-route">Próximo / ruta</th>
                               <th>Equipos</th>
-                              <th>Acciones</th>
                             </tr>
                           </thead>
                           <tbody>`;
@@ -4298,21 +4154,9 @@
                                 <div class="session-route-meta">${firstSchedule}</div>
                               </td>
                               <td class="session-cell-muted">${escapeHtml(firstRow[4] || "No especificado")}</td>
-                              <td>
-                                <div class="session-row-actions">
-                                  <button
-                                    type="button"
-                                    onclick="editUnit(${firstRow[18] || 0})"
-                                    class="btn btn-secondary session-unit-edit-button"
-                                    style="padding: 7px 10px; font-size: 11px;">
-                                    ${lucideIcon("pencil", "lucide-icon--inline")}
-                                    Editar unidad
-                                  </button>
-                                </div>
-                              </td>
                             </tr>
                             <tr id="${rowKey}-details" class="session-tramos-row" hidden>
-                              <td colspan="8">
+                              <td colspan="7">
                                 <div class="session-tramos-panel">
                                   <table class="session-tramos-table">
                                     <thead>
@@ -4462,6 +4306,7 @@
                     destino: "editTramoDestino",
                     salida_patio_programada: "editTramoSalidaPatio",
                     cita_carga: "editTramoCitaCarga",
+                    salida_carga_programada: "editTramoSalidaCarga",
                     descarga_programada: "editTramoDescarga",
                     instrucciones: "editTramoInstrucciones",
                 };
@@ -4487,6 +4332,11 @@
                         label: "Carga",
                         icon: "package-check",
                         value: row?.[12],
+                    },
+                    {
+                        label: "Salida carga",
+                        icon: "truck",
+                        value: row?.[13],
                     },
                     {
                         label: "Descarga",
@@ -4519,6 +4369,7 @@
                 const fields = [
                     ["editTramoSalidaPatio", "editTramoSalidaPatio12h"],
                     ["editTramoCitaCarga", "editTramoCitaCarga12h"],
+                    ["editTramoSalidaCarga", "editTramoSalidaCarga12h"],
                     ["editTramoDescarga", "editTramoDescarga12h"],
                 ];
 
@@ -4835,6 +4686,8 @@
                     toDateTimeLocalInputValue(fila[11]);
                 document.getElementById("editTramoCitaCarga").value =
                     toDateTimeLocalInputValue(fila[12]);
+                document.getElementById("editTramoSalidaCarga").value =
+                    toDateTimeLocalInputValue(fila[13]);
                 document.getElementById("editTramoDescarga").value =
                     toDateTimeLocalInputValue(fila[14]);
                 updateEditTramoTimeHints();
@@ -4995,6 +4848,9 @@
                         .value.trim(),
                     cita_carga: document
                         .getElementById("editTramoCitaCarga")
+                        .value.trim(),
+                    salida_carga_programada: document
+                        .getElementById("editTramoSalidaCarga")
                         .value.trim(),
                     descarga_programada: document
                         .getElementById("editTramoDescarga")
@@ -5332,6 +5188,8 @@
                         card.querySelector(".d-salida-patio")?.value || "",
                     cita_carga:
                         card.querySelector(".d-cita-carga")?.value || "",
+                    salida_carga:
+                        card.querySelector(".d-salida-carga")?.value || "",
                     descarga_programada:
                         card.querySelector(".d-descarga")?.value || "",
                     requiere_regreso_origen: card.querySelector(
@@ -5347,8 +5205,9 @@
                 // Permitir horas anteriores dentro del mismo día para capturas tardías.
                 const hoyTramoStr = todayLocal();
                 const camposTiempo = [
-                    ["salida_patio", "Salida de Patio"],
+                    ["salida_patio", "Inicio de ruta"],
                     ["cita_carga", "Cita de Carga"],
+                    ["salida_carga", "Salida de Carga"],
                     ["descarga_programada", "Cita de Descarga"],
                     ["regreso_origen_programado", "Fecha de Regreso"],
                 ];
@@ -5832,7 +5691,11 @@
                             </div>
                             <div class="trip-segment-grid">
                                 ${linea("Salida patio", t.salida_patio)}
-                                ${grupoProgramado("Carga programada", linea("Cita carga", t.cita_carga))}
+                                ${grupoProgramado(
+                                    "Carga programada",
+                                    linea("Cita carga", t.cita_carga) +
+                                        linea("Salida carga", t.salida_carga),
+                                )}
                                 ${grupoProgramado("Descarga programada", linea("Cita descarga", t.descarga_programada))}
                             </div>
                         </div>`;
@@ -5940,6 +5803,8 @@
                     card.querySelector(".d-salida-patio")?.value || "";
                 const citaCarga =
                     card.querySelector(".d-cita-carga")?.value || "";
+                const salidaCarga =
+                    card.querySelector(".d-salida-carga")?.value || "";
                 const descarga = card.querySelector(".d-descarga")?.value || "";
                 const requiereRegresoOrigen =
                     card.querySelector(".d-requiere-regreso-origen")?.checked ||
@@ -5955,8 +5820,9 @@
                 // Ningún tiempo programado puede tener fecha anterior a hoy.
                 const hoyTramoStr = todayLocal();
                 const tiempos = [
-                    [salidaPatio, "Salida de Patio"],
+                    [salidaPatio, "Inicio de ruta"],
                     [citaCarga, "Cita de Carga"],
+                    [salidaCarga, "Salida de Carga"],
                     [descarga, "Cita de Descarga"],
                     [
                         requiereRegresoOrigen ? regresoOrigen : "",
@@ -5997,6 +5863,7 @@
                                     instrucciones: v(".d-instrucciones"),
                                     salida_patio: salidaPatio || null,
                                     cita_carga: citaCarga || null,
+                                    salida_carga: salidaCarga || null,
                                     descarga_programada: descarga || null,
                                     requiere_regreso_origen:
                                         requiereRegresoOrigen ? 1 : 0,
@@ -6219,14 +6086,9 @@
                     loadDirectorioMonitoreo();
                 }
                 if (tabName === "logisticaTab") {
-                    // Recargar plantillas para asegurar que los dropdowns estén actualizados
                     if (currentCliente) {
-                        cargarPlantillasRuta();
                         cargarOperadores();
                     }
-                }
-                if (tabName === "plantillasRutaTab") {
-                    cargarPlantillasRuta();
                 }
                 if (tabName === "operadoresTab") {
                     cargarOperadores();
@@ -6360,9 +6222,9 @@
 
             <div class="grid datos-generales-grid">
                 <div class="form-group"><label>Ruta / Identificador</label><input type="text" class="d-ruta"></div>
-                <div class="form-group"><label>Punto de Origen</label><input type="text" class="d-origen"></div>
+                <div class="form-group"><label>Punto de Origen / Inicio de ruta</label><input type="text" class="d-origen"></div>
                 <div class="form-group"><label>Lugar de Carga</label><input type="text" class="d-lugar-carga" placeholder="Bodega / CEDIS"></div>
-                <div class="form-group"><label>Punto de Destino</label><input type="text" class="d-destino"></div>
+                <div class="form-group"><label>Punto de Destino / Descarga</label><input type="text" class="d-destino"></div>
                 <div class="form-group" style="grid-column: 1 / -1; margin-top: 5px;">
                   <label>Instrucciones especiales</label>
                   <input type="text" class="d-instrucciones" placeholder="Ej: No pernoctar en zonas no autorizadas / Prioridad alta">
@@ -6372,7 +6234,7 @@
             <div class="schedule-panel">
                 <div class="schedule-reference">
                     <div class="form-group">
-                      <label>Salida de Patio</label>
+                      <label>Inicio de ruta</label>
                       <input type="datetime-local" class="d-salida-patio" min="${minDateTime}"/>
                     </div>
                 </div>
@@ -6381,11 +6243,12 @@
                     <summary>
                         <div class="schedule-summary">
                             <span class="schedule-summary-title">Carga programada</span>
-                            <span class="schedule-summary-meta">Cita de carga</span>
+                            <span class="schedule-summary-meta">Cita y salida de carga</span>
                         </div>
                     </summary>
                     <div class="schedule-grid">
                         <div class="form-group"><label>Cita de Carga</label><input type="datetime-local" class="d-cita-carga" min="${minDateTime}"></div>
+                        <div class="form-group"><label>Salida de Carga</label><input type="datetime-local" class="d-salida-carga" min="${minDateTime}"></div>
                     </div>
                 </details>
 
@@ -6528,7 +6391,6 @@
                     });
                 refreshLucideIcons();
 
-                // Guardar en base de datos multi-tenant
                 try {
                     await syncContactToSheets(contactObj);
                     showToast("Contacto agregado y guardado en BD");
@@ -6621,6 +6483,42 @@
                 t.innerText = msg;
                 t.style.display = "block";
                 setTimeout(() => (t.style.display = "none"), 3000);
+            }
+
+            function confirmModal(message, title = "Confirmar") {
+                const overlay = document.getElementById("confirmOverlay");
+                const titleEl = document.getElementById("confirmModalTitle");
+                const messageEl = document.getElementById(
+                    "confirmModalMessage",
+                );
+                const acceptBtn = document.getElementById(
+                    "confirmModalAccept",
+                );
+                const cancelBtn = document.getElementById(
+                    "confirmModalCancel",
+                );
+
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+                overlay.classList.remove("hidden");
+
+                return new Promise((resolve) => {
+                    const cleanup = (result) => {
+                        overlay.classList.add("hidden");
+                        acceptBtn.removeEventListener("click", onAccept);
+                        cancelBtn.removeEventListener("click", onCancel);
+                        overlay.removeEventListener("click", onOverlayClick);
+                        resolve(result);
+                    };
+                    const onAccept = () => cleanup(true);
+                    const onCancel = () => cleanup(false);
+                    const onOverlayClick = (e) => {
+                        if (e.target === overlay) cleanup(false);
+                    };
+                    acceptBtn.addEventListener("click", onAccept);
+                    cancelBtn.addEventListener("click", onCancel);
+                    overlay.addEventListener("click", onOverlayClick);
+                });
             }
 
             async function exportFinalExcel() {
@@ -7138,696 +7036,6 @@
                 });
             }
 
-            /**
-             * Carga las plantillas de ruta del cliente actual desde la API
-             */
-            async function cargarPlantillasRuta() {
-                if (!currentCliente) {
-                    showToast("⚠️ Selecciona un cliente primero", "warning");
-                    return;
-                }
-
-                try {
-                    const clienteId = obtenerClienteId();
-                    if (!clienteId) {
-                        showToast(
-                            "⚠️ No se pudo obtener el ID del cliente",
-                            "error",
-                        );
-                        return;
-                    }
-
-                    const response = await fetch(
-                        `${VIAJES_API}?action=listar_rutas&cliente_id=${clienteId}`,
-                        {
-                            headers: getAuthHeaders(),
-                        },
-                    );
-
-                    const text = await response.text();
-                    let json = null;
-                    if (text.trim()) {
-                        json = JSON.parse(text);
-                    } else if (response.ok) {
-                        json = {
-                            ok: true,
-                            favoritos: [],
-                            frecuentes: [],
-                            recientes: [],
-                            total: 0,
-                        };
-                    } else {
-                        throw new Error(`Error HTTP ${response.status}`);
-                    }
-
-                    if (response.ok && json.ok) {
-                        // El endpoint devuelve 3 secciones. Las guardamos por separado
-                        // (para el render seccionado) y también aplanadas en
-                        // plantillasRutaCache (para que el resto del JS —aplicar a
-                        // tramo, selectores— siga funcionando con un array plano).
-                        const favoritos = json.favoritos || [];
-                        const frecuentes = json.frecuentes || [];
-                        const recientes = json.recientes || [];
-                        plantillasRutaSecciones = {
-                            favoritos,
-                            frecuentes,
-                            recientes,
-                        };
-                        plantillasRutaCache = [
-                            ...favoritos,
-                            ...frecuentes,
-                            ...recientes,
-                        ];
-                        plantillasRutaPage = 1;
-                        renderPlantillasRutaTable();
-                        document.getElementById("plantillasCount").textContent =
-                            plantillasRutaCache.length;
-                        // Actualizar todos los dropdowns de plantillas en los tramos existentes
-                        actualizarSelectoresPlantillas();
-                    } else {
-                        throw new Error(json.error || "Error al cargar rutas");
-                    }
-                } catch (error) {
-                    console.error("Error cargando plantillas:", error);
-                    showToast(
-                        "❌ Error al cargar plantillas: " + error.message,
-                        "error",
-                    );
-                }
-            }
-
-            /**
-             * Renderiza la tabla de plantillas de ruta
-             */
-            function renderPlantillasRutaTable() {
-                const container = document.getElementById(
-                    "plantillasTableContainer",
-                );
-
-                if (plantillasRutaCache.length === 0) {
-                    container.innerHTML = `
-                        <p style="text-align: center; color: var(--text-muted); padding: 40px;">
-                            Aún no hay rutas en el historial. Se crearán solas conforme completes viajes,
-                            o puedes agregar una manualmente arriba.
-                        </p>
-                    `;
-                    return;
-                }
-
-                // Fecha relativa simple para "última vez"
-                const tiempoRelativo = (fecha) => {
-                    if (!fecha) return "";
-                    const d = new Date(fecha.replace(" ", "T"));
-                    if (isNaN(d)) return "";
-                    const dias = Math.floor(
-                        (Date.now() - d.getTime()) / 86400000,
-                    );
-                    if (dias <= 0) return "hoy";
-                    if (dias === 1) return "ayer";
-                    if (dias < 30) return `hace ${dias} días`;
-                    if (dias < 365)
-                        return `hace ${Math.floor(dias / 30)} meses`;
-                    return `hace ${Math.floor(dias / 365)} años`;
-                };
-
-                const card = (plantilla) => {
-                    const ruta = plantilla.ruta
-                        ? `<span class="plantilla-card-ruta">${escapeHtml(plantilla.ruta)}</span>`
-                        : "";
-                    const fila = (icono, label, valor) =>
-                        valor
-                            ? `<div class="plantilla-card-fila">
-                                   <span class="plantilla-card-icono">${icono}</span>
-                                   <span class="plantilla-card-label">${label}:</span>
-                                   <span class="plantilla-card-valor">${escapeHtml(valor)}</span>
-                               </div>`
-                            : "";
-                    const instruccionesText = String(
-                        plantilla.instrucciones || "",
-                    ).trim();
-                    const instruccionesHtml = escapeHtml(instruccionesText);
-                    const instruccionesLargas = instruccionesText.length > 180;
-                    const instr = instruccionesText
-                        ? `<div class="plantilla-card-instr" title="${instruccionesHtml}">
-                               <span class="plantilla-card-instr-header">
-                                   ${lucideIcon("clipboard-list", "lucide-icon--inline")} Instrucciones
-                               </span>
-                               ${
-                                   instruccionesLargas
-                                       ? `<span class="plantilla-card-instr-text plantilla-card-instr-text--preview">${instruccionesHtml}</span>
-                                          <details>
-                                            <summary>${lucideIcon("chevrons-down", "lucide-icon--inline")} Ver completas</summary>
-                                            <span class="plantilla-card-instr-full">${instruccionesHtml}</span>
-                                          </details>`
-                                       : `<span class="plantilla-card-instr-text">${instruccionesHtml}</span>`
-                               }
-                             </div>`
-                        : "";
-                    // Métricas de uso (solo si vienen del historial / tienen usos)
-                    const usos =
-                        plantilla.veces_usada > 0
-                            ? `<span title="Veces usada">${lucideIcon("repeat-2", "lucide-icon--inline")} ${plantilla.veces_usada}</span>`
-                            : "";
-                    const ultima = plantilla.ultima_vez_usada
-                        ? `<span title="Última vez">${lucideIcon("clock-3", "lucide-icon--inline")} ${tiempoRelativo(plantilla.ultima_vez_usada)}</span>`
-                        : "";
-                    const metricas =
-                        usos || ultima
-                            ? `<div class="plantilla-card-metricas" style="display:flex; gap:12px; font-size:12px; color:var(--text-muted); margin-top:6px;">${usos}${ultima}</div>`
-                            : "";
-                    const puedeEditar = Number(plantilla.id || 0) > 0;
-                    const estrella = plantilla.es_favorito
-                        ? lucideIcon("star", "", 'fill="currentColor"')
-                        : lucideIcon("star");
-                    const tituloFav = plantilla.es_favorito
-                        ? "Quitar de favoritos"
-                        : "Marcar como favorito";
-                    const botonFavorito = puedeEditar
-                        ? `<button
-                                type="button"
-                                class="icon-btn icon-btn--ghost btn-fav"
-                                onclick="toggleFavoritoRuta(${plantilla.id}, ${plantilla.es_favorito ? "false" : "true"})"
-                                title="${tituloFav}"
-                                aria-label="${tituloFav}: ${escapeHtml(plantilla.etiqueta)}"
-                            >${estrella}</button>`
-                        : "";
-                    const acciones = puedeEditar
-                        ? `<div class="plantilla-card-acciones">
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-secondary"
-                                onclick="renombrarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}', ${plantilla.es_favorito ? "true" : "false"})"
-                                title="Renombrar etiqueta"
-                            >
-                                ${lucideIcon("pencil", "lucide-icon--inline")} Renombrar
-                            </button>
-
-                            <button
-                                type="button"
-                                class="icon-btn icon-btn--danger"
-                                onclick="ocultarRuta(${plantilla.id}, '${escapeHtml(plantilla.etiqueta).replace(/'/g, "\\'")}')"
-                                title="Ocultar del historial"
-                                aria-label="Ocultar ruta ${escapeHtml(plantilla.etiqueta)} del historial"
-                            >
-                                ${lucideIcon("trash-2")}
-                            </button>
-                        </div>`
-                        : "";
-
-                    return `
-                    <div class="plantilla-card">
-                        <div class="plantilla-card-head">
-                            ${botonFavorito}
-                            <strong class="plantilla-card-etiqueta">${escapeHtml(plantilla.etiqueta)}</strong>
-                            ${ruta}
-                        </div>
-                        <div class="plantilla-card-body">
-                            ${fila(lucideIcon("map-pin"), "Origen", plantilla.origen)}
-                            ${fila(lucideIcon("warehouse"), "Carga", plantilla.lugar_carga)}
-                            ${fila(lucideIcon("flag"), "Destino", plantilla.destino)}
-                            ${instr}
-                            ${metricas}
-                        </div>
-                        ${acciones}
-                    </div>`;
-                };
-
-                const totalRutas = plantillasRutaCache.length;
-                const totalPaginas = Math.max(
-                    1,
-                    Math.ceil(totalRutas / PLANTILLAS_RUTA_PAGE_SIZE),
-                );
-                plantillasRutaPage = Math.min(
-                    Math.max(parseInt(plantillasRutaPage || 1, 10), 1),
-                    totalPaginas,
-                );
-                const desde =
-                    (plantillasRutaPage - 1) * PLANTILLAS_RUTA_PAGE_SIZE;
-                const visibles = plantillasRutaCache.slice(
-                    desde,
-                    desde + PLANTILLAS_RUTA_PAGE_SIZE,
-                );
-                const visibleItems = new Set(visibles);
-                const seccionesVisibles = {
-                    favoritos: plantillasRutaSecciones.favoritos.filter((p) =>
-                        visibleItems.has(p),
-                    ),
-                    frecuentes: plantillasRutaSecciones.frecuentes.filter((p) =>
-                        visibleItems.has(p),
-                    ),
-                    recientes: plantillasRutaSecciones.recientes.filter((p) =>
-                        visibleItems.has(p),
-                    ),
-                };
-                const inicio = totalRutas ? desde + 1 : 0;
-                const fin = Math.min(desde + visibles.length, totalRutas);
-
-                const seccion = (icono, titulo, subtitulo, items, total) => {
-                    if (!items || items.length === 0) return "";
-                    const cards = items.map(card).join("");
-                    return `
-                        <div class="historial-seccion" style="margin-bottom: 28px;">
-                            <h3 style="margin: 0 0 4px; display:flex; align-items:center;">
-                                ${lucideIcon(icono, "lucide-icon--section")}
-                                ${titulo} <span style="color:var(--text-muted); font-weight:normal; margin-left: 6px;">(${total})</span>
-                            </h3>
-                            <p style="margin: 0 0 12px; font-size: 12px; color: var(--text-muted);">${subtitulo}</p>
-                            <div class="plantillas-grid">${cards}</div>
-                        </div>`;
-                };
-
-                const pagination =
-                    totalPaginas > 1
-                        ? `<div class="plantillas-pagination">
-                            <span>Mostrando ${inicio}-${fin} de ${totalRutas} rutas</span>
-                            <div class="plantillas-pagination-controls">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-secondary"
-                                    ${plantillasRutaPage <= 1 ? "disabled" : ""}
-                                    onclick="setPlantillasRutaPage(${plantillasRutaPage - 1})"
-                                >
-                                    ${lucideIcon("chevron-left", "lucide-icon--inline")} Anterior
-                                </button>
-                                <span class="plantillas-pagination-page">${plantillasRutaPage} / ${totalPaginas}</span>
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-secondary"
-                                    ${plantillasRutaPage >= totalPaginas ? "disabled" : ""}
-                                    onclick="setPlantillasRutaPage(${plantillasRutaPage + 1})"
-                                >
-                                    Siguiente ${lucideIcon("chevron-right", "lucide-icon--inline")}
-                                </button>
-                            </div>
-                        </div>`
-                        : "";
-
-                container.innerHTML =
-                    seccion(
-                        "star",
-                        "Favoritos",
-                        "Rutas fijadas que siempre aparecen primero.",
-                        seccionesVisibles.favoritos,
-                        plantillasRutaSecciones.favoritos.length,
-                    ) +
-                    seccion(
-                        "repeat-2",
-                        "Frecuentes",
-                        "Rutas que ya has completado, ordenadas por uso.",
-                        seccionesVisibles.frecuentes,
-                        plantillasRutaSecciones.frecuentes.length,
-                    ) +
-                    seccion(
-                        "clock-3",
-                        "Recientes",
-                        "Rutas recientes detectadas en el historial.",
-                        seccionesVisibles.recientes,
-                        plantillasRutaSecciones.recientes.length,
-                    ) +
-                    pagination;
-                refreshLucideIcons();
-            }
-
-            function setPlantillasRutaPage(page) {
-                plantillasRutaPage = Math.max(1, parseInt(page, 10) || 1);
-                renderPlantillasRutaTable();
-            }
-
-            /**
-             * Guarda o actualiza una plantilla de ruta
-             */
-            async function guardarPlantillaRuta() {
-                const plantillaEditId =
-                    document.getElementById("plantillaEditId").value;
-                const etiqueta = document
-                    .getElementById("plantillaEtiqueta")
-                    .value.trim()
-                    .toUpperCase();
-                const ruta = document
-                    .getElementById("plantillaRuta")
-                    .value.trim();
-                const origen = document
-                    .getElementById("plantillaOrigen")
-                    .value.trim();
-                const lugarCarga = document
-                    .getElementById("plantillaLugarCarga")
-                    .value.trim();
-                const destino = document
-                    .getElementById("plantillaDestino")
-                    .value.trim();
-                const instrucciones = document
-                    .getElementById("plantillaInstrucciones")
-                    .value.trim();
-
-                if (!etiqueta) {
-                    showToast("⚠️ La etiqueta es obligatoria", "warning");
-                    return;
-                }
-
-                if (!currentCliente) {
-                    showToast("⚠️ Selecciona un cliente primero", "warning");
-                    return;
-                }
-
-                const clienteId = obtenerClienteId();
-                if (!clienteId) {
-                    showToast(
-                        "⚠️ No se pudo obtener el ID del cliente",
-                        "error",
-                    );
-                    return;
-                }
-
-                const payload = {
-                    cliente_id: clienteId,
-                    etiqueta,
-                    ruta: ruta || null,
-                    origen: origen || null,
-                    lugar_carga: lugarCarga || null,
-                    destino: destino || null,
-                    instrucciones: instrucciones || null,
-                };
-
-                try {
-                    let url, method;
-                    if (plantillaEditId) {
-                        // Actualizar plantilla existente
-                        url = viajesApiUrl("actualizar_plantilla", "PUT");
-                        method = "POST";
-                        payload.plantilla_id = parseInt(plantillaEditId);
-                    } else {
-                        // Crear nueva plantilla
-                        url = `${VIAJES_API}?action=crear_plantilla`;
-                        method = "POST";
-                    }
-
-                    const response = await fetch(url, {
-                        method,
-                        headers: getAuthHeaders({
-                            "Content-Type": "application/json",
-                        }),
-                        body: JSON.stringify(payload),
-                    });
-
-                    const json = await response.json();
-
-                    if (json.ok) {
-                        showToast(
-                            `✅ Plantilla "${etiqueta}" ${plantillaEditId ? "actualizada" : "creada"} correctamente`,
-                            "success",
-                        );
-                        limpiarFormularioPlantilla();
-                        await cargarPlantillasRuta();
-                    } else {
-                        throw new Error(
-                            json.error || "Error al guardar plantilla",
-                        );
-                    }
-                } catch (error) {
-                    console.error("Error guardando plantilla:", error);
-                    showToast("❌ Error: " + error.message, "error");
-                }
-            }
-
-            /**
-             * Prepara el formulario para editar una plantilla
-             */
-            function editarPlantillaRuta(plantillaId) {
-                const plantilla = plantillasRutaCache.find(
-                    (p) => p.id === plantillaId,
-                );
-                if (!plantilla) {
-                    showToast("⚠️ Plantilla no encontrada", "error");
-                    return;
-                }
-
-                // Llenar el formulario
-                document.getElementById("plantillaEditId").value = plantilla.id;
-                document.getElementById("plantillaEtiqueta").value =
-                    plantilla.etiqueta;
-                document.getElementById("plantillaRuta").value =
-                    plantilla.ruta || "";
-                document.getElementById("plantillaOrigen").value =
-                    plantilla.origen || "";
-                document.getElementById("plantillaLugarCarga").value =
-                    plantilla.lugar_carga || "";
-                document.getElementById("plantillaDestino").value =
-                    plantilla.destino || "";
-                document.getElementById("plantillaInstrucciones").value =
-                    plantilla.instrucciones || "";
-                _limpiarMapasPlantilla();
-
-                // Cambiar UI a modo edición
-                document.getElementById("plantillaFormTitle").textContent =
-                    "Editar Plantilla";
-                document.getElementById("plantillaFormBtnText").textContent =
-                    "Actualizar Plantilla";
-                document.getElementById("plantillaCancelBtn").style.display =
-                    "inline-block";
-
-                // Scroll al formulario
-                document
-                    .getElementById("plantillaForm")
-                    .scrollIntoView({ behavior: "smooth" });
-            }
-
-            /**
-             * Elimina una plantilla de ruta (soft delete)
-             */
-            async function eliminarPlantillaRuta(plantillaId, etiqueta) {
-                if (
-                    !confirm(
-                        `¿Estás seguro de eliminar la plantilla "${etiqueta}"?`,
-                    )
-                ) {
-                    return;
-                }
-
-                try {
-                    const response = await fetch(
-                        viajesApiUrl("eliminar_plantilla", "DELETE"),
-                        {
-                            method: "POST",
-                            headers: getAuthHeaders({
-                                "Content-Type": "application/json",
-                            }),
-                            body: JSON.stringify({ plantilla_id: plantillaId }),
-                        },
-                    );
-
-                    const json = await response.json();
-
-                    if (json.ok) {
-                        showToast(
-                            `✅ Plantilla "${etiqueta}" eliminada`,
-                            "success",
-                        );
-                        await cargarPlantillasRuta();
-                    } else {
-                        throw new Error(
-                            json.error || "Error al eliminar plantilla",
-                        );
-                    }
-                } catch (error) {
-                    console.error("Error eliminando plantilla:", error);
-                    showToast("❌ Error: " + error.message, "error");
-                }
-            }
-
-            /**
-             * Marca/desmarca una ruta como favorita (estrella).
-             */
-            async function toggleFavoritoRuta(plantillaId, esFavorito) {
-                try {
-                    const response = await fetch(
-                        viajesApiUrl("marcar_favorito", "PUT"),
-                        {
-                            method: "POST",
-                            headers: getAuthHeaders({
-                                "Content-Type": "application/json",
-                            }),
-                            body: JSON.stringify({
-                                plantilla_id: plantillaId,
-                                es_favorito: esFavorito,
-                            }),
-                        },
-                    );
-                    const json = await response.json();
-                    if (json.ok) {
-                        showToast(
-                            esFavorito
-                                ? "Añadida a favoritos"
-                                : "Quitada de favoritos",
-                            "success",
-                        );
-                        await cargarPlantillasRuta();
-                    } else {
-                        throw new Error(json.error || "Error");
-                    }
-                } catch (error) {
-                    showToast("❌ Error: " + error.message, "error");
-                }
-            }
-
-            /**
-             * Renombra la etiqueta de una ruta (ej: "CDMX → MTY" → "Casa → Trabajo").
-             * Conserva el estado de favorito.
-             */
-            async function renombrarRuta(
-                plantillaId,
-                etiquetaActual,
-                esFavorito,
-            ) {
-                const nueva = prompt(
-                    "Nuevo nombre para esta ruta:",
-                    etiquetaActual,
-                );
-                if (nueva === null) return; // cancelado
-                const limpia = nueva.trim();
-                if (!limpia) {
-                    showToast("⚠️ El nombre no puede estar vacío", "warning");
-                    return;
-                }
-                if (limpia === etiquetaActual) return;
-                try {
-                    const response = await fetch(
-                        viajesApiUrl("marcar_favorito", "PUT"),
-                        {
-                            method: "POST",
-                            headers: getAuthHeaders({
-                                "Content-Type": "application/json",
-                            }),
-                            body: JSON.stringify({
-                                plantilla_id: plantillaId,
-                                es_favorito: esFavorito,
-                                etiqueta: limpia,
-                            }),
-                        },
-                    );
-                    const json = await response.json();
-                    if (json.ok) {
-                        showToast(
-                            `✅ Ruta renombrada a "${limpia}"`,
-                            "success",
-                        );
-                        await cargarPlantillasRuta();
-                    } else {
-                        throw new Error(json.error || "Error");
-                    }
-                } catch (error) {
-                    showToast("❌ Error: " + error.message, "error");
-                }
-            }
-
-            /**
-             * Oculta una ruta del historial (soft delete vía ocultar_ruta).
-             */
-            async function ocultarRuta(plantillaId, etiqueta) {
-                if (
-                    !confirm(
-                        `¿Ocultar la ruta "${etiqueta}" del historial?\n\nNo se borra: si se vuelve a despachar reaparecerá.`,
-                    )
-                ) {
-                    return;
-                }
-                try {
-                    const response = await fetch(
-                        viajesApiUrl("ocultar_ruta", "DELETE"),
-                        {
-                            method: "POST",
-                            headers: getAuthHeaders({
-                                "Content-Type": "application/json",
-                            }),
-                            body: JSON.stringify({ plantilla_id: plantillaId }),
-                        },
-                    );
-                    const json = await response.json();
-                    if (json.ok) {
-                        showToast(`✅ Ruta "${etiqueta}" ocultada`, "success");
-                        await cargarPlantillasRuta();
-                    } else {
-                        throw new Error(json.error || "Error");
-                    }
-                } catch (error) {
-                    showToast("❌ Error: " + error.message, "error");
-                }
-            }
-
-            /**
-             * Cancela la edición de una plantilla y limpia el formulario
-             */
-            function cancelarEdicionPlantilla() {
-                limpiarFormularioPlantilla();
-            }
-
-            /**
-             * Limpia el formulario de plantillas y lo devuelve al modo "Crear"
-             */
-            function limpiarFormularioPlantilla() {
-                document.getElementById("plantillaForm").reset();
-                _limpiarMapasPlantilla();
-                document.getElementById("plantillaEditId").value = "";
-                document.getElementById("plantillaFormTitle").textContent =
-                    "Agregar Nueva Plantilla";
-                document.getElementById("plantillaFormBtnText").textContent =
-                    "Guardar Plantilla";
-                document.getElementById("plantillaCancelBtn").style.display =
-                    "none";
-            }
-
-            /**
-             * Obtiene el cliente_id del cliente actual
-             */
-            function obtenerClienteId() {
-                if (!planificadorUser || !planificadorUser.clientes)
-                    return null;
-                const clienteActual = planificadorUser.clientes.find(
-                    (c) => c.nombre === currentCliente,
-                );
-                return clienteActual ? clienteActual.id : null;
-            }
-
-            /**
-             * Construye el HTML de <option> para los selectores de ruta de los
-             * tramos, agrupadas por sección (Favoritos / Frecuentes /
-             * Recientes) usando <optgroup>. La etiqueta de frecuentes/recientes
-             * muestra el contador de usos para dar señal tipo Uber.
-             */
-            function construirOpcionesRutas() {
-                let html = '<option value="">-- Llenar manualmente --</option>';
-
-                const grupo = (titulo, items, mostrarUsos) => {
-                    if (!items || items.length === 0) return "";
-                    const opts = items
-                        .map((p) => {
-                            const usos =
-                                mostrarUsos && p.veces_usada > 0
-                                    ? ` (${p.veces_usada})`
-                                    : "";
-                            return `<option value="${p.id}">${escapeHtml(p.etiqueta)}${usos}</option>`;
-                        })
-                        .join("");
-                    return `<optgroup label="${titulo}">${opts}</optgroup>`;
-                };
-
-                html += grupo(
-                    "Favoritos",
-                    plantillasRutaSecciones.favoritos,
-                    false,
-                );
-                html += grupo(
-                    "Frecuentes",
-                    plantillasRutaSecciones.frecuentes,
-                    true,
-                );
-                html += grupo(
-                    "Recientes",
-                    plantillasRutaSecciones.recientes,
-                    false,
-                );
-                return html;
-            }
-
             function formatoFechaRutaHistorial(value) {
                 if (!value) return "Sin fecha";
                 try {
@@ -7861,9 +7069,9 @@
                         );
                         const recorrido = `${ruta.origen || "Origen"} -> ${ruta.destino || "Destino"}`;
                         return `
-                            <button type="button" onclick="aplicarRutaHistorial(this)" data-ruta-index="${index}"
-                                    class="route-history-result">
-                                <div class="route-history-result-main">
+                            <div class="route-history-result">
+                                <button type="button" onclick="aplicarRutaHistorial(this)" data-ruta-index="${index}"
+                                        class="route-history-result-main">
                                     <div class="route-history-result-copy">
                                         <div class="route-history-result-title">${escapeHtml(ruta.ruta || ruta.etiqueta || recorrido)}</div>
                                         <div class="route-history-result-meta">${escapeHtml(recorrido)}</div>
@@ -7873,8 +7081,12 @@
                                         <span class="chip chip--info">${lucideIcon("repeat-2", "lucide-icon--inline")} ${escapeHtml(usoTxt)}</span>
                                         <span class="chip chip--muted">${lucideIcon("clock-3", "lucide-icon--inline")} Última: ${escapeHtml(ultima)}</span>
                                     </div>
-                                </div>
-                            </button>`;
+                                </button>
+                                <button type="button" onclick="eliminarRutaHistorial(this)" data-ruta-index="${index}"
+                                        class="route-history-result-delete" title="Eliminar ruta del historial">
+                                    ${lucideIcon("trash-2", "lucide-icon--inline")}
+                                </button>
+                            </div>`;
                     })
                     .join("");
                 refreshLucideIcons();
@@ -7975,79 +7187,58 @@
 
                 showToast("✅ Ruta del historial aplicada", "success");
             }
-            /**
-             * Aplica una plantilla de ruta a un tramo del formulario
-             */
-            function aplicarPlantillaATramo(selectElement) {
-                const plantillaId = parseInt(selectElement.value);
-                if (!plantillaId) return; // No hay plantilla seleccionada
 
-                const plantilla = plantillasRutaCache.find(
-                    (p) => p.id === plantillaId,
+            async function eliminarRutaHistorial(buttonEl) {
+                const card = buttonEl.closest(".dispatch-card");
+                if (!card || !card._rutasHistorial) return;
+                const index = parseInt(buttonEl.dataset.rutaIndex || "-1", 10);
+                const ruta = card._rutasHistorial[index];
+                if (!ruta) return;
+
+                const etiqueta =
+                    ruta.ruta ||
+                    ruta.etiqueta ||
+                    `${ruta.origen || "Origen"} -> ${ruta.destino || "Destino"}`;
+                const confirmado = await confirmModal(
+                    `¿Eliminar la ruta "${etiqueta}" del historial? No se borran los viajes ya despachados; solo deja de sugerirse aquí.`,
+                    "Eliminar ruta del historial",
                 );
-                if (!plantilla) {
-                    showToast("⚠️ Plantilla no encontrada", "error");
-                    return;
+                if (!confirmado) return;
+
+                try {
+                    const clienteId = obtenerClienteId();
+                    const response = await fetch(
+                        viajesApiUrl("ocultar_ruta_historial", "DELETE"),
+                        {
+                            method: "POST",
+                            headers: getAuthHeaders({
+                                "Content-Type": "application/json",
+                            }),
+                            body: JSON.stringify({
+                                id: ruta.id || 0,
+                                cliente_id: clienteId,
+                                ruta: ruta.ruta || "",
+                                origen: ruta.origen || "",
+                                lugar_carga: ruta.lugar_carga || "",
+                                destino: ruta.destino || "",
+                            }),
+                        },
+                    );
+                    const json = await response.json();
+                    if (!response.ok || !json.ok) {
+                        throw new Error(json.error || `Error ${response.status}`);
+                    }
+                    card._rutasHistorial.splice(index, 1);
+                    renderRutasHistorial(card, card._rutasHistorial);
+                    showToast(`✅ Ruta "${etiqueta}" eliminada del historial`, "success");
+                } catch (error) {
+                    showToast("❌ Error: " + error.message, "error");
                 }
-
-                // Obtener el tramo padre (dispatch-card)
-                const card = selectElement.closest(".dispatch-card");
-                if (!card) return;
-
-                // Rellenar campos automáticamente
-                const rutaInput = card.querySelector(".d-ruta");
-                const origenInput = card.querySelector(".d-origen");
-                const lugarCargaInput = card.querySelector(".d-lugar-carga");
-                const destinoInput = card.querySelector(".d-destino");
-                const instruccionesInput =
-                    card.querySelector(".d-instrucciones");
-
-                if (rutaInput) rutaInput.value = plantilla.ruta || "";
-                if (origenInput) origenInput.value = plantilla.origen || "";
-                if (lugarCargaInput)
-                    lugarCargaInput.value = plantilla.lugar_carga || "";
-                if (destinoInput) destinoInput.value = plantilla.destino || "";
-                if (instruccionesInput)
-                    instruccionesInput.value = plantilla.instrucciones || "";
-
-                showToast(
-                    `✅ Plantilla "${plantilla.etiqueta}" aplicada al tramo`,
-                    "success",
-                );
-            }
-
-            /**
-             * Actualiza las opciones de todos los selectores de plantillas en los tramos
-             */
-            function actualizarSelectoresPlantillas() {
-                const selectores = document.querySelectorAll(
-                    ".plantilla-selector",
-                );
-                const opciones = construirOpcionesRutas();
-                selectores.forEach((select) => {
-                    const valorActual = select.value;
-                    select.innerHTML = opciones;
-                    // Restaurar selección si existía
-                    if (valorActual) select.value = valorActual;
-                });
             }
 
             // Exportar funciones al scope global
-            window.cargarPlantillasRuta = cargarPlantillasRuta;
-            window.guardarPlantillaRuta = guardarPlantillaRuta;
-            window.editarPlantillaRuta = editarPlantillaRuta;
-            window.eliminarPlantillaRuta = eliminarPlantillaRuta;
-            window.toggleFavoritoRuta = toggleFavoritoRuta;
-            window.renombrarRuta = renombrarRuta;
-            window.ocultarRuta = ocultarRuta;
-            window.cancelarEdicionPlantilla = cancelarEdicionPlantilla;
-            window.aplicarPlantillaATramo = aplicarPlantillaATramo;
             window.buscarRutasHistorial = buscarRutasHistorial;
             window.aplicarRutaHistorial = aplicarRutaHistorial;
-            window.setPlantillasRutaPage = setPlantillasRutaPage;
-            window.construirOpcionesRutas = construirOpcionesRutas;
-            window.actualizarSelectoresPlantillas =
-                actualizarSelectoresPlantillas;
 
             window.openTab = openTab;
             window.addPhoneField = addPhoneField;
