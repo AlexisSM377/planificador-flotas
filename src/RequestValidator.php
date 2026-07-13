@@ -1,125 +1,124 @@
 <?php
-/**
- * Security validation class for API inputs
- */
 
-class RequestValidator {
-    /**
-     * Validate API request
-     */
-    public static function validateRequest() {
-        // Skip validation if running from CLI (development)
-        if (php_sapi_name() === 'cli') {
+class RequestValidator
+{
+    public static function validateRequest()
+    {
+        if (php_sapi_name() === "cli") {
             return;
         }
-        
-        // In development environment, allow requests without API_KEY
-        if (ENVIRONMENT === 'development') {
+
+        if (($_SERVER["REQUEST_METHOD"] ?? "") === "OPTIONS") {
+            self::validateCORS();
+            http_response_code(204);
+            exit();
+        }
+
+        if (ENVIRONMENT === "development") {
             return;
         }
-        
-        // Validate CORS - peticiones deben venir del mismo origen
+
         self::validateCORS();
-        
-        // Validar que la petición viene del mismo dominio
-        // No requerimos API_KEY en el cliente, solo validamos origen
-        $referer = $_SERVER['HTTP_REFERER'] ?? '';
-        $host = $_SERVER['HTTP_HOST'] ?? '';
-        
-        // Si hay referer, debe ser del mismo dominio
+
+        if (ENVIRONMENT === "development") {
+            return;
+        }
+
+        self::validateCORS();
+
+        $referer = $_SERVER["HTTP_REFERER"] ?? "";
+        $host = $_SERVER["HTTP_HOST"] ?? "";
+
         if (!empty($referer)) {
             $refererHost = parse_url($referer, PHP_URL_HOST);
             if ($refererHost !== $host) {
-                throw new Exception('Invalid request origin', 403);
+                throw new Exception("Invalid request origin", 403);
             }
         }
-        
-        // Validate request method
-        $method = $_SERVER['REQUEST_METHOD'];
-        if (!in_array($method, ['GET', 'POST', 'OPTIONS'])) {
-            throw new Exception('Method not allowed', 405);
+
+        $method = $_SERVER["REQUEST_METHOD"];
+        if (!in_array($method, ["GET", "POST", "PUT", "DELETE", "OPTIONS"])) {
+            throw new Exception("Method not allowed", 405);
         }
     }
-    
-    /**
-     * Validate CORS origin
-     */
-    public static function validateCORS() {
-        // Skip CORS validation if running from CLI
-        if (php_sapi_name() === 'cli') {
+
+    public static function validateCORS()
+    {
+        if (php_sapi_name() === "cli") {
             return;
         }
-        
-        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+        $origin = $_SERVER["HTTP_ORIGIN"] ?? "";
         $allowedOrigins = ALLOWED_ORIGINS;
-        
+
         if (empty($origin)) {
-            return; // Allow same-origin requests
+            return;
         }
-        
-        // Check if origin is allowed
+
         $isAllowed = false;
         foreach ($allowedOrigins as $allowed) {
             $allowed = trim($allowed);
-            if ($origin === $allowed || $allowed === '*') {
+            if ($origin === $allowed || $allowed === "*") {
                 $isAllowed = true;
                 break;
             }
         }
-        
-        if (!$isAllowed && ENVIRONMENT !== 'development') {
-            throw new Exception('CORS policy violation', 403);
+
+        if (!$isAllowed && ENVIRONMENT !== "development") {
+            throw new Exception("CORS policy violation", 403);
         }
-        
+
         if ($isAllowed) {
             header("Access-Control-Allow-Origin: $origin");
-            header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-            header('Access-Control-Allow-Headers: Content-Type, X-API-Key, Authorization');
+            header(
+                "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS",
+            );
+            header(
+                "Access-Control-Allow-Headers: Content-Type, X-API-Key, Authorization",
+            );
         }
     }
-    
-    /**
-     * Sanitize input parameter
-     */
-    public static function sanitizeInput($value, $type = 'string') {
-        if ($type === 'string') {
-            return htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
-        } elseif ($type === 'int') {
-            return (int)$value;
+
+    public static function sanitizeInput($value, $type = "string")
+    {
+        if ($type === "string") {
+            return htmlspecialchars(trim($value), ENT_QUOTES, "UTF-8");
+        } elseif ($type === "int") {
+            return (int) $value;
         }
         return $value;
     }
-    
-    /**
-     * Validate tipo parameter (whitelist)
-     */
-    public static function validateTipo($tipo) {
-        $validTypes = ['logistica', 'contactos', 'usuarios', 'directorio_monitoreo'];
-        
+
+    public static function validateTipo($tipo)
+    {
+        $validTypes = [
+            "logistica",
+            "contactos",
+            "usuarios",
+            "directorio_monitoreo",
+        ];
+
         if (!in_array($tipo, $validTypes, true)) {
-            throw new Exception('Invalid tipo parameter', 400);
+            throw new Exception("Invalid tipo parameter", 400);
         }
-        
+
         return $tipo;
     }
-    
-    /**
-     * Validate rows data
-     */
-    public static function validateRows($rows) {
+
+    public static function validateRows($rows)
+    {
         if (!is_array($rows)) {
-            throw new Exception('Rows must be an array', 400);
+            throw new Exception("Rows must be an array", 400);
         }
-        
+
         if (empty($rows)) {
-            throw new Exception('Rows cannot be empty', 400);
+            throw new Exception("Rows cannot be empty", 400);
         }
-        
-        // Limit rows to prevent abuse
+
         if (count($rows) > 1000) {
-            throw new Exception('Too many rows (max 1000)', 400);
+            throw new Exception("Too many rows (max 1000)", 400);
         }
-        
+
         return $rows;
     }
 }
