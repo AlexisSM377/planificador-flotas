@@ -1173,7 +1173,7 @@
 
             .session-units-table {
                 width: 100%;
-                min-width: 1120px;
+                min-width: 1200px;
                 border-collapse: collapse;
                 table-layout: fixed;
             }
@@ -1216,7 +1216,7 @@
             }
 
             .session-units-table .col-route {
-                width: 420px;
+                width: 500px;
             }
 
             .session-unit-name {
@@ -1315,19 +1315,52 @@
                 font-size: 12px;
                 font-weight: 700;
                 line-height: 1.25;
-                overflow-wrap: anywhere;
+                overflow-wrap: normal;
+                word-break: normal;
             }
 
             .schedule-points--compact {
-                flex-wrap: nowrap;
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                align-items: stretch;
                 gap: 5px;
                 width: 100%;
             }
 
             .schedule-points--compact .schedule-point {
-                flex: 1 1 0;
-                min-width: 118px;
-                padding: 6px 8px;
+                width: 100%;
+                min-width: 0;
+                box-sizing: border-box;
+                grid-template-columns: 20px minmax(0, 1fr);
+                gap: 6px;
+                padding: 6px 7px;
+            }
+
+            .schedule-points--compact .schedule-point > span:last-child {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .schedule-points--compact .schedule-point__icon {
+                width: 20px;
+                height: 20px;
+            }
+
+            .schedule-points--compact .schedule-point__label {
+                font-size: 9px;
+                letter-spacing: 0.02em;
+            }
+
+            .schedule-points--compact .schedule-point__time {
+                font-size: 11px;
+                white-space: normal;
+                max-width: 100%;
+            }
+
+            .schedule-point__date,
+            .schedule-point__clock {
+                display: block;
+                white-space: nowrap;
             }
 
             .schedule-points--empty {
@@ -1873,8 +1906,6 @@
                                         onchange="onOperadorChange('operador')"
                                     >
                                         <option value="">
-                                            -- Selecciona operador --
-                                        </option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -2653,6 +2684,9 @@
         <!-- Modal: Editar datos de unidad -->
         <div
             id="editUnitModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="editUnitModalTitle"
             style="
                 display: none;
                 position: fixed;
@@ -2685,6 +2719,7 @@
                     "
                 >
                     <strong
+                        id="editUnitModalTitle"
                         style="
                             font-size: 15px;
                             display: flex;
@@ -2712,6 +2747,8 @@
 
                 <div style="padding: 20px">
                     <input type="hidden" id="editUnitId" />
+                    <input type="hidden" id="editUnitClienteId" />
+                    <input type="hidden" id="editUnitEconomicoOriginal" />
 
                     <p
                         style="
@@ -2741,6 +2778,7 @@
                     <input
                         id="editUnitEconomico"
                         type="text"
+                        required
                         style="
                             width: 100%;
                             padding: 9px 11px;
@@ -2787,6 +2825,7 @@
                     <select
                         id="editUnitOperador"
                         onchange="onOperadorChange('editUnitOperador')"
+                        required
                         style="
                             width: 100%;
                             padding: 9px 11px;
@@ -2798,6 +2837,10 @@
                     >
                         <option value="">-- Selecciona operador --</option>
                     </select>
+
+                    <p class="inline-note inline-note--warning" style="margin: 0 0 12px">
+                        El cambio se aplicará a esta unidad y se reflejará en sus viajes relacionados.
+                    </p>
 
                     <label
                         style="
@@ -2875,6 +2918,9 @@
         <!-- Modal: Editar datos de ruta de un tramo -->
         <div
             id="editTramoModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="editTramoTitle"
             style="
                 display: none;
                 position: fixed;
@@ -2911,6 +2957,7 @@
                     "
                 >
                     <strong
+                        id="editTramoTitle"
                         style="
                             font-size: 15px;
                             display: flex;
@@ -2923,7 +2970,7 @@
                             class="lucide-icon"
                             aria-hidden="true"
                         ></i>
-                        Editar Tramo
+                        Editar tramo
                     </strong>
                     <button
                         type="button"
@@ -2945,6 +2992,7 @@
                     "
                 >
                     <input type="hidden" id="editTramoId" />
+                    <input type="hidden" id="editTramoMode" value="edit" />
                     <input type="hidden" id="editTramoCreatedAt" />
                     <input type="hidden" id="editTramoEditedAt" />
 
@@ -3277,6 +3325,56 @@
                     ></textarea>
 
                     <div
+                        id="editTramoRequestReasonWrap"
+                        style="
+                            display: none;
+                            margin: 0 0 12px;
+                            padding: 12px;
+                            border: 1px solid #fde68a;
+                            border-radius: 8px;
+                            background: #fffbeb;
+                        "
+                    >
+                        <label
+                            for="editTramoRequestReason"
+                            style="
+                                display: block;
+                                margin-bottom: 4px;
+                                color: #92400e;
+                                font-size: 12px;
+                                font-weight: 700;
+                            "
+                            >Motivo de la solicitud</label
+                        >
+                        <textarea
+                            id="editTramoRequestReason"
+                            rows="3"
+                            maxlength="500"
+                            placeholder="Explica por qué se requiere la corrección"
+                            style="
+                                width: 100%;
+                                padding: 9px 11px;
+                                border: 1px solid #fbbf24;
+                                border-radius: 8px;
+                                font: inherit;
+                                resize: vertical;
+                                background: #fff;
+                            "
+                        ></textarea>
+                        <p
+                            style="
+                                margin: 6px 0 0;
+                                color: #92400e;
+                                font-size: 11px;
+                            "
+                        >
+                            Se enviarán únicamente los campos cuyo valor hayas
+                            modificado. El tramo no cambiará hasta que un
+                            administrador autorice la solicitud.
+                        </p>
+                    </div>
+
+                    <div
                         style="
                             display: flex;
                             justify-content: flex-end;
@@ -3433,6 +3531,7 @@
             let unitsHistory = {};
             let dateFilter = "today";
             let allUnitsData = [];
+            let editTramoOriginalValues = {};
             let filterByUnit = "";
             let sessionUnitsPage = 1;
             const SESSION_UNITS_PAGE_SIZE = 10;
@@ -3498,6 +3597,13 @@
                 return (
                     String(planificadorUser?.role || "").toLowerCase() ===
                     "admin"
+                );
+            }
+
+            function canWritePlanificador() {
+                return (
+                    String(planificadorUser?.role || "").toLowerCase() !==
+                    "lector"
                 );
             }
 
@@ -4033,6 +4139,7 @@
                               <th class="col-tramos">Tramos</th>
                               <th class="col-route">Próximo / ruta</th>
                               <th>Equipos</th>
+                              <th>Acciones</th>
                             </tr>
                           </thead>
                           <tbody>`;
@@ -4086,13 +4193,24 @@
                                      ${lucideIcon("pencil", "lucide-icon--inline")}
                                      Editar
                                   </button>`
-                                    : `
+                                    : canWritePlanificador()
+                                      ? `
+                                  <button
+                                    type="button"
+                                    onclick="editTramo(${tramoId}, true)"
+                                    class="btn btn-secondary"
+                                    style="padding: 6px 9px; font-size: 11px;"
+                                    title="${escapeHtml(editState.reason)}">
+                                    ${lucideIcon("message-square-plus", "lucide-icon--inline")}
+                                    Solicitar cambio
+                                  </button>`
+                                      : `
                                   <button
                                     type="button"
                                     class="btn btn-secondary"
                                     style="padding: 6px 9px; font-size: 11px;"
                                     disabled
-                                    title="${escapeHtml(editState.reason)}">
+                                    title="Solo lectura">
                                     ${lucideIcon("lock", "lucide-icon--inline")}
                                     Bloqueado
                                   </button>`
@@ -4154,9 +4272,23 @@
                                 <div class="session-route-meta">${firstSchedule}</div>
                               </td>
                               <td class="session-cell-muted">${escapeHtml(firstRow[4] || "No especificado")}</td>
+                              <td>
+                                ${
+                                    canWritePlanificador()
+                                        ? `<button
+                                             type="button"
+                                             onclick="editUnit(${parseInt(firstRow[18], 10) || 0})"
+                                             class="btn btn-secondary"
+                                             style="padding: 6px 9px; font-size: 11px;">
+                                             ${lucideIcon("pencil", "lucide-icon--inline")}
+                                             Editar unidad
+                                           </button>`
+                                        : '<span class="session-cell-muted">Solo lectura</span>'
+                                }
+                              </td>
                             </tr>
                             <tr id="${rowKey}-details" class="session-tramos-row" hidden>
-                              <td colspan="7">
+                              <td colspan="8">
                                 <div class="session-tramos-panel">
                                   <table class="session-tramos-table">
                                     <thead>
@@ -4352,14 +4484,24 @@
                 return `<div class="schedule-points${compact ? " schedule-points--compact" : ""}">
                     ${points
                         .map(
-                            (point) => `
+                            (point) => {
+                                const formatted = formatDateTime(point.value);
+                                const [datePart, ...timeParts] = String(
+                                    formatted,
+                                ).split(/\s+/);
+                                const timePart = timeParts.join(" ");
+                                return `
                                 <span class="schedule-point">
                                     <span class="schedule-point__icon">${lucideIcon(point.icon)}</span>
                                     <span>
                                         <span class="schedule-point__label">${escapeHtml(point.label)}</span>
-                                        <span class="schedule-point__time">${escapeHtml(formatDateTime(point.value))}</span>
+                                        <span class="schedule-point__time">
+                                            <span class="schedule-point__date">${escapeHtml(datePart)}</span>
+                                            <span class="schedule-point__clock">${escapeHtml(timePart)}</span>
+                                        </span>
                                     </span>
-                                </span>`,
+                                </span>`;
+                            },
                         )
                         .join("")}
                 </div>`;
@@ -4524,7 +4666,11 @@
                 refreshLucideIcons();
             }
 
-            function editUnit(unidadId) {
+            async function editUnit(unidadId) {
+                if (!canWritePlanificador()) {
+                    showToast("⚠️ No tienes permisos para editar unidades");
+                    return;
+                }
                 unidadId = parseInt(unidadId, 10) || 0;
                 if (!unidadId) {
                     showToast("⚠️ No se pudo identificar la unidad");
@@ -4541,6 +4687,10 @@
                 }
 
                 document.getElementById("editUnitId").value = unidadId;
+                document.getElementById("editUnitClienteId").value =
+                    parseInt(fila[19], 10) || 0;
+                document.getElementById("editUnitEconomicoOriginal").value =
+                    fila[2] || "";
                 document.getElementById("editUnitEconomico").value =
                     fila[2] || "";
                 document.getElementById("editUnitPlacas").value = fila[3] || "";
@@ -4551,14 +4701,12 @@
                 document.getElementById("editUnitClienteLabel").textContent =
                     fila[16] || "—";
 
-                // Asegurar opciones del select y seleccionar por nombre del operador actual
-                actualizarSelectoresOperador();
-                _seleccionarOperadorPorNombre(
-                    "editUnitOperador",
+                document.getElementById("editUnitModal").style.display = "flex";
+                document.getElementById("editUnitEconomico").focus();
+                await cargarOperadoresParaEdicion(
+                    parseInt(fila[19], 10) || 0,
                     fila[5] || "",
                 );
-
-                document.getElementById("editUnitModal").style.display = "flex";
             }
 
             function closeEditUnitModal() {
@@ -4588,9 +4736,23 @@
                 const opNombre = opId
                     ? opSel.selectedOptions[0].textContent.trim()
                     : "";
+                if (!opId || !opNombre) {
+                    showToast("⚠️ El operador es obligatorio");
+                    opSel.focus();
+                    return;
+                }
+
+                const clienteId = parseInt(
+                    document.getElementById("editUnitClienteId").value,
+                    10,
+                );
+                const economicoOriginal = document
+                    .getElementById("editUnitEconomicoOriginal")
+                    .value.trim();
 
                 const payload = {
                     unidad_id: unidadId,
+                    cliente_id: clienteId,
                     economico_nuevo: economicoNuevo,
                     placas: document
                         .getElementById("editUnitPlacas")
@@ -4637,7 +4799,27 @@
 
                     showToast("✓ Unidad actualizada correctamente");
                     closeEditUnitModal();
-                    loadUnitsFromSheets(); // Recargar tabla
+                    if (clienteId) {
+                        delete viajesUnidadesCache[clienteId];
+                    }
+                    const economicoInput =
+                        document.getElementById("id_vehiculo");
+                    if (
+                        economicoInput &&
+                        economicoInput.value.trim() === economicoOriginal
+                    ) {
+                        economicoInput.value =
+                            json.unidad?.economico || economicoNuevo;
+                        document.getElementById("operador").value = String(
+                            json.unidad?.operador_id || opId,
+                        );
+                    }
+                    await Promise.all([
+                        loadUnitsFromSheets(),
+                        clienteId
+                            ? loadUnitsFromViajesAPI(clienteId)
+                            : Promise.resolve(),
+                    ]);
                 } catch (error) {
                     console.error("Error actualizando unidad:", error);
                     showToast("❌ " + error.message);
@@ -4648,7 +4830,11 @@
             }
 
             // ─── Editar TRAMO (ruta, origen, lugar carga, destino, instrucciones) ───
-            function editTramo(despachoId) {
+            function editTramo(despachoId, requestMode = false) {
+                if (!canWritePlanificador()) {
+                    showToast("⚠️ No tienes permisos para editar o solicitar cambios");
+                    return;
+                }
                 despachoId = parseInt(despachoId, 10) || 0;
                 if (!despachoId) {
                     showToast("⚠️ No se pudo identificar el tramo");
@@ -4664,12 +4850,16 @@
                 }
 
                 const editState = getTramoEditState(fila);
-                if (!editState.canEdit) {
+                if (!editState.canEdit && !requestMode) {
                     showToast("⚠️ " + editState.reason);
                     return;
                 }
+                requestMode = Boolean(requestMode && !editState.canEdit);
 
                 document.getElementById("editTramoId").value = despachoId;
+                document.getElementById("editTramoMode").value = requestMode
+                    ? "request"
+                    : "edit";
                 document.getElementById("editTramoCreatedAt").value =
                     fila[22] || "";
                 document.getElementById("editTramoEditedAt").value =
@@ -4693,6 +4883,18 @@
                 updateEditTramoTimeHints();
                 document.getElementById("editTramoInstrucciones").value =
                     fila[15] || "";
+                editTramoOriginalValues = {
+                    folio: String(fila[1] || "").trim(),
+                    ruta: String(fila[7] || "").trim(),
+                    origen: String(fila[8] || "").trim(),
+                    lugar_carga: String(fila[9] || "").trim(),
+                    destino: String(fila[10] || "").trim(),
+                    salida_patio_programada: toDateTimeLocalInputValue(fila[11]),
+                    cita_carga: toDateTimeLocalInputValue(fila[12]),
+                    salida_carga_programada: toDateTimeLocalInputValue(fila[13]),
+                    descarga_programada: toDateTimeLocalInputValue(fila[14]),
+                    instrucciones: String(fila[15] || "").trim(),
+                };
                 document.getElementById("editTramoLabel").textContent =
                     `${fila[2] || "Unidad"} · Folio ${fila[1] || "—"} · Tramo ${fila[21] || ""}`;
                 applyEditedInputBorders(fila);
@@ -4702,17 +4904,43 @@
                 );
                 if (lockMessage) {
                     lockMessage.style.display = "block";
-                    lockMessage.textContent =
-                        "Puedes guardar cambios durante el día en que se capturó el tramo. Al día siguiente queda bloqueado.";
+                    lockMessage.textContent = requestMode
+                        ? "El periodo de edición directa terminó. Modifica los campos necesarios y envía la solicitud para revisión."
+                        : "Puedes guardar cambios durante el día en que se capturó el tramo. Al día siguiente podrás solicitar una corrección.";
+                }
+
+                const title = document.getElementById("editTramoTitle");
+                if (title) {
+                    title.innerHTML = requestMode
+                        ? `${lucideIcon("message-square-plus", "lucide-icon--inline")} Solicitar corrección`
+                        : `${lucideIcon("pencil", "lucide-icon--inline")} Editar tramo`;
+                }
+                const reasonWrap = document.getElementById(
+                    "editTramoRequestReasonWrap",
+                );
+                const reason = document.getElementById(
+                    "editTramoRequestReason",
+                );
+                if (reasonWrap) {
+                    reasonWrap.style.display = requestMode ? "block" : "none";
+                }
+                if (reason) reason.value = "";
+                const saveBtn = document.getElementById("saveTramoEditBtn");
+                if (saveBtn) {
+                    saveBtn.textContent = requestMode
+                        ? "Enviar solicitud"
+                        : "Guardar cambios";
                 }
 
                 document.getElementById("editTramoModal").style.display =
                     "flex";
+                refreshLucideIcons();
             }
 
             function closeEditTramoModal() {
                 document.getElementById("editTramoModal").style.display =
                     "none";
+                editTramoOriginalValues = {};
             }
 
             function openTramoDetail(despachoId) {
@@ -4859,22 +5087,57 @@
                         .getElementById("editTramoInstrucciones")
                         .value.trim(),
                 };
+                const requestMode =
+                    document.getElementById("editTramoMode").value === "request";
+                let requestPayload = null;
+                if (requestMode) {
+                    const cambios = Object.fromEntries(
+                        Object.entries(payload).filter(
+                            ([campo, valor]) =>
+                                campo !== "despacho_id" &&
+                                String(valor ?? "").trim() !==
+                                    String(
+                                        editTramoOriginalValues[campo] ?? "",
+                                    ).trim(),
+                        ),
+                    );
+                    const motivo = document
+                        .getElementById("editTramoRequestReason")
+                        .value.trim();
+                    if (!Object.keys(cambios).length) {
+                        showToast("⚠️ Modifica al menos un campo");
+                        return;
+                    }
+                    if (motivo.length < 5) {
+                        showToast("⚠️ Escribe el motivo de la solicitud");
+                        return;
+                    }
+                    requestPayload = {
+                        despacho_id: despachoId,
+                        motivo,
+                        cambios,
+                    };
+                }
 
                 const btn = document.getElementById("saveTramoEditBtn");
                 const original = btn.textContent;
                 btn.disabled = true;
-                btn.textContent = "Guardando...";
+                btn.textContent = requestMode ? "Enviando..." : "Guardando...";
 
                 try {
                     const res = await fetch(
-                        viajesApiUrl("actualizar_despacho", "PUT"),
+                        requestMode
+                            ? viajesApiUrl("crear_solicitud_edicion")
+                            : viajesApiUrl("actualizar_despacho", "PUT"),
                         {
                             method: "POST",
                             headers: getAuthHeaders({
                                 "Content-Type": "application/json",
                                 Accept: "application/json",
                             }),
-                            body: JSON.stringify(payload),
+                            body: JSON.stringify(
+                                requestMode ? requestPayload : payload,
+                            ),
                         },
                     );
                     const text = await res.text();
@@ -4888,6 +5151,15 @@
                         throw new Error(
                             json.error || `Error HTTP ${res.status}`,
                         );
+                    }
+
+                    if (requestMode) {
+                        const solicitudId = json.solicitud?.id || "";
+                        showToast(
+                            `✓ Solicitud ${solicitudId ? `#${solicitudId} ` : ""}enviada para revisión`,
+                        );
+                        closeEditTramoModal();
+                        return;
                     }
 
                     const sync = json.tramos_sincronizados || 0;
@@ -6729,6 +7001,57 @@
             // ============================================================================
 
             let operadoresCache = [];
+
+            async function cargarOperadoresParaEdicion(
+                clienteId,
+                operadorActual,
+            ) {
+                const select = document.getElementById("editUnitOperador");
+                if (!select || !clienteId) return;
+
+                select.disabled = true;
+                select.innerHTML =
+                    '<option value="">Cargando operadores...</option>';
+                try {
+                    const response = await fetch(
+                        `${VIAJES_API}?action=listar_operadores&cliente_id=${clienteId}`,
+                        { headers: getAuthHeaders() },
+                    );
+                    const text = await response.text();
+                    const json = text.trim()
+                        ? JSON.parse(text)
+                        : { ok: true, operadores: [] };
+                    if (!response.ok || !json.ok) {
+                        throw new Error(
+                            json.error || `Error HTTP ${response.status}`,
+                        );
+                    }
+
+                    select.innerHTML =
+                        '<option value="">-- Selecciona operador --</option>';
+                    (json.operadores || []).forEach((op) => {
+                        const option = document.createElement("option");
+                        option.value = op.id;
+                        option.textContent = op.nombre;
+                        option.dataset.telefonos = op.telefonos || "";
+                        select.appendChild(option);
+                    });
+                    _seleccionarOperadorPorNombre(
+                        "editUnitOperador",
+                        operadorActual,
+                    );
+                } catch (error) {
+                    console.error(
+                        "Error cargando operadores para edición:",
+                        error,
+                    );
+                    select.innerHTML =
+                        '<option value="">No se pudieron cargar operadores</option>';
+                    showToast("❌ " + error.message);
+                } finally {
+                    select.disabled = false;
+                }
+            }
 
             async function cargarOperadores() {
                 if (!currentCliente) return;

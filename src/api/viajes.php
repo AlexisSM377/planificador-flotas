@@ -1975,7 +1975,7 @@ function handle_actualizar_unidad($conn, $ctx)
     assert_cliente_access($ctx, (int) $unidad["cliente_id"]);
     $unidad_id = (int) $unidad["id"];
 
-    $campos = ["placas", "operador", "telefonos", "equipos"];
+    $campos = ["placas", "telefonos", "equipos"];
     $sets = [];
     $types = "";
     $params = [];
@@ -1989,10 +1989,55 @@ function handle_actualizar_unidad($conn, $ctx)
     }
 
     if (array_key_exists("operador_id", $body)) {
+        $operador_id = (int) $body["operador_id"];
+        if ($operador_id <= 0) {
+            throw new Exception("Debes seleccionar un operador", 400);
+        }
+        if (!db_table_exists($conn, "operadores")) {
+            throw new Exception(
+                "El catálogo de operadores no está disponible",
+                500,
+            );
+        }
+
+        $stmt = $conn->prepare(
+            'SELECT id, nombre
+               FROM operadores
+              WHERE id = ? AND cliente_id = ? AND activo = 1
+              LIMIT 1',
+        );
+        if (!$stmt) {
+            throw new Exception(
+                "Error preparando validación de operador: " . $conn->error,
+                500,
+            );
+        }
+        $stmt->bind_param(
+            "ii",
+            $operador_id,
+            $unidad["cliente_id"],
+        );
+        $stmt->execute();
+        $operador = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$operador) {
+            throw new Exception(
+                "El operador no pertenece al cliente de la unidad",
+                400,
+            );
+        }
+
+        $sets[] = "operador = ?";
+        $types .= "s";
+        $params[] = $operador["nombre"];
         $sets[] = "operador_id = ?";
         $types .= "i";
-        $oid = (int) $body["operador_id"];
-        $params[] = $oid > 0 ? $oid : null;
+        $params[] = $operador_id;
+    } elseif (array_key_exists("operador", $body)) {
+        // Compatibilidad con integraciones anteriores que solo envían el nombre.
+        $sets[] = "operador = ?";
+        $types .= "s";
+        $params[] = null_if_empty($body["operador"]);
     }
 
     if (array_key_exists("economico_nuevo", $body)) {
@@ -2044,7 +2089,7 @@ function handle_actualizar_unidad($conn, $ctx)
     $stmt->close();
 
     $stmt = $conn->prepare(
-        'SELECT id, cliente_id, economico, placas, operador, telefonos, equipos
+        'SELECT id, cliente_id, economico, placas, operador, operador_id, telefonos, equipos
            FROM unidades WHERE id = ? LIMIT 1',
     );
     $stmt->bind_param("i", $unidad_id);
@@ -2059,10 +2104,243 @@ function handle_actualizar_unidad($conn, $ctx)
             "economico" => $u["economico"],
             "placas" => $u["placas"],
             "operador" => $u["operador"],
+            "operador_id" => isset($u["operador_id"])
+                ? (int) $u["operador_id"]
+                : null,
             "telefonos" => $u["telefonos"],
             "equipos" => $u["equipos"],
         ],
     ]);
+}
+
+function planificador_solicitud_campos()
+{
+    return [
+        "folio" => ["despacho" => "folio", "datetime" => false],
+        "ruta" => ["despacho" => "ruta", "datetime" => false],
+        "origen" => ["despacho" => "origen", "datetime" => false],
+        "lugar_carga" => ["despacho" => "lugar_carga", "datetime" => false],
+        "destino" => ["despacho" => "destino", "datetime" => false],
+        "instrucciones" => ["despacho" => "instrucciones", "datetime" => false],
+        "salida_patio_programada" => [
+            "despacho" => "salida_patio_programada",
+            "datetime" => true,
+        ],
+        "cita_carga" => ["despacho" => "cita_carga", "datetime" => true],
+        "salida_carga_programada" => [
+            "despacho" => "salida_carga_programada",
+            "datetime" => true,
+        ],
+        "descarga_programada" => [
+            "despacho" => "descarga_programada",
+            "datetime" => true,
+        ],
+    ];
+}
+
+function assert_solicitudes_edicion_table($conn)
+{
+    if (!db_table_exists($conn, "solicitudes_edicion_tramo")) {
+        throw new Exception(
+            "El módulo de solicitudes aún no está instalado. Aplica la migración 2026-07-28_solicitudes_edicion_tramo.sql",
+            503,
+        );
+    }
+}
+
+function handle_crear_solicitud_edicion($conn, $ctx)
+{
+    assert_can_write($ctx);
+    assert_solicitudes_edicion_table($conn);
+    ensure_planificador_edit_columns($conn);
+
+    $body = json_decode(file_get_contents("php://input"), true);
+    if (!is_array($body)) {
+        throw new Exception("JSON invalido", 400);
+    }
+
+    $despacho_id = (int) ($body["despacho_id"] ?? 0);
+    $motivo = trim((string) ($body["motivo"] ?? ""));
+    $cambios = $body["cambios"] ?? [];
+    if ($despacho_id <= 0) {
+        throw new Exception("despacho_id requerido", 400);
+    }
+    if (strlen($motivo) < 5 || strlen($motivo) > 500) {
+        throw new Exception(
+            "Describe el motivo de la solicitud (entre 5 y 500 caracteres)",
+            400,
+        );
+    }
+    if (!is_array($cambios) || !count($cambios)) {
+        throw new Exception("Selecciona al menos un campo para cambiar", 400);
+    }
+
+    $stmt = $conn->prepare(
+        'SELECT id, cliente_id, unidad_id, folio, fecha_programada, tramo_numero,
+                ruta, origen, lugar_carga, destino, instrucciones,
+                salida_patio_programada, cita_carga, salida_carga_programada,
+                descarga_programada, planificador_creado_at
+           FROM despachos
+          WHERE id = ? AND eliminado_at IS NULL
+          LIMIT 1',
+    );
+    $stmt->bind_param("i", $despacho_id);
+    $stmt->execute();
+    $despacho = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$despacho) {
+        throw new Exception("Tramo no encontrado", 404);
+    }
+    assert_cliente_access($ctx, (int) $despacho["cliente_id"]);
+
+    $created_date = substr(
+        (string) ($despacho["planificador_creado_at"] ?:
+            ($despacho["fecha_programada"] ?? "")),
+        0,
+        10,
+    );
+    if ($created_date === date("Y-m-d")) {
+        throw new Exception(
+            "Este tramo todavía puede editarse directamente durante el día de hoy",
+            409,
+        );
+    }
+
+    $permitidos = planificador_solicitud_campos();
+    $valores_actuales = [];
+    $valores_solicitados = [];
+    foreach ($cambios as $campo => $valor) {
+        if (!isset($permitidos[$campo])) {
+            throw new Exception("Campo no permitido en la solicitud: $campo", 400);
+        }
+        $config = $permitidos[$campo];
+        $nuevo = $config["datetime"]
+            ? (str_val($valor) === "" ? null : to_datetime($valor))
+            : null_if_empty($valor);
+        if ($campo === "folio" && $nuevo === null) {
+            throw new Exception("El folio no puede quedar vacío", 400);
+        }
+        $actual = $despacho[$config["despacho"]] ?? null;
+        if (trim((string) $nuevo) === trim((string) $actual)) {
+            continue;
+        }
+        $valores_actuales[$campo] = $actual;
+        $valores_solicitados[$campo] = $nuevo;
+    }
+    if (!count($valores_solicitados)) {
+        throw new Exception("Los valores solicitados son iguales a los actuales", 400);
+    }
+
+    $actuales_json = json_encode($valores_actuales, JSON_UNESCAPED_UNICODE);
+    $solicitados_json = json_encode(
+        $valores_solicitados,
+        JSON_UNESCAPED_UNICODE,
+    );
+    if ($actuales_json === false || $solicitados_json === false) {
+        throw new Exception("No se pudieron preparar los cambios solicitados", 500);
+    }
+
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare(
+            "SELECT id FROM solicitudes_edicion_tramo
+              WHERE despacho_id = ? AND estado IN ('pendiente', 'en_revision')
+              LIMIT 1 FOR UPDATE",
+        );
+        $stmt->bind_param("i", $despacho_id);
+        $stmt->execute();
+        $existente = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if ($existente) {
+            throw new Exception(
+                "Este tramo ya tiene una solicitud pendiente (#" .
+                    (int) $existente["id"] .
+                    ")",
+                409,
+            );
+        }
+
+        $cliente_id = (int) $despacho["cliente_id"];
+        $usuario_id = (int) $ctx["id"];
+        $stmt = $conn->prepare(
+            "INSERT INTO solicitudes_edicion_tramo
+                (despacho_id, cliente_id, solicitado_por_usuario_id, motivo,
+                 campos_solicitados, valores_actuales)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        );
+        $stmt->bind_param(
+            "iiisss",
+            $despacho_id,
+            $cliente_id,
+            $usuario_id,
+            $motivo,
+            $solicitados_json,
+            $actuales_json,
+        );
+        if (!$stmt->execute()) {
+            throw new Exception(
+                "Error creando solicitud: " . $stmt->error,
+                500,
+            );
+        }
+        $solicitud_id = (int) $stmt->insert_id;
+        $stmt->close();
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        throw $e;
+    }
+
+    json_ok(
+        [
+            "solicitud" => [
+                "id" => $solicitud_id,
+                "estado" => "pendiente",
+                "despacho_id" => $despacho_id,
+                "campos" => array_keys($valores_solicitados),
+            ],
+        ],
+        201,
+    );
+}
+
+function handle_listar_solicitudes_edicion($conn, $ctx)
+{
+    assert_solicitudes_edicion_table($conn);
+    $usuario_id = (int) $ctx["id"];
+    $sql =
+        "SELECT s.id, s.despacho_id, s.estado, s.motivo,
+                s.campos_solicitados, s.valores_actuales, s.valores_aplicados,
+                s.comentario_admin, s.created_at, s.reviewed_at, s.applied_at,
+                d.folio, d.tramo_numero, u.economico AS unidad,
+                c.nombre AS cliente
+           FROM solicitudes_edicion_tramo s
+           JOIN despachos d ON d.id = s.despacho_id
+           JOIN unidades u ON u.id = d.unidad_id
+           JOIN clientes c ON c.id = s.cliente_id
+          WHERE s.solicitado_por_usuario_id = ?
+          ORDER BY s.created_at DESC
+          LIMIT 100";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $usuario_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $solicitudes = [];
+    while ($row = $res->fetch_assoc()) {
+        foreach (
+            ["campos_solicitados", "valores_actuales", "valores_aplicados"]
+            as $campo_json
+        ) {
+            $decoded = json_decode((string) ($row[$campo_json] ?? ""), true);
+            $row[$campo_json] = is_array($decoded) ? $decoded : [];
+        }
+        $row["id"] = (int) $row["id"];
+        $row["despacho_id"] = (int) $row["despacho_id"];
+        $row["tramo_numero"] = (int) $row["tramo_numero"];
+        $solicitudes[] = $row;
+    }
+    $stmt->close();
+    json_ok(["solicitudes" => $solicitudes]);
 }
 
 function handle_actualizar_despacho($conn, $ctx)
@@ -2396,23 +2674,17 @@ function handle_eliminar_despacho($conn, $ctx)
     }
     assert_cliente_access($ctx, (int) $desp["cliente_id"]);
 
-    if ($desp["eliminado_at"] !== null) {
-        json_ok([
-            "despacho_id" => $despacho_id,
-            "eliminado" => true,
-            "msg" => "Ya estaba eliminado",
-        ]);
-    }
-
     $uid = (int) $ctx["id"];
     $tramos_cancelados = 0;
+    $viaje_ids_afectados = [];
+    $viajes_eliminados = 0;
 
     $conn->begin_transaction();
     try {
         $stmt = $conn->prepare(
             'UPDATE despachos
                 SET eliminado_at = NOW(), eliminado_por_usuario_id = ?, eliminado_motivo = ?
-              WHERE id = ?',
+              WHERE id = ? AND eliminado_at IS NULL',
         );
         $stmt->bind_param("isi", $uid, $motivo, $despacho_id);
         if (!$stmt->execute()) {
@@ -2424,11 +2696,13 @@ function handle_eliminar_despacho($conn, $ctx)
         $stmt->close();
 
         $stmt = $conn->prepare(
-            "SELECT vt.id
+            "SELECT vt.id, vt.viaje_id, vt.estado, vt.eliminado_at
                FROM viaje_tramos vt
                JOIN viajes v ON v.id = vt.viaje_id
               WHERE v.cliente_id = ? AND v.unidad_id = ? AND v.folio = ?
-                AND vt.tramo_numero = ? AND v.estado <> 'cancelado' AND vt.estado <> 'cancelado'",
+                AND vt.tramo_numero = ?
+                AND v.estado <> 'cancelado'
+                ",
         );
         $stmt->bind_param(
             "iisi",
@@ -2441,7 +2715,13 @@ function handle_eliminar_despacho($conn, $ctx)
         $res_t = $stmt->get_result();
         $tramo_ids = [];
         while ($r = $res_t->fetch_assoc()) {
-            $tramo_ids[] = (int) $r["id"];
+            $viaje_ids_afectados[(int) $r["viaje_id"]] = true;
+            if (
+                (string) $r["estado"] !== "cancelado" &&
+                $r["eliminado_at"] === null
+            ) {
+                $tramo_ids[] = (int) $r["id"];
+            }
         }
         $stmt->close();
 
@@ -2461,6 +2741,45 @@ function handle_eliminar_despacho($conn, $ctx)
             $stmt->close();
         }
 
+        foreach (array_keys($viaje_ids_afectados) as $viaje_id) {
+            $stmt = $conn->prepare(
+                "SELECT COUNT(*) AS activos
+                   FROM viaje_tramos
+                  WHERE viaje_id = ?
+                    AND estado <> 'cancelado'
+                    AND eliminado_at IS NULL",
+            );
+            $stmt->bind_param("i", $viaje_id);
+            if (!$stmt->execute()) {
+                throw new Exception(
+                    "Error verificando tramos activos: " . $stmt->error,
+                    500,
+                );
+            }
+            $activos = (int) ($stmt->get_result()->fetch_assoc()["activos"] ?? 0);
+            $stmt->close();
+
+            if ($activos === 0) {
+                $stmt = $conn->prepare(
+                    "UPDATE viajes
+                        SET estado = 'cancelado',
+                            eliminado_at = NOW(),
+                            eliminado_por_usuario_id = ?,
+                            eliminado_motivo = ?
+                      WHERE id = ? AND eliminado_at IS NULL",
+                );
+                $stmt->bind_param("isi", $uid, $motivo, $viaje_id);
+                if (!$stmt->execute()) {
+                    throw new Exception(
+                        "Error eliminando viaje padre: " . $stmt->error,
+                        500,
+                    );
+                }
+                $viajes_eliminados += $stmt->affected_rows;
+                $stmt->close();
+            }
+        }
+
         $conn->commit();
     } catch (Exception $e) {
         $conn->rollback();
@@ -2471,6 +2790,7 @@ function handle_eliminar_despacho($conn, $ctx)
         "despacho_id" => $despacho_id,
         "eliminado" => true,
         "tramos_cancelados" => $tramos_cancelados,
+        "viajes_eliminados" => $viajes_eliminados,
     ]);
 }
 
@@ -2497,6 +2817,7 @@ function handle_eliminar_registro($conn, $ctx)
     $despachos_eliminados = 0;
     $viajes_cancelados = 0;
     $tramos_cancelados = 0;
+    $ya_eliminado = false;
 
     $conn->begin_transaction();
     try {
@@ -2565,11 +2886,33 @@ function handle_eliminar_registro($conn, $ctx)
         }
 
         if ($despachos_eliminados === 0 && $viajes_cancelados === 0) {
-            $conn->rollback();
-            throw new Exception(
-                "No se encontró un registro activo para eliminar",
-                404,
+            $stmt = $conn->prepare(
+                "SELECT COUNT(*) AS eliminados
+                   FROM viajes
+                  WHERE cliente_id = ?
+                    AND unidad_id = ?
+                    AND folio = ?
+                    AND estado = 'cancelado'
+                    AND eliminado_at IS NOT NULL",
             );
+            $stmt->bind_param("iis", $cliente_id, $unidad_id, $folio);
+            if (!$stmt->execute()) {
+                throw new Exception(
+                    "Error verificando eliminación previa: " . $stmt->error,
+                    500,
+                );
+            }
+            $ya_eliminado =
+                (int) ($stmt->get_result()->fetch_assoc()["eliminados"] ?? 0) > 0;
+            $stmt->close();
+
+            if (!$ya_eliminado) {
+                $conn->rollback();
+                throw new Exception(
+                    "No se encontró un registro activo para eliminar",
+                    404,
+                );
+            }
         }
 
         $conn->commit();
@@ -2583,6 +2926,7 @@ function handle_eliminar_registro($conn, $ctx)
         "despachos_eliminados" => $despachos_eliminados,
         "viajes_cancelados" => $viajes_cancelados,
         "tramos_cancelados" => $tramos_cancelados,
+        "ya_eliminado" => $ya_eliminado,
     ]);
 }
 
@@ -2740,9 +3084,17 @@ function detectar_conflictos(
         FROM viajes v
         JOIN unidades u ON u.id = v.unidad_id
         WHERE v.unidad_id = ?
+          AND v.eliminado_at IS NULL
           AND v.estado NOT IN ('cancelado', 'completado')
           AND v.fecha_inicio <= ?
           AND COALESCE(v.fecha_fin, v.fecha_inicio) >= ?
+          AND EXISTS (
+              SELECT 1
+                FROM viaje_tramos vt
+               WHERE vt.viaje_id = v.id
+                 AND vt.estado <> 'cancelado'
+                 AND vt.eliminado_at IS NULL
+          )
     ";
     $params = [$unidad_id, $fin_nuevo, $fecha_inicio];
     $types = "iss";
@@ -3680,6 +4032,10 @@ try {
             => handle_actualizar_unidad($conn, $ctx),
         $method === "PUT" && $action === "actualizar_despacho"
             => handle_actualizar_despacho($conn, $ctx),
+        $method === "POST" && $action === "crear_solicitud_edicion"
+            => handle_crear_solicitud_edicion($conn, $ctx),
+        $method === "GET" && $action === "listar_solicitudes_edicion"
+            => handle_listar_solicitudes_edicion($conn, $ctx),
         $method === "DELETE" && $action === "eliminar_despacho"
             => handle_eliminar_despacho($conn, $ctx),
         $method === "DELETE" && $action === "eliminar_registro"
