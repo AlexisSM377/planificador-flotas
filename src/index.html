@@ -5503,10 +5503,18 @@
 
                 // Derivar fecha_fin del tramo más lejano (para la verificación de
                 // conflictos y el aviso multi-día). El backend la recalcula igual.
+                let _minDt = "";
                 let _maxDt = "";
                 for (const t of tramos) {
                     for (const [campo] of camposTiempo) {
+                        if (
+                            campo === "regreso_origen_programado" &&
+                            !t.requiere_regreso_origen
+                        ) {
+                            continue;
+                        }
                         const val = t[campo];
+                        if (val && (!_minDt || val < _minDt)) _minDt = val;
                         if (val && val > _maxDt) _maxDt = val;
                     }
                 }
@@ -5555,21 +5563,18 @@
                                   unidadId,
                                   fechaInicio,
                                   fechaFin,
+                                  _minDt,
+                                  _maxDt,
                               )
                             : null;
                     if (chk && chk.tiene_conflicto) {
                         mostrarAlertaConflicto(chk.conflictos);
-                        const folios = chk.conflictos
-                            .map((c) => c.folio)
-                            .join(", ");
-                        const ok = confirm(
-                            `⚠️ La unidad ya tiene viaje(s) activo(s) en ese rango:\n${folios}\n\n¿Deseas guardar de todas formas?`,
+                        showToast(
+                            "⚠️ La unidad ya tiene un viaje activo que se traslapa con estos horarios",
                         );
-                        if (!ok) {
-                            btn.disabled = false;
-                            btn.textContent = "Guardar Viaje";
-                            return;
-                        }
+                        btn.disabled = false;
+                        btn.textContent = "Guardar Viaje";
+                        return;
                     } else {
                         ocultarAlertaConflicto();
                     }
@@ -5663,6 +5668,8 @@
                 unidadId,
                 fechaInicio,
                 fechaFin,
+                inicioOcupacion = "",
+                finOcupacion = "",
             ) {
                 if (!unidadId || !fechaInicio || !planificadorUser) return null;
                 try {
@@ -5672,6 +5679,10 @@
                         fecha_inicio: fechaInicio,
                     });
                     if (fechaFin) params.set("fecha_fin", fechaFin);
+                    if (inicioOcupacion)
+                        params.set("inicio_ocupacion", inicioOcupacion);
+                    if (finOcupacion)
+                        params.set("fin_ocupacion", finOcupacion);
 
                     const res = await fetch(`${VIAJES_API}?${params}`, {
                         headers: getAuthHeaders({ Accept: "application/json" }),

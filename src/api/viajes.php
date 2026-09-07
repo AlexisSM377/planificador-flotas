@@ -362,6 +362,12 @@ function fecha_fin_desde_tramos($tramos)
     ];
     foreach ($tramos as $t) {
         foreach ($campos as $c) {
+            if (
+                $c === "regreso_origen_programado" &&
+                empty($t["requiere_regreso_origen"])
+            ) {
+                continue;
+            }
             $dt = to_datetime($t[$c] ?? "");
             if ($dt && ($max === null || $dt > $max)) {
                 $max = $dt;
@@ -369,6 +375,51 @@ function fecha_fin_desde_tramos($tramos)
         }
     }
     return $max ? substr($max, 0, 10) : null;
+}
+
+function rango_ocupacion_desde_tramos($tramos, $fecha_inicio, $fecha_fin = null)
+{
+    $inicio = null;
+    $fin = null;
+    $campos = [
+        "salida_patio",
+        "cita_carga",
+        "salida_carga",
+        "descarga_programada",
+        "regreso_origen_programado",
+    ];
+
+    foreach ($tramos as $t) {
+        foreach ($campos as $campo) {
+            if (
+                $campo === "regreso_origen_programado" &&
+                empty($t["requiere_regreso_origen"])
+            ) {
+                continue;
+            }
+            $dt = to_datetime($t[$campo] ?? "");
+            if (!$dt) {
+                continue;
+            }
+            if ($inicio === null || $dt < $inicio) {
+                $inicio = $dt;
+            }
+            if ($fin === null || $dt > $fin) {
+                $fin = $dt;
+            }
+        }
+    }
+
+    $inicio_fallback = $fecha_inicio ? $fecha_inicio . " 00:00:00" : null;
+    $fecha_fin_fallback = $fecha_fin ?: $fecha_inicio;
+    $fin_fallback = $fecha_fin_fallback
+        ? $fecha_fin_fallback . " 23:59:59"
+        : $inicio_fallback;
+
+    return [
+        "inicio" => $inicio ?: $inicio_fallback,
+        "fin" => $fin ?: $fin_fallback,
+    ];
 }
 
 function map_tramo_row($r)
@@ -745,11 +796,44 @@ function handle_crear($conn, $ctx)
 
     assert_cliente_access($ctx, $cliente_id);
 
+    if ($operador_id > 0) {
+        if (!db_table_exists($conn, "operadores")) {
+            throw new Exception(
+                "El catálogo de operadores no está disponible",
+                500,
+            );
+        }
+        $stmt = $conn->prepare(
+            'SELECT nombre
+               FROM operadores
+              WHERE id = ? AND cliente_id = ? AND activo = 1
+              LIMIT 1',
+        );
+        if (!$stmt) {
+            throw new Exception(
+                "Error preparando validación de operador: " . $conn->error,
+                500,
+            );
+        }
+        $stmt->bind_param("ii", $operador_id, $cliente_id);
+        $stmt->execute();
+        $operador_catalogo = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$operador_catalogo) {
+            throw new Exception(
+                "El operador no pertenece al cliente indicado",
+                400,
+            );
+        }
+        $operador = (string) $operador_catalogo["nombre"];
+    }
+
     $unidad_id = (int) ($body["unidad_id"] ?? 0);
+    $economico_unidad_existente = null;
 
     if ($unidad_id > 0) {
         $stmt = $conn->prepare(
-            "SELECT id FROM unidades WHERE id = ? AND cliente_id = ? AND activo = 1 LIMIT 1",
+            "SELECT id, economico FROM unidades WHERE id = ? AND cliente_id = ? AND activo = 1 LIMIT 1",
         );
         if (!$stmt) {
             throw new Exception(
@@ -767,6 +851,7 @@ function handle_crear($conn, $ctx)
                 400,
             );
         }
+        $economico_unidad_existente = (string) $existe["economico"];
     } else {
         if ($economico === "") {
             throw new Exception(
@@ -786,11 +871,19 @@ function handle_crear($conn, $ctx)
         );
     }
 
+    $rango_ocupacion = rango_ocupacion_desde_tramos(
+        $tramos,
+        $fecha_inicio,
+        $fecha_fin,
+    );
     $conflictos = detectar_conflictos(
         $conn,
         $unidad_id,
         $fecha_inicio,
         $fecha_fin,
+        null,
+        $rango_ocupacion["inicio"],
+        $rango_ocupacion["fin"],
     );
     if (count($conflictos) > 0) {
         json_err_conflicto($conflictos);
@@ -798,6 +891,25 @@ function handle_crear($conn, $ctx)
 
     $conn->begin_transaction();
     try {
+        if ($economico_unidad_existente !== null) {
+            $unidad_id_actualizada = upsert_unidad(
+                $conn,
+                $cliente_id,
+                $economico_unidad_existente,
+                $placas,
+                $operador,
+                $telefonos,
+                $equipos,
+                $operador_id,
+            );
+            if ($unidad_id_actualizada !== $unidad_id) {
+                throw new Exception(
+                    "No se pudo actualizar la unidad seleccionada",
+                    500,
+                );
+            }
+        }
+
         $uid = $ctx["id"];
         $stmt = $conn->prepare(
             'INSERT INTO viajes
@@ -1950,13 +2062,13 @@ function handle_actualizar_unidad($conn, $ctx)
 
     if ($unidad_id > 0) {
         $stmt = $conn->prepare(
-            "SELECT id, cliente_id, economico FROM unidades WHERE id = ? AND activo = 1 LIMIT 1",
+            "SELECT id, cliente_id, economico FROM unidades WHERE id = ? LIMIT 1",
         );
         $stmt->bind_param("i", $unidad_id);
     } elseif ($cliente_id > 0 && $economico !== "") {
         $stmt = $conn->prepare(
             'SELECT id, cliente_id, economico FROM unidades
-              WHERE cliente_id = ? AND economico = ? AND activo = 1 LIMIT 1',
+              WHERE cliente_id = ? AND economico = ? LIMIT 1',
         );
         $stmt->bind_param("is", $cliente_id, $economico);
     } else {
@@ -3074,36 +3186,80 @@ function detectar_conflictos(
     $fecha_inicio,
     $fecha_fin,
     $excluir_viaje_id = null,
+    $inicio_ocupacion = null,
+    $fin_ocupacion = null,
 ) {
-    $fin_nuevo = $fecha_fin ?: $fecha_inicio;
+    $inicio_nuevo = to_datetime($inicio_ocupacion) ?:
+        $fecha_inicio . " 00:00:00";
+    $fecha_fin_nueva = $fecha_fin ?: $fecha_inicio;
+    $fin_nuevo = to_datetime($fin_ocupacion) ?:
+        $fecha_fin_nueva . " 23:59:59";
+    if ($fin_nuevo < $inicio_nuevo) {
+        $fin_nuevo = $inicio_nuevo;
+    }
 
     $sql = "
         SELECT
             v.id AS viaje_id, v.folio, v.fecha_inicio, v.fecha_fin,
-            v.estado, u.economico
+            v.estado, u.economico,
+            COALESCE(
+                MIN(NULLIF(LEAST(
+                    COALESCE(vt.salida_patio, '9999-12-31 23:59:59'),
+                    COALESCE(vt.cita_carga, '9999-12-31 23:59:59'),
+                    COALESCE(vt.salida_carga, '9999-12-31 23:59:59'),
+                    COALESCE(vt.descarga_programada, '9999-12-31 23:59:59'),
+                    COALESCE(
+                        CASE WHEN vt.requiere_regreso_origen = 1
+                            THEN vt.regreso_origen_programado
+                            ELSE NULL
+                        END,
+                        '9999-12-31 23:59:59'
+                    )
+                ), '9999-12-31 23:59:59')),
+                CONCAT(v.fecha_inicio, ' 00:00:00')
+            ) AS ocupacion_inicio,
+            COALESCE(
+                MAX(NULLIF(GREATEST(
+                    COALESCE(vt.salida_patio, '1000-01-01 00:00:00'),
+                    COALESCE(vt.cita_carga, '1000-01-01 00:00:00'),
+                    COALESCE(vt.salida_carga, '1000-01-01 00:00:00'),
+                    COALESCE(vt.descarga_programada, '1000-01-01 00:00:00'),
+                    COALESCE(
+                        CASE WHEN vt.requiere_regreso_origen = 1
+                            THEN vt.regreso_origen_programado
+                            ELSE NULL
+                        END,
+                        '1000-01-01 00:00:00'
+                    )
+                ), '1000-01-01 00:00:00')),
+                CONCAT(COALESCE(v.fecha_fin, v.fecha_inicio), ' 23:59:59')
+            ) AS ocupacion_fin
         FROM viajes v
         JOIN unidades u ON u.id = v.unidad_id
+        JOIN viaje_tramos vt
+          ON vt.viaje_id = v.id
+         AND vt.estado <> 'cancelado'
+         AND vt.eliminado_at IS NULL
         WHERE v.unidad_id = ?
           AND v.eliminado_at IS NULL
           AND v.estado NOT IN ('cancelado', 'completado')
-          AND v.fecha_inicio <= ?
-          AND COALESCE(v.fecha_fin, v.fecha_inicio) >= ?
-          AND EXISTS (
-              SELECT 1
-                FROM viaje_tramos vt
-               WHERE vt.viaje_id = v.id
-                 AND vt.estado <> 'cancelado'
-                 AND vt.eliminado_at IS NULL
-          )
     ";
-    $params = [$unidad_id, $fin_nuevo, $fecha_inicio];
-    $types = "iss";
+    $params = [$unidad_id];
+    $types = "i";
 
     if ($excluir_viaje_id) {
         $sql .= " AND v.id != ?";
         $types .= "i";
         $params[] = $excluir_viaje_id;
     }
+
+    $sql .= "
+        GROUP BY v.id, v.folio, v.fecha_inicio, v.fecha_fin, v.estado, u.economico
+        HAVING ocupacion_inicio < ? AND ocupacion_fin > ?
+    ";
+    $types .= "ss";
+    $params[] = $fin_nuevo;
+    $params[] = $inicio_nuevo;
 
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -3125,6 +3281,8 @@ function detectar_conflictos(
             "fecha_fin" => $r["fecha_fin"],
             "estado" => $r["estado"],
             "economico" => $r["economico"],
+            "ocupacion_inicio" => $r["ocupacion_inicio"],
+            "ocupacion_fin" => $r["ocupacion_fin"],
         ];
     }
     $stmt->close();
@@ -3160,6 +3318,8 @@ function handle_verificar_conflictos($conn, $ctx)
     $excluir_viaje_id = isset($_GET["excluir_viaje_id"])
         ? (int) $_GET["excluir_viaje_id"]
         : null;
+    $inicio_ocupacion = to_datetime($_GET["inicio_ocupacion"] ?? "");
+    $fin_ocupacion = to_datetime($_GET["fin_ocupacion"] ?? "");
 
     if ($unidad_id <= 0) {
         throw new Exception("unidad_id requerido", 400);
@@ -3186,6 +3346,8 @@ function handle_verificar_conflictos($conn, $ctx)
         $fecha_inicio,
         $fecha_fin,
         $excluir_viaje_id,
+        $inicio_ocupacion,
+        $fin_ocupacion,
     );
 
     json_ok([
