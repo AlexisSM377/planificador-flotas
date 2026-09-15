@@ -101,6 +101,37 @@ function db_columns_exist($conn, $table, $columns)
     return true;
 }
 
+function cliente_permite_viajes_simultaneos($conn, $cliente_id)
+{
+    if (
+        $cliente_id <= 0 ||
+        !db_columns_exist($conn, "clientes", ["permite_viajes_simultaneos"])
+    ) {
+        return false;
+    }
+
+    $stmt = $conn->prepare(
+        "SELECT permite_viajes_simultaneos FROM clientes WHERE id = ? AND activo = 1 LIMIT 1",
+    );
+    if (!$stmt) {
+        throw new Exception(
+            "Error preparando politica de viajes simultaneos: " . $conn->error,
+            500,
+        );
+    }
+    $stmt->bind_param("i", $cliente_id);
+    if (!$stmt->execute()) {
+        throw new Exception(
+            "Error consultando politica de viajes simultaneos: " . $stmt->error,
+            500,
+        );
+    }
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return !empty($row["permite_viajes_simultaneos"]);
+}
+
 function ensure_planificador_edit_columns($conn)
 {
     $required = [
@@ -795,6 +826,10 @@ function handle_crear($conn, $ctx)
     }
 
     assert_cliente_access($ctx, $cliente_id);
+    $permite_viajes_simultaneos = cliente_permite_viajes_simultaneos(
+        $conn,
+        $cliente_id,
+    );
 
     if ($operador_id > 0) {
         if (!db_table_exists($conn, "operadores")) {
@@ -885,7 +920,10 @@ function handle_crear($conn, $ctx)
         $rango_ocupacion["inicio"],
         $rango_ocupacion["fin"],
     );
-    if (count($conflictos) > 0) {
+    $traslape_detectado = count($conflictos) > 0;
+    $traslape_permitido =
+        $traslape_detectado && $permite_viajes_simultaneos;
+    if ($traslape_detectado && !$permite_viajes_simultaneos) {
         json_err_conflicto($conflictos);
     }
 
@@ -995,7 +1033,11 @@ function handle_crear($conn, $ctx)
         throw $e;
     }
 
-    json_ok(handle_obtener_data($conn, $viaje_id), 201);
+    $response = handle_obtener_data($conn, $viaje_id);
+    $response["traslape_detectado"] = $traslape_detectado;
+    $response["traslape_permitido"] = $traslape_permitido;
+    $response["conflictos"] = $traslape_permitido ? $conflictos : [];
+    json_ok($response, 201);
 }
 
 function handle_listar($conn, $ctx)
@@ -3053,8 +3095,6 @@ function handle_duplicar($conn, $ctx)
 
     $viaje_id = (int) ($body["viaje_id"] ?? 0);
     $nueva_fecha_inicio = to_date($body["nueva_fecha_inicio"] ?? "");
-    $ignorar_conflictos = !empty($body["ignorar_conflictos"]);
-
     if ($viaje_id <= 0) {
         throw new Exception("viaje_id requerido", 400);
     }
@@ -3078,6 +3118,10 @@ function handle_duplicar($conn, $ctx)
         throw new Exception("Viaje original no encontrado", 404);
     }
     assert_cliente_access($ctx, $orig["cliente_id"]);
+    $permite_viajes_simultaneos = cliente_permite_viajes_simultaneos(
+        $conn,
+        (int) $orig["cliente_id"],
+    );
 
     $dt_orig_inicio = new DateTime($orig["fecha_inicio"]);
     $dt_nueva = new DateTime($nueva_fecha_inicio);
@@ -3090,16 +3134,17 @@ function handle_duplicar($conn, $ctx)
         $nueva_fecha_fin = $dt_fin->format("Y-m-d");
     }
 
-    if (!$ignorar_conflictos) {
-        $conflictos = detectar_conflictos(
-            $conn,
-            (int) $orig["unidad_id"],
-            $nueva_fecha_inicio,
-            $nueva_fecha_fin,
-        );
-        if (count($conflictos) > 0) {
-            json_err_conflicto($conflictos);
-        }
+    $conflictos = detectar_conflictos(
+        $conn,
+        (int) $orig["unidad_id"],
+        $nueva_fecha_inicio,
+        $nueva_fecha_fin,
+    );
+    $traslape_detectado = count($conflictos) > 0;
+    $traslape_permitido =
+        $traslape_detectado && $permite_viajes_simultaneos;
+    if ($traslape_detectado && !$permite_viajes_simultaneos) {
+        json_err_conflicto($conflictos);
     }
 
     $stmt = $conn->prepare(
@@ -3134,7 +3179,7 @@ function handle_duplicar($conn, $ctx)
              VALUES (?, ?, ?, ?, ?, \'planificado\', ?, ?)',
         );
         $stmt->bind_param(
-            "iisssis",
+            "iissssi",
             $orig["cliente_id"],
             $orig["unidad_id"],
             $nuevo_folio,
@@ -3177,7 +3222,11 @@ function handle_duplicar($conn, $ctx)
         throw $e;
     }
 
-    json_ok(handle_obtener_data($conn, $nuevo_viaje_id), 201);
+    $response = handle_obtener_data($conn, $nuevo_viaje_id);
+    $response["traslape_detectado"] = $traslape_detectado;
+    $response["traslape_permitido"] = $traslape_permitido;
+    $response["conflictos"] = $traslape_permitido ? $conflictos : [];
+    json_ok($response, 201);
 }
 
 function detectar_conflictos(
@@ -3301,6 +3350,9 @@ function json_err_conflicto($conflictos)
         [
             "ok" => false,
             "conflicto" => true,
+            "tiene_conflicto" => true,
+            "traslape_detectado" => true,
+            "traslape_permitido" => false,
             "error" =>
                 "La unidad ya tiene viajes activos en ese rango de fechas",
             "conflictos" => $conflictos,
@@ -3339,6 +3391,10 @@ function handle_verificar_conflictos($conn, $ctx)
         throw new Exception("Unidad no encontrada", 404);
     }
     assert_cliente_access($ctx, $u["cliente_id"]);
+    $permite_viajes_simultaneos = cliente_permite_viajes_simultaneos(
+        $conn,
+        (int) $u["cliente_id"],
+    );
 
     $conflictos = detectar_conflictos(
         $conn,
@@ -3349,9 +3405,15 @@ function handle_verificar_conflictos($conn, $ctx)
         $inicio_ocupacion,
         $fin_ocupacion,
     );
+    $traslape_detectado = count($conflictos) > 0;
+    $traslape_permitido =
+        $traslape_detectado && $permite_viajes_simultaneos;
 
     json_ok([
-        "tiene_conflicto" => count($conflictos) > 0,
+        "tiene_conflicto" =>
+            $traslape_detectado && !$permite_viajes_simultaneos,
+        "traslape_detectado" => $traslape_detectado,
+        "traslape_permitido" => $traslape_permitido,
         "conflictos" => $conflictos,
         "unidad_id" => $unidad_id,
         "economico" => $u["economico"],

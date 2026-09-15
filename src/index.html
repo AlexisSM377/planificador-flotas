@@ -623,6 +623,92 @@
                 color: #92400e;
             }
 
+            .conflict-panel {
+                --conflict-bg: oklch(0.97 0.025 25);
+                --conflict-border: oklch(0.8 0.11 25);
+                --conflict-divider: oklch(0.87 0.065 25);
+                --conflict-ink: oklch(0.43 0.17 25);
+                display: none;
+                margin-top: 16px;
+                padding: 14px 18px;
+                background: var(--conflict-bg);
+                border: 1px solid var(--conflict-border);
+                border-radius: 12px;
+                color: var(--conflict-ink);
+            }
+            .conflict-panel--allowed {
+                --conflict-bg: oklch(0.97 0.04 85);
+                --conflict-border: oklch(0.78 0.12 75);
+                --conflict-divider: oklch(0.86 0.08 80);
+                --conflict-ink: oklch(0.42 0.11 65);
+            }
+            .conflict-panel__header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            .conflict-panel__title {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                font-size: 13px;
+                font-weight: 800;
+            }
+            .conflict-panel__close {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 0;
+                border-radius: 8px;
+                background: transparent;
+                color: currentColor;
+                cursor: pointer;
+            }
+            .conflict-panel__close:hover {
+                background: oklch(0.92 0.02 70 / 0.65);
+            }
+            .conflict-panel__close:focus-visible {
+                outline: 2px solid currentColor;
+                outline-offset: 2px;
+            }
+            .conflict-panel__description {
+                max-width: 70ch;
+                margin: 0 0 8px;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+            .conflict-panel__row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+                padding: 7px 0;
+                border-bottom: 1px solid var(--conflict-divider);
+                font-size: 12px;
+            }
+            .conflict-panel__row:last-child {
+                border-bottom: 0;
+            }
+            .conflict-panel__trip {
+                display: grid;
+                gap: 2px;
+                min-width: 0;
+            }
+            .conflict-panel__range {
+                color: color-mix(in oklch, currentColor 82%, transparent);
+                font-variant-numeric: tabular-nums;
+            }
+            .conflict-panel__state {
+                flex: 0 0 auto;
+                font-weight: 700;
+                text-transform: capitalize;
+            }
+
             .dispatch-card {
                 background: #f8fafc;
                 padding: 25px;
@@ -1974,47 +2060,26 @@
                             <!-- Panel: alerta de conflictos -->
                             <div
                                 id="conflictos-panel"
-                                style="
-                                    display: none;
-                                    margin-top: 16px;
-                                    padding: 14px 18px;
-                                    background: #fef2f2;
-                                    border: 1px solid #fca5a5;
-                                    border-radius: 12px;
-                                "
+                                class="conflict-panel conflict-panel--blocking"
+                                role="status"
+                                aria-live="polite"
                             >
-                                <div
-                                    style="
-                                        display: flex;
-                                        justify-content: space-between;
-                                        align-items: center;
-                                        margin-bottom: 8px;
-                                    "
-                                >
-                                    <span
-                                        style="
-                                            font-size: 13px;
-                                            font-weight: 700;
-                                            color: #b91c1c;
-                                        "
-                                    >
+                                <div class="conflict-panel__header">
+                                    <span class="conflict-panel__title">
                                         <i
                                             data-lucide="triangle-alert"
                                             class="lucide-icon lucide-icon--inline"
                                             aria-hidden="true"
                                         ></i>
-                                        Conflicto de fechas detectado
+                                        <span id="conflictos-titulo"
+                                            >Unidad ocupada en este horario</span
+                                        >
                                     </span>
                                     <button
                                         type="button"
                                         onclick="ocultarAlertaConflicto()"
-                                        style="
-                                            background: none;
-                                            border: none;
-                                            cursor: pointer;
-                                            font-size: 16px;
-                                            color: #64748b;
-                                        "
+                                        class="conflict-panel__close"
+                                        aria-label="Cerrar aviso de horarios"
                                     >
                                         <i
                                             data-lucide="x"
@@ -2024,14 +2089,11 @@
                                     </button>
                                 </div>
                                 <p
-                                    style="
-                                        font-size: 12px;
-                                        color: #991b1b;
-                                        margin: 0 0 8px;
-                                    "
+                                    id="conflictos-descripcion"
+                                    class="conflict-panel__description"
                                 >
-                                    Esta unidad ya tiene viajes activos en el
-                                    rango seleccionado:
+                                    Corrige el horario o selecciona otra unidad
+                                    para continuar.
                                 </p>
                                 <div id="conflictos-lista"></div>
                             </div>
@@ -3907,6 +3969,7 @@
                 document.getElementById("fecha_registro").value = todayLocal();
                 document.getElementById("viajesActivosPanel").style.display =
                     "none";
+                ocultarAlertaConflicto();
 
                 document.getElementById("phoneRows").innerHTML = `
           <div class="dynamic-row">
@@ -5567,14 +5630,16 @@
                                   _maxDt,
                               )
                             : null;
-                    if (chk && chk.tiene_conflicto) {
-                        mostrarAlertaConflicto(chk.conflictos);
+                    if (chk?.tiene_conflicto) {
+                        mostrarAlertaConflicto(chk.conflictos, false);
                         showToast(
                             "⚠️ La unidad ya tiene un viaje activo que se traslapa con estos horarios",
                         );
                         btn.disabled = false;
                         btn.textContent = "Guardar Viaje";
                         return;
+                    } else if (chk?.traslape_permitido) {
+                        mostrarAlertaConflicto(chk.conflictos, true);
                     } else {
                         ocultarAlertaConflicto();
                     }
@@ -5605,9 +5670,15 @@
                         json.viaje?.tramos?.length || tramos.length;
                     const esMultiDia = fechaFin && fechaFin !== fechaInicio;
 
-                    showToast(
-                        `✓ Viaje ${folio} guardado — ${totalTramos} tramo${totalTramos !== 1 ? "s" : ""}${esMultiDia ? " · multi-día" : ""}`,
-                    );
+                    if (json.traslape_permitido) {
+                        showToast(
+                            "✓ Viaje guardado. Este cliente permite varias asignaciones activas para la unidad",
+                        );
+                    } else {
+                        showToast(
+                            `✓ Viaje ${folio} guardado, ${totalTramos} tramo${totalTramos !== 1 ? "s" : ""}${esMultiDia ? " · multi-día" : ""}`,
+                        );
+                    }
                     showSyncStatus("Guardado correctamente", false);
 
                     // Invalidar cache de unidades para que la nueva aparezca en el autofill
@@ -5661,6 +5732,7 @@
                 // Ocultar panel de viajes activos
                 document.getElementById("viajesActivosPanel").style.display =
                     "none";
+                ocultarAlertaConflicto();
             }
 
             // ── Detección de conflictos ───────────────────────────────────────
@@ -5694,20 +5766,63 @@
                 }
             }
 
-            function mostrarAlertaConflicto(conflictos) {
+            function formatConflictoDateTime(value) {
+                const match = String(value || "")
+                    .replace("T", " ")
+                    .match(
+                        /^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2}))?/,
+                    );
+                if (!match) return String(value || "");
+                const fecha = `${match[3]}/${match[2]}/${match[1]}`;
+                return match[4] ? `${fecha} ${match[4]}:${match[5]}` : fecha;
+            }
+
+            function mostrarAlertaConflicto(conflictos, permitido = false) {
                 const panel = document.getElementById("conflictos-panel");
                 const lista = document.getElementById("conflictos-lista");
-                if (!panel || !lista) return;
+                const titulo = document.getElementById("conflictos-titulo");
+                const descripcion = document.getElementById(
+                    "conflictos-descripcion",
+                );
+                if (!panel || !lista || !titulo || !descripcion) return;
 
-                lista.innerHTML = conflictos
+                panel.classList.toggle(
+                    "conflict-panel--allowed",
+                    permitido,
+                );
+                panel.classList.toggle(
+                    "conflict-panel--blocking",
+                    !permitido,
+                );
+                titulo.textContent = permitido
+                    ? "Asignación adicional permitida"
+                    : "Unidad ocupada en este horario";
+                descripcion.textContent = permitido
+                    ? "Este cliente permite varios viajes activos para la misma unidad. El viaje se guardará con esta advertencia."
+                    : "Corrige el horario o selecciona otra unidad para continuar.";
+
+                lista.innerHTML = (Array.isArray(conflictos) ? conflictos : [])
                     .map((c) => {
-                        const fechas =
-                            c.fecha_fin && c.fecha_fin !== c.fecha_inicio
-                                ? `${c.fecha_inicio} → ${c.fecha_fin}`
-                                : c.fecha_inicio;
-                        return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fca5a5;font-size:12px;">
-                        <span><strong>${escapeHtml(c.folio)}</strong> &mdash; ${fechas}</span>
-                        <span style="color:#b91c1c;font-weight:600;text-transform:capitalize;">${c.estado.replace("_", " ")}</span>
+                        const inicio = formatConflictoDateTime(
+                            c.ocupacion_inicio || c.fecha_inicio,
+                        );
+                        const fin = formatConflictoDateTime(
+                            c.ocupacion_fin || c.fecha_fin || c.fecha_inicio,
+                        );
+                        const rango =
+                            inicio && fin && inicio !== fin
+                                ? `${inicio} → ${fin}`
+                                : inicio || fin || "Horario no disponible";
+                        const estado = String(c.estado || "activo").replaceAll(
+                            "_",
+                            " ",
+                        );
+                        return `<div class="conflict-panel__row">
+                        <span class="conflict-panel__trip">
+                            <strong>${escapeHtml(c.folio || "Sin folio")}</strong>
+                            <span class="conflict-panel__range">${escapeHtml(rango)}</span>
+                        </span>
+                        <span class="conflict-panel__state">${escapeHtml(estado)}</span>
                     </div>`;
                     })
                     .join("");
@@ -5744,7 +5859,9 @@
                     fechaFin,
                 );
                 if (chk?.tiene_conflicto) {
-                    mostrarAlertaConflicto(chk.conflictos);
+                    mostrarAlertaConflicto(chk.conflictos, false);
+                } else if (chk?.traslape_permitido) {
+                    mostrarAlertaConflicto(chk.conflictos, true);
                 } else {
                     ocultarAlertaConflicto();
                 }
