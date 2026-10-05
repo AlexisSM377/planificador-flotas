@@ -623,17 +623,17 @@ function handle_read($conn)
     }
 
     if ($tipo === "directorio_monitoreo") {
-        $clienteFilterSql = "";
-        if (count($allowedClienteIds)) {
-            $clienteFilterSql =
-                " WHERE dm.cliente_id IN (" .
-                implode(",", array_map("intval", $allowedClienteIds)) .
-                ")";
+        $whereConds = ["dm.activo = 1"];
+        if (strtolower($context["role"]) !== "admin") {
+            $whereConds[] = count($allowedClienteIds)
+                ? "dm.cliente_id IN (" . implode(",", array_map("intval", $allowedClienteIds)) . ")"
+                : "1 = 0";
         }
+        $clienteFilterSql = " WHERE " . implode(" AND ", $whereConds);
 
         $sql = "SELECT c.nombre AS cliente, dm.nombre, dm.cargo, dm.area,
                        dm.prioridad, dm.telefonos, dm.correos, dm.acciones,
-                       dm.observaciones, dm.activo
+                       dm.observaciones, dm.activo, dm.id
                   FROM directorio_monitoreo dm
                   INNER JOIN clientes c ON c.id = dm.cliente_id
                  $clienteFilterSql
@@ -659,6 +659,7 @@ function handle_read($conn)
                 $row["acciones"] ?? "",
                 $row["observaciones"] ?? "",
                 (int) $row["activo"] === 1 ? "TRUE" : "FALSE",
+                (int) $row["id"],
             ];
         }
         json_response(["ok" => true, "data" => $rows]);
@@ -1100,6 +1101,49 @@ function handle_write($conn)
     }
 }
 
+function handle_delete_contact($conn)
+{
+    if (($_SERVER["REQUEST_METHOD"] ?? "") !== "POST") {
+        throw new Exception("Metodo no permitido", 405);
+    }
+
+    $input = json_decode(file_get_contents("php://input"), true);
+    $contactId = filter_var($input["id"] ?? null, FILTER_VALIDATE_INT);
+    if (!is_array($input) || !$contactId || $contactId < 1) {
+        throw new Exception("ID de contacto invalido", 400);
+    }
+
+    $context = get_request_context($conn);
+    $role = strtolower($context["role"] ?? "");
+    if ($role === "lector") {
+        throw new Exception("No tienes permiso para eliminar contactos", 403);
+    }
+
+    $allowedIds = allowed_cliente_ids($context);
+    if ($role !== "admin" && !count($allowedIds)) {
+        throw new Exception("No tienes permiso para eliminar contactos", 403);
+    }
+
+    $sql = "UPDATE directorio_monitoreo SET activo = 0 WHERE id = ? AND activo = 1";
+    if ($role !== "admin") {
+        $sql .= " AND cliente_id IN (" . implode(",", array_map("intval", $allowedIds)) . ")";
+    }
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Error preparando eliminacion de contacto", 500);
+    }
+    $stmt->bind_param("i", $contactId);
+    if (!$stmt->execute()) {
+        throw new Exception("Error eliminando contacto", 500);
+    }
+    $deleted = $stmt->affected_rows;
+    $stmt->close();
+    if ($deleted !== 1) {
+        throw new Exception("Contacto no encontrado", 404);
+    }
+    json_response(["ok" => true, "id" => $contactId]);
+}
+
 try {
     RequestValidator::validateRequest();
     $conn = getDbConnection();
@@ -1114,6 +1158,8 @@ try {
         handle_read($conn);
     } elseif ($action === "write") {
         handle_write($conn);
+    } elseif ($action === "delete_contact") {
+        handle_delete_contact($conn);
     } else {
         throw new Exception("Invalid action", 400);
     }

@@ -6361,7 +6361,7 @@
                         throw new Error("El servidor no devolvió JSON válido");
                     }
 
-                    if (!json.ok) {
+                    if (!res.ok || !json.ok) {
                         throw new Error(json.error || "Error desconocido");
                     }
 
@@ -6392,8 +6392,8 @@
                             json.error || "Error cargando directorio",
                         );
                     }
-                    contactsList = (json.data || []).map((row, index) => ({
-                        id: Date.now() + index,
+                    contactsList = (json.data || []).map((row) => ({
+                        id: Number(row[10]),
                         cliente: row[0] || "",
                         nombre: row[1] || "",
                         cargo: row[2] || "N/A",
@@ -6748,7 +6748,6 @@
                 }
 
                 const contactObj = {
-                    id: Date.now(),
                     prioridad: prioridades.join(", "),
                     area: area,
                     nombre: nombre,
@@ -6759,8 +6758,14 @@
                     observaciones: obs,
                 };
 
-                contactsList.push(contactObj);
-                renderContacts();
+                try {
+                    await syncContactToSheets(contactObj);
+                    await loadDirectorioMonitoreo();
+                } catch (error) {
+                    console.error("Error al guardar contacto:", error);
+                    showToast("No se pudo guardar el contacto: " + error.message);
+                    return;
+                }
 
                 // Clear form fields
                 document.getElementById("c_nombre").value = "";
@@ -6791,15 +6796,7 @@
                     });
                 refreshLucideIcons();
 
-                try {
-                    await syncContactToSheets(contactObj);
-                    showToast("Contacto agregado y guardado en BD");
-                } catch (error) {
-                    console.error("Error al sincronizar contacto:", error);
-                    showToast(
-                        "Contacto agregado localmente, pero fallo guardar en BD",
-                    );
-                }
+                showToast("Contacto agregado y guardado en BD");
             }
 
             function renderContacts() {
@@ -6866,16 +6863,44 @@
                 <td style="font-size: 12px;">${escapeHtml(c.observaciones)}</td>
                 <td><button type="button" class="remove-btn" onclick="removeContact(${
                     c.id
-                })" aria-label="Quitar contacto ${escapeHtml(c.nombre)}" title="Quitar contacto">${lucideIcon("trash-2")}</button></td>
+                }, this)" aria-label="Quitar contacto ${escapeHtml(c.nombre)}" title="Quitar contacto">${lucideIcon("trash-2")}</button></td>
             `;
                     body.appendChild(row);
                 });
                 refreshLucideIcons();
             }
 
-            function removeContact(id) {
-                contactsList = contactsList.filter((c) => c.id !== id);
-                renderContacts();
+            async function removeContact(id, button) {
+                if (!canWritePlanificador()) {
+                    showToast("No tienes permiso para eliminar contactos");
+                    return;
+                }
+                if (!Number.isSafeInteger(id) || id < 1) {
+                    showToast("No se pudo identificar el contacto");
+                    return;
+                }
+                if (button) button.disabled = true;
+                try {
+                    const res = await fetch(`${PLANIFICADOR_API}?action=delete_contact`, {
+                        method: "POST",
+                        headers: getAuthHeaders({
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                        }),
+                        body: JSON.stringify({ id }),
+                    });
+                    const json = await readJsonResponse(res);
+                    if (!res.ok || !json.ok) {
+                        throw new Error(json.error || `Error ${res.status}`);
+                    }
+                    contactsList = contactsList.filter((c) => c.id !== id);
+                    renderContacts();
+                    showToast("Contacto eliminado del directorio");
+                } catch (error) {
+                    console.error("Error al eliminar contacto:", error);
+                    showToast("No se pudo eliminar el contacto: " + error.message);
+                    if (button) button.disabled = false;
+                }
             }
 
             function showToast(msg) {
