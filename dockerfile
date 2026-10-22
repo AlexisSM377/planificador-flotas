@@ -1,4 +1,7 @@
-FROM php:8.2-apache
+FROM php:8.2.35-apache
+
+# CVE-2026-109618 / CVE-2026-109619: 8.2.35 trae el parche; esto es defensa extra.
+RUN echo "session.upload_progress.enabled=0" > /usr/local/etc/php/conf.d/zz-hardening.ini
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
